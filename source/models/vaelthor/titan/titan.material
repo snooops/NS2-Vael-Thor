@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+albedoMap = "models/vaelthor/titan/titan.dds"
+normalMap = "models/vaelthor/titan/titan_normal.dds"
+emissiveMap = "models/vaelthor/titan/titan_illum.dds"
+specularMap = "models/vaelthor/titan/titan_spec.dds"
+surface = "metal"

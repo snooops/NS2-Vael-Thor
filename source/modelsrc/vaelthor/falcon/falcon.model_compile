@@ -1,0 +1,8 @@
+geometry "falcon.fbx"
+bone_order_override
+{
+0 "rifle_root"
+1 "fxnode_riflecasing"
+2 "fxnode_riflemuzzle"
+3 "fxnode_glmuzzle"
+}

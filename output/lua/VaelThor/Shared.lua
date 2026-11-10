@@ -1,0 +1,5 @@
+-- ============================================================================
+-- Vael'Thor Empire - shared entry point
+-- Everything shared is loaded through file hooks (FileHooks.lua) so that it
+-- exists before entity classes register; nothing further is needed here.
+-- ============================================================================

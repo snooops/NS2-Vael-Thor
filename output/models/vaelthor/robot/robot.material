@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+albedoMap = "models/vaelthor/robot/robot.dds"
+normalMap = "models/vaelthor/robot/robot_normal.dds"
+emissiveMap = "models/vaelthor/robot/robot_illum.dds"
+specularMap = "models/vaelthor/robot/robot_spec.dds"
+surface = "metal"

@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+albedoMap = "models/vaelthor/mecha/mecha.dds"
+normalMap = "models/vaelthor/mecha/mecha_normal.dds"
+emissiveMap = "models/vaelthor/mecha/mecha_illum.dds"
+specularMap = "models/vaelthor/mecha/mecha_spec.dds"
+surface = "metal"

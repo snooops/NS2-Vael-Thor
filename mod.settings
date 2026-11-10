@@ -1,0 +1,12 @@
+name        = "Vael'Thor"
+source_dir  = "source"
+output_dir  = "output"
+description = [=["We did not arrive to negotiate or share resources. We came to rule."
+The Vael'Thor are an ancient, bio-mechanical species whose homeworld was rendered uninhabitable eons ago through overpopulation and total warfare. Under the rule of the Supreme Archon, their society transformed into an absolute totalitarian empire.
+Their core nature is driven by ruthless conquest: foreign worlds are stripped for raw materials, and foreign species are viewed as either slave labor or obstacles to be eliminated. Unlike the industrial pragmatism of the Trans-Gov Marines (TSA) or the organic mutations of the Kharaa, the Vael'Thor utilize antimatter, plasma systems, energy shielding, and psionic tech.
+
+License: This mod is free to use for all real free to play servers without any custom content to buy for real money.]=]
+image       = "preview.jpg"
+tag_modtype = "Custom Game Mode"
+tag_support = "Must be run on Server"
+publish_id = 3833055653

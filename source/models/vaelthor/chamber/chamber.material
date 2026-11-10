@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+surface = "metal"
+albedoMap = "models/vaelthor/chamber/chamber.dds"
+normalMap = "models/vaelthor/chamber/chamber_normal.dds"
+emissiveMap = "models/vaelthor/chamber/chamber_illum.dds"
+specularMap = "models/vaelthor/chamber/chamber_spec.dds"

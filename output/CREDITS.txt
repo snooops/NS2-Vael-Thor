@@ -1,0 +1,7 @@
+Vael'Thor Empire - third-party assets
+=====================================
+
+Plasma Carbine model (models/vaelthor/falcon/):
+  This work is based on "Falcon Rilfe" (https://sketchfab.com/3d-models/falcon-rilfe-3d2abdffc82d44a597baf10ef63f00a6)
+  by pocolov (https://sketchfab.com/pocolov), licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/).
+  Changes: re-textured accents (purple plasma glow), rescaled and rigged onto the NS2 rifle world/view models.

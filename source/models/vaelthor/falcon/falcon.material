@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+albedoMap = "models/vaelthor/falcon/falcon.dds"
+normalMap = "models/vaelthor/falcon/falcon_normal.dds"
+emissiveMap = "models/vaelthor/falcon/falcon_illum.dds"
+specularMap = "models/vaelthor/falcon/falcon_spec.dds"
+surface = "metal"

@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+surface = "metal"
+albedoMap = "models/vaelthor/rift/rift.dds"
+normalMap = "models/vaelthor/rift/rift_normal.dds"
+emissiveMap = "models/vaelthor/rift/rift_illum.dds"
+specularMap = "models/vaelthor/rift/rift_spec.dds"

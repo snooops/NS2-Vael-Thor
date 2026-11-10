@@ -1,0 +1,6 @@
+shader = "shaders/super_emissive.surface_shader"
+albedoMap = "models/vaelthor/bolt/plasma_bolt.dds"
+emissiveMap = "models/vaelthor/bolt/plasma_bolt_illum.dds"
+normalMap = "models/vaelthor/bolt/plasma_bolt_normal.dds"
+specularMap = "models/vaelthor/bolt/plasma_bolt_spec.dds"
+opacityMap = "models/vaelthor/bolt/plasma_bolt_opacity.dds"

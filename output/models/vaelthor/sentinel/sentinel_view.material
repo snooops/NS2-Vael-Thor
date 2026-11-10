@@ -1,0 +1,6 @@
+shader = "shaders/WeaponView_emissive.surface_shader"
+albedoMap = "models/vaelthor/sentinel/sentinel.dds"
+normalMap = "models/vaelthor/sentinel/sentinel_normal.dds"
+specularMap = "models/vaelthor/sentinel/sentinel_spec.dds"
+emissiveMap = "models/vaelthor/sentinel/sentinel_illum.dds"
+darken = 0

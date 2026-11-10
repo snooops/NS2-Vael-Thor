@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+surface = "metal"
+albedoMap = "models/vaelthor/spire/spire.dds"
+normalMap = "models/vaelthor/spire/spire_normal.dds"
+emissiveMap = "models/vaelthor/spire/spire_illum.dds"
+specularMap = "models/vaelthor/spire/spire_spec.dds"

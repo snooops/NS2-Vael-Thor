@@ -1,0 +1,6 @@
+shader = "shaders/super_emissive.surface_shader"
+albedoMap = "models/vaelthor/blades/blades.dds"
+emissiveMap = "models/vaelthor/blades/blades_hidden_opacity.dds"
+normalMap = "models/vaelthor/blades/blades_normal.dds"
+specularMap = "models/vaelthor/blades/blades_spec.dds"
+opacityMap = "models/vaelthor/blades/blades_hidden_opacity.dds"

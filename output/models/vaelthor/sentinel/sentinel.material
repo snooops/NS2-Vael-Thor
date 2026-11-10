@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+albedoMap = "models/vaelthor/sentinel/sentinel.dds"
+normalMap = "models/vaelthor/sentinel/sentinel_normal.dds"
+emissiveMap = "models/vaelthor/sentinel/sentinel_illum.dds"
+specularMap = "models/vaelthor/sentinel/sentinel_spec.dds"
+surface = "metal"

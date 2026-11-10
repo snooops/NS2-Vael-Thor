@@ -1,0 +1,7 @@
+modEntry = {
+    FileHooks = "lua/VaelThor/FileHooks.lua",
+    Shared    = "lua/VaelThor/Shared.lua",
+    Server    = "lua/VaelThor/Server.lua",
+    Client    = "lua/VaelThor/Client.lua",
+    Priority  = 5
+}

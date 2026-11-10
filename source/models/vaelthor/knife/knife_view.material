@@ -1,0 +1,6 @@
+shader = "shaders/WeaponView_emissive.surface_shader"
+albedoMap = "models/vaelthor/knife/knife.dds"
+normalMap = "models/vaelthor/knife/knife_normal.dds"
+emissiveMap = "models/vaelthor/knife/knife_illum.dds"
+specularMap = "models/vaelthor/knife/knife_spec.dds"
+darken = 0
