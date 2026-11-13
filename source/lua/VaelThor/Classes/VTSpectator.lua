@@ -14,6 +14,9 @@
 
 class 'VTSpectator' (MarineSpectator)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTSpectator, { "MarineSpectator" })
+
 VTSpectator.kMapName = kVTMapNames.Spectator
 
 local networkVars =
@@ -36,7 +39,7 @@ end
 
 function VTSpectator:OnCreate()
 
-    MarineSpectator.OnCreate(self)
+    VTBase.MarineSpectator.OnCreate(self)
 
     self.vtDesiredClass = kVTClass.Vanguard
     self.vtModule       = kVTModule.ShieldBoost
@@ -115,7 +118,7 @@ if Server then
 
     -- Runs whether or not the client's moves reach OnProcessMove.
     function VTSpectator:OnUpdate(deltaTime)
-        MarineSpectator.OnUpdate(self, deltaTime)
+        VTBase.MarineSpectator.OnUpdate(self, deltaTime)
         self:VT_EnsurePreferences()
         if self.vtPrefsLoaded and (Shared.GetTime() >= (self.vtNextLoadoutSync or 0)
                 or self.vtSentReadyTime ~= self:VT_GetSynthReadyTime()) then
@@ -194,7 +197,7 @@ function VTSpectator:OnProcessMove(input)
     -- These keys belong to the matrix menu, not to spectator camera modes.
     input.commands = bit.band(input.commands, bit.bnot(kChoiceMask))
 
-    MarineSpectator.OnProcessMove(self, input)
+    VTBase.MarineSpectator.OnProcessMove(self, input)
 
 end
 

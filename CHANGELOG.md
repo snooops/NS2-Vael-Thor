@@ -8,6 +8,25 @@ Balance numbers are always first pass.
 
 ## 2026-11-13
 
+### Added
+- **Isolation from other mods** (instead of a "team 3", which NS2 can't do: team 3 is the spectator team and
+  everything assumes two playing teams). Balance and gameplay mods for marines no longer reach the Vael'Thor:
+  - **Vanilla snapshot:** a second entry `lua/entry/VaelThorBaseline.entry` (Priority 1000, loads before every other
+    mod) hooks the vanilla marine class, mixin, balance, tech data and damage files and stores a copy right after
+    each one loads (`Baseline/`).
+  - **Frozen behaviour:** every Vael'Thor class gets frozen copies of the marine methods it inherits
+    (`VT_FreezeClass`, `Baseline/Freeze.lua`): copies of the vanilla functions that keep the vanilla file-local
+    constants and read vanilla balance values and vanilla marine-only mixins. Explicit base calls go through
+    `VTBase.Marine...`. Methods shared with a both-teams base (Player, Weapon, ...) still follow mods of that base.
+  - **Own numbers:** Vael'Thor tech entries are cloned from the *vanilla* marine entries, and the code that builds
+    on marine values reads them through `VT_Vanilla(...)`. Plasma Calibration / Shield Matrix have their own tech ids
+    (cost, time and damage scaling of the marine Weapons/Armor 1–3 no longer apply).
+  - Alien-side effects on soldiers (parasite, web, stun, corrosion) stay shared on purpose: alien mods may change
+    what aliens do to anyone.
+  - **Check:** `vt_isolation` lists what other mods changed and whether it reaches the Vael'Thor;
+    `vt_isolation_selftest` (cheats) patches marine code like a mod would and checks the Vael'Thor stay vanilla.
+  ✅
+
 ### Removed
 - **Rift Portal** (a reskinned Phase Gate). The empire's mobility now runs only through the pylons and Nexus Gates.
   Getting to the front fast means building a gated Nexus there (25 + 20 res) on purpose, and the Nexus Gate becomes

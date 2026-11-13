@@ -4,6 +4,7 @@
 
 Script.Load("lua/VaelThor/VTTeam.lua")
 Script.Load("lua/VaelThor/Hooks/TargetSelectors.lua")
+Script.Load("lua/VaelThor/Baseline/Isolation.lua")   -- console command vt_isolation
 
 -- ----------------------------------------------------------------------------
 -- Faction matchup (VTMatchupVote.lua). Read from the mod's own config file once

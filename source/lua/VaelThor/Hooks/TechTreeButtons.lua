@@ -122,15 +122,15 @@ local kVTIconCellList =
     { "VTObeliskBeams3", 8, 20 },
 }
 
--- vanilla upgrades relabelled for Vael'Thor viewers (Plasma Calibration / Shield Matrix): own icons for them only
+-- Plasma Calibration / Shield Matrix (own tech ids) use the cells drawn for them
+for i, name in ipairs({ "VTPlasmaCalibration1", "VTPlasmaCalibration2", "VTPlasmaCalibration3",
+                        "VTShieldMatrix1", "VTShieldMatrix2", "VTShieldMatrix3" }) do
+    kVTIconCellList[#kVTIconCellList + 1] = { name, i + 2, 19 }
+end
+
+-- vanilla tech shown with a different icon to Vael'Thor viewers only (none at the moment)
 local kVTViewerIconCellList =
 {
-    { "Weapons1", 3, 19 },
-    { "Weapons2", 4, 19 },
-    { "Weapons3", 5, 19 },
-    { "Armor1", 6, 19 },
-    { "Armor2", 7, 19 },
-    { "Armor3", 8, 19 },
 }
 
 local function BuildCells(list)

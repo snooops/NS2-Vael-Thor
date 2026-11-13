@@ -103,8 +103,8 @@ function VTPlasmaBolt:OnCreate()
     InitMixin(self, DamageMixin)
     self.vtDamageScalar = kVTCarbineDamageScalar
     -- defaults = carbine; the Praetor miniguns override these on the server entity
-    self.vtBaseDamage = kRifleDamage
-    self.vtDamageType = kRifleDamageType
+    self.vtBaseDamage = VT_Vanilla("kRifleDamage")
+    self.vtDamageType = VT_Vanilla("kRifleDamageType")
     self.vtWeaponTechId = kTechId.VTPlasmaCarbine
     self.vtDeathIcon = kDeathMessageIcon.Rifle
     self.vtSplashRadius = 0          -- Praetor bolts: splash damage around the impact
@@ -119,11 +119,11 @@ function VTPlasmaBolt:GetVTDamageScalar(target)
 end
 
 function VTPlasmaBolt:GetDamageType()
-    return self.vtDamageType or kRifleDamageType
+    return self.vtDamageType or VT_Vanilla("kRifleDamageType")
 end
 
 function VTPlasmaBolt:GetIsAffectedByWeaponUpgrades()
-    return true          -- Plasma Calibration (Weapons1-3)
+    return true          -- Plasma Calibration I-III (Hooks/DamageTypes.lua)
 end
 
 function VTPlasmaBolt:GetWeaponTechId()
@@ -211,7 +211,7 @@ if Server then
             self.vtDebugHit = { name = DebugName(targetHit), dist = dist, health = health, target = targetHit }
         end
         if targetHit ~= owner then
-            self:DoDamage(self.vtBaseDamage or kRifleDamage, targetHit, hitPoint, direction, surface or "metal", false, false)
+            self:DoDamage(self.vtBaseDamage or VT_Vanilla("kRifleDamage"), targetHit, hitPoint, direction, surface or "metal", false, false)
             -- splash (Praetor): every other enemy in range, falloff to the edge, walls block
             local radius = self.vtSplashRadius or 0
             if radius > 0 then
@@ -258,6 +258,9 @@ Shared.LinkClassToMap("VTPlasmaBolt", VTPlasmaBolt.kMapName, boltNetworkVars)
 -- ----------------------------------------------------------------------------
 class 'VTPlasmaCarbine' (Rifle)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTPlasmaCarbine, { "Rifle", "ClipWeapon" })
+
 VTPlasmaCarbine.kMapName = kVTMapNames.Carbine
 
 local carbineNetworkVars =
@@ -275,7 +278,7 @@ function VTPlasmaCarbine:GetViewModelName(sex, variant)
 end
 
 function VTPlasmaCarbine:OnCreate()
-    Rifle.OnCreate(self)      -- ClipWeapon.OnCreate fills clip/ammo from the overrides below
+    VTBase.Rifle.OnCreate(self)      -- ClipWeapon.OnCreate fills clip/ammo from the overrides below
     self.vtOvercharged = false
     self.vtLastBoltTime = 0
     self.vtRechargeProgress = 0
@@ -350,7 +353,7 @@ end
 -- Overcharge Core: heavy bolts at most every kVTOverchargeFireDelay. Gated here (not in FirePrimary) so a
 -- suppressed shot costs no energy.
 function VTPlasmaCarbine:GetIsAllowedToShoot(player)
-    if not Rifle.GetIsAllowedToShoot(self, player) then
+    if not VTBase.Rifle.GetIsAllowedToShoot(self, player) then
         return false
     end
     return not self.vtOvercharged or Shared.GetTime() - (self.timeAttackFired or 0) >= kVTOverchargeFireDelay
@@ -359,7 +362,7 @@ end
 local kBoltSound = PrecacheAsset("sound/NS2.fev/marine/heavy/railgun_quick_fire")
 
 function VTPlasmaCarbine:GetSpread()
-    return Rifle.GetSpread(self) * kVTCarbineSpreadScalar
+    return VTBase.Rifle.GetSpread(self) * kVTCarbineSpreadScalar
 end
 
 -- Plasma bolt instead of hitscan bullets: aim from the eye (spread as the rifle), launch from the gun.
@@ -417,6 +420,9 @@ Shared.LinkClassToMap("VTPlasmaCarbine", VTPlasmaCarbine.kMapName, carbineNetwor
 -- ----------------------------------------------------------------------------
 class 'VTPsionicBlade' (Axe)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTPsionicBlade, { "Axe" })
+
 VTPsionicBlade.kMapName = kVTMapNames.Blade
 
 -- Dual wrist-mounted psionic blades (Zealot style), art/weapons/build_psi_blades.sh:
@@ -427,7 +433,7 @@ local kBladesNullModel = PrecacheAsset("models/vaelthor/blades/blades_null.model
 local kBladesViewModel = PrecacheAsset("models/vaelthor/blades/blades_view.model")
 
 function VTPsionicBlade:OnInitialized()
-    Axe.OnInitialized(self)
+    VTBase.Axe.OnInitialized(self)
     self:SetModel(kBladesNullModel)
 end
 
@@ -446,7 +452,7 @@ end
 
 -- Axe skins must not override the blade materials (see Hooks/Cosmetics.lua too).
 function VTPsionicBlade:ProcessMoveOnWeapon(player, input)
-    Axe.ProcessMoveOnWeapon(self, player, input)
+    VTBase.Axe.ProcessMoveOnWeapon(self, player, input)
     if Server and self.axeVariant ~= nil and self.axeVariant ~= kDefaultAxeVariant then
         self.axeVariant = kDefaultAxeVariant
     end
@@ -458,12 +464,12 @@ if Client then
             self.axeVariant = kDefaultAxeVariant
             self.dirtySkinState = true
         end
-        Axe.OnUpdateRender(self)
+        VTBase.Axe.OnUpdateRender(self)
     end
 end
 
 function VTPsionicBlade:GetVTDamageScalar(target)
-    return kVTBladeDamage / kAxeDamage
+    return kVTBladeDamage / VT_Vanilla("kAxeDamage")   -- the frozen axe code deals the vanilla kAxeDamage
 end
 
 function VTPsionicBlade:GetHasSecondary(player)
@@ -497,13 +503,16 @@ Shared.LinkClassToMap("VTPsionicBlade", VTPsionicBlade.kMapName, {})
 -- ----------------------------------------------------------------------------
 class 'VTPsionicKnife' (Axe)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTPsionicKnife, { "Axe" })
+
 VTPsionicKnife.kMapName = kVTMapNames.Knife
 
 local kKnifeWorldModel = PrecacheAsset("models/vaelthor/knife/knife.model")
 local kKnifeViewModel  = PrecacheAsset("models/vaelthor/knife/knife_view.model")
 
 function VTPsionicKnife:OnInitialized()
-    Axe.OnInitialized(self)            -- sets the vanilla axe model
+    VTBase.Axe.OnInitialized(self)            -- sets the vanilla axe model
     self:SetModel(kKnifeWorldModel)
 end
 
@@ -517,7 +526,7 @@ end
 
 -- Structure breaker: extra damage against structures only (see kVTKnifeStructureDamageScalar).
 function VTPsionicKnife:GetVTDamageScalar(target)
-    if target and target.GetReceivesStructuralDamage and target:GetReceivesStructuralDamage(kAxeDamageType) then
+    if target and target.GetReceivesStructuralDamage and target:GetReceivesStructuralDamage(VT_Vanilla("kAxeDamageType")) then
         return kVTKnifeStructureDamageScalar
     end
     return 1
@@ -525,7 +534,7 @@ end
 
 -- Axe skins would override the knife's material slots: keep the default.
 function VTPsionicKnife:ProcessMoveOnWeapon(player, input)
-    Axe.ProcessMoveOnWeapon(self, player, input)
+    VTBase.Axe.ProcessMoveOnWeapon(self, player, input)
     if Server and self.axeVariant ~= nil and self.axeVariant ~= kDefaultAxeVariant then
         self.axeVariant = kDefaultAxeVariant
     end
@@ -538,7 +547,7 @@ if Client then
             self.axeVariant = kDefaultAxeVariant
             self.dirtySkinState = true
         end
-        Axe.OnUpdateRender(self)
+        VTBase.Axe.OnUpdateRender(self)
     end
 end
 
@@ -556,10 +565,13 @@ Shared.LinkClassToMap("VTPsionicKnife", VTPsionicKnife.kMapName, {})
 -- ----------------------------------------------------------------------------
 class 'VTSubjectClaws' (Axe)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTSubjectClaws, { "Axe" })
+
 VTSubjectClaws.kMapName = kVTMapNames.Claws
 
 function VTSubjectClaws:GetVTDamageScalar(target)
-    return kVTClawsDamage / kAxeDamage
+    return kVTClawsDamage / VT_Vanilla("kAxeDamage")
 end
 
 function VTSubjectClaws:GetRange()
@@ -577,7 +589,7 @@ local kClawsViewModel = PrecacheAsset("models/vaelthor/claws/claws_view.model")
 local kClawsNullModel = PrecacheAsset("models/vaelthor/blades/blades_null.model")
 
 function VTSubjectClaws:OnInitialized()
-    Axe.OnInitialized(self)
+    VTBase.Axe.OnInitialized(self)
     self:SetModel(kClawsNullModel)
 end
 
@@ -586,7 +598,7 @@ function VTSubjectClaws:GetViewModelName(sex, variant)
 end
 
 function VTSubjectClaws:ProcessMoveOnWeapon(player, input)
-    Axe.ProcessMoveOnWeapon(self, player, input)
+    VTBase.Axe.ProcessMoveOnWeapon(self, player, input)
     if Server and self.axeVariant ~= nil and self.axeVariant ~= kDefaultAxeVariant then
         self.axeVariant = kDefaultAxeVariant
     end
@@ -598,7 +610,7 @@ if Client then
             self.axeVariant = kDefaultAxeVariant
             self.dirtySkinState = true
         end
-        Axe.OnUpdateRender(self)
+        VTBase.Axe.OnUpdateRender(self)
     end
 end
 
@@ -618,16 +630,19 @@ Shared.LinkClassToMap("VTSubjectClaws", VTSubjectClaws.kMapName, {})
 -- ----------------------------------------------------------------------------
 class 'VTSingularityBolt' (Grenade)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTSingularityBolt, { "Grenade" })
+
 VTSingularityBolt.kMapName = kVTMapNames.SingularityBolt
 -- PredictedProjectile reads these statics through _G[className].
-VTSingularityBolt.kModelName         = Grenade.kModelName
-VTSingularityBolt.kRadius            = Grenade.kRadius
-VTSingularityBolt.kDetonateRadius    = Grenade.kDetonateRadius
-VTSingularityBolt.kMinLifeTime       = Grenade.kMinLifeTime
+VTSingularityBolt.kModelName         = VTBase.Grenade.kModelName
+VTSingularityBolt.kRadius            = VTBase.Grenade.kRadius
+VTSingularityBolt.kDetonateRadius    = VTBase.Grenade.kDetonateRadius
+VTSingularityBolt.kMinLifeTime       = VTBase.Grenade.kMinLifeTime
 VTSingularityBolt.kClearOnImpact     = true    -- stop the (client-predicted) flight at the first impact
-VTSingularityBolt.kClearOnEnemyImpact= Grenade.kClearOnEnemyImpact
+VTSingularityBolt.kClearOnEnemyImpact= VTBase.Grenade.kClearOnEnemyImpact
 VTSingularityBolt.kNeedsHitEntity    = false   -- ProcessHit also for walls / floor (no hit entity)
-VTSingularityBolt.kMinVelocityToMove = Grenade.kMinVelocityToMove
+VTSingularityBolt.kMinVelocityToMove = VTBase.Grenade.kMinVelocityToMove
 
 function VTSingularityBolt:GetWeaponTechId()
     return kTechId.VTSingularityLauncher
@@ -750,6 +765,9 @@ Shared.LinkClassToMap("VTSingularityBolt", VTSingularityBolt.kMapName, {})
 -- ----------------------------------------------------------------------------
 class 'VTSingularityLauncher' (GrenadeLauncher)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTSingularityLauncher, { "GrenadeLauncher", "ClipWeapon" })
+
 VTSingularityLauncher.kMapName = kVTMapNames.Singularity
 
 local kSingularityShells = 4   -- cosmetic: shells shown by the view model
@@ -767,7 +785,7 @@ function VT_GetSingularityShots(player)
 end
 
 function VTSingularityLauncher:OnCreate()
-    GrenadeLauncher.OnCreate(self)
+    VTBase.GrenadeLauncher.OnCreate(self)
     self.clip = kSingularityShells
     self.ammo = 0
 end
@@ -795,12 +813,12 @@ end
 
 -- Not enough energy: don't even start the fire animation.
 function VTSingularityLauncher:GetIsPrimaryAttackAllowed(player)
-    return GrenadeLauncher.GetIsPrimaryAttackAllowed(self, player) and HasEnergy(player)
+    return VTBase.GrenadeLauncher.GetIsPrimaryAttackAllowed(self, player) and HasEnergy(player)
 end
 
 -- Checked on the animation's "shoot" tag (ClipWeapon:OnTag), right before FirePrimary.
 function VTSingularityLauncher:GetIsAllowedToShoot(player)
-    return GrenadeLauncher.GetIsAllowedToShoot(self, player) and HasEnergy(player)
+    return VTBase.GrenadeLauncher.GetIsAllowedToShoot(self, player) and HasEnergy(player)
 end
 
 -- Pay the energy (predicted like a carbine shot: the cell's clip is networked) and
@@ -817,7 +835,7 @@ end
 
 -- ClipWeapon:OnTag takes one shell per shot: put it back so the clip stays full.
 function VTSingularityLauncher:OnTag(tagName)
-    GrenadeLauncher.OnTag(self, tagName)
+    VTBase.GrenadeLauncher.OnTag(self, tagName)
     self.clip = kSingularityShells
 end
 
@@ -840,11 +858,11 @@ function VTSingularityLauncher:ShootGrenade(player)
         local eyePos = player:GetEyePos()
         local floorAim = 1 - math.min(viewCoords.zAxis.y, 0)
 
-        local startPointTrace = Shared.TraceCapsule(eyePos, eyePos + viewCoords.zAxis * floorAim * GrenadeLauncher.kLauncherBarrelDist,
+        local startPointTrace = Shared.TraceCapsule(eyePos, eyePos + viewCoords.zAxis * floorAim * VTBase.GrenadeLauncher.kLauncherBarrelDist,
                 VTSingularityBolt.kRadius + 0.0001, 0, CollisionRep.Move, PhysicsMask.PredictedProjectileGroup, EntityFilterTwo(self, player))
 
-        player:CreatePredictedProjectile("VTSingularityBolt", startPointTrace.endPoint, viewCoords.zAxis * GrenadeLauncher.kGrenadeSpeed,
-                GrenadeLauncher.kGrenadeBounce, GrenadeLauncher.kGrenadeFriction, nil, PhysicsMask.GLGrenadeGroup)
+        player:CreatePredictedProjectile("VTSingularityBolt", startPointTrace.endPoint, viewCoords.zAxis * VTBase.GrenadeLauncher.kGrenadeSpeed,
+                VTBase.GrenadeLauncher.kGrenadeBounce, VTBase.GrenadeLauncher.kGrenadeFriction, nil, PhysicsMask.GLGrenadeGroup)
 
     end
 
@@ -876,6 +894,9 @@ Shared.LinkClassToMap("VTSingularityLauncher", VTSingularityLauncher.kMapName, {
 -- they fade out over kVTEchoScanFadeTime. Replaces the marine commander scan.
 -- ----------------------------------------------------------------------------
 class 'VTEchoPulse' (Builder)
+
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTEchoPulse, { "Builder" })
 
 VTEchoPulse.kMapName = kVTMapNames.EchoPulse
 
@@ -946,7 +967,7 @@ end
 -- the render VM and for other players' third-person view too).
 function VTEchoPulse:OnUpdateRender()
     self.playEffect = self:GetIsActive() and GetIsScanning(self)
-    Builder.OnUpdateRender(self)
+    VTBase.Builder.OnUpdateRender(self)
 end
 
 -- for marine thirdperson pose: the builder pose (tablet held up)
@@ -964,6 +985,9 @@ Shared.LinkClassToMap("VTEchoPulse", VTEchoPulse.kMapName, {})
 -- Spin-up, heat and overheat stay vanilla (heat follows self.shooting). No orange muzzle flash, no shells.
 -- ----------------------------------------------------------------------------
 class 'VTPlasmaMinigun' (Minigun)
+
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTPlasmaMinigun, { "Minigun" })
 
 VTPlasmaMinigun.kMapName = "vt_plasmaminigun"
 
@@ -1016,13 +1040,13 @@ local function FireBolt(self, player)
 
     local bolt = player:CreatePredictedProjectile("VTPlasmaBolt", start, boltDir * kVTCarbineBoltSpeed, 0, 0, 0)
     if bolt then   -- server entity
-        bolt.vtBaseDamage = kMinigunDamage * kVTPraetorBoltBatch
+        bolt.vtBaseDamage = VT_Vanilla("kMinigunDamage") * kVTPraetorBoltBatch
         bolt.vtDamageScalar = kVTPraetorBoltDamageScalar
-        bolt.vtDamageType = kMinigunDamageType
+        bolt.vtDamageType = VT_Vanilla("kMinigunDamageType")
         bolt.vtWeaponTechId = kTechId.Minigun
         bolt.vtDeathIcon = kDeathMessageIcon.Minigun
         bolt.vtSplashRadius = kVTPraetorSplashRadius
-        bolt.vtSplashDamage = kMinigunDamage * kVTPraetorBoltBatch * kVTPraetorSplashDamage
+        bolt.vtSplashDamage = VT_Vanilla("kMinigunDamage") * kVTPraetorBoltBatch * kVTPraetorSplashDamage
     end
 
     StartSoundEffectOnEntity(kMinigunBoltSound, player, 0.35, player)
@@ -1059,7 +1083,7 @@ if Client then
     end
     -- no brass casings
     function VTPlasmaMinigun:OnUpdateRender()
-        Minigun.OnUpdateRender(self)
+        VTBase.Minigun.OnUpdateRender(self)
         if self.shellsCinematic then
             self.shellsCinematic:SetIsActive(false)
         end

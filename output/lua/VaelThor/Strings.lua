@@ -61,6 +61,7 @@ kVTStrings =
     VT_SHIELD_MATRIX_2             = "Shield Matrix II",
     VT_SHIELD_MATRIX_3             = "Shield Matrix III",
     VT_SHIELD_MATRIX_TOOLTIP       = "Soldiers: +15 maximum psi shield per level. Armor and integrity are permanent - only the psi shield regenerates.",
+    VT_PLASMA_CALIBRATION_TOOLTIP  = "Plasma weapons: +10% damage per level.",
 
     VT_CARBINE                     = "Plasma Carbine",
     VT_BLADE                       = "Psionic Blade",
@@ -135,20 +136,10 @@ function VT_GetString(key)
     return kVTStrings[key] or key
 end
 
--- Vanilla keys shown differently to Vael'Thor players only (the upgrades re-use
--- the marine Weapons1-3 / Armor1-3 tech ids; real marines in a Vael'Thor vs.
--- Marines match keep the vanilla names).
+-- Vanilla keys shown differently to Vael'Thor players only. Empty since Plasma
+-- Calibration / Shield Matrix have their own tech ids; kept for future relabels.
 kVTViewerOverrides =
 {
-    MARINE_WEAPONS1 = "VT_PLASMA_CALIBRATION_1",
-    MARINE_WEAPONS2 = "VT_PLASMA_CALIBRATION_2",
-    MARINE_WEAPONS3 = "VT_PLASMA_CALIBRATION_3",
-    MARINE_ARMOR1   = "VT_SHIELD_MATRIX_1",
-    MARINE_ARMOR2   = "VT_SHIELD_MATRIX_2",
-    MARINE_ARMOR3   = "VT_SHIELD_MATRIX_3",
-    MARINE_ARMOR1_TOOLTIP = "VT_SHIELD_MATRIX_TOOLTIP",
-    MARINE_ARMOR2_TOOLTIP = "VT_SHIELD_MATRIX_TOOLTIP",
-    MARINE_ARMOR3_TOOLTIP = "VT_SHIELD_MATRIX_TOOLTIP",
 }
 
 local function GetLocalIsVT()

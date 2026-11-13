@@ -187,12 +187,15 @@ end
 -- ----------------------------------------------------------------------------
 class 'VTVanguard' (Marine)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTVanguard, { "Marine" })
+
 VTVanguard.kMapName = kVTMapNames.Vanguard
 
 local vanguardNetworkVars = AddVTNetworkVars({})
 
 function VTVanguard:OnCreate()
-    Marine.OnCreate(self)
+    VTBase.Marine.OnCreate(self)
     InitVTFields(self)
 end
 
@@ -210,7 +213,7 @@ function VTVanguard:GetArmorAmount(armorLevels)
 end
 
 function VTVanguard:OnProcessMove(input)
-    Marine.OnProcessMove(self, input)
+    VTBase.Marine.OnProcessMove(self, input)
     local carbine = self:GetWeapon(VTPlasmaCarbine.kMapName)
     if carbine and carbine.VT_UpdateEnergy then
         carbine:VT_UpdateEnergy(self, input.time)
@@ -218,7 +221,7 @@ function VTVanguard:OnProcessMove(input)
 end
 
 function VTVanguard:GetMaxSpeed(possible)
-    local speed = Marine.GetMaxSpeed(self, possible)
+    local speed = VTBase.Marine.GetMaxSpeed(self, possible)
     if not possible and self.vtModule == kVTModule.ShieldOverdrive and self:VT_GetAbilityActive() then
         speed = speed * kVTOverdriveSpeedScalar
     end
@@ -299,6 +302,9 @@ Shared.LinkClassToMap("VTVanguard", VTVanguard.kMapName, vanguardNetworkVars, tr
 -- ----------------------------------------------------------------------------
 class 'VTInfiltrator' (Marine)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTInfiltrator, { "Marine" })
+
 VTInfiltrator.kMapName = kVTMapNames.Infiltrator
 
 local infiltratorNetworkVars = AddVTNetworkVars({
@@ -308,7 +314,7 @@ local infiltratorNetworkVars = AddVTNetworkVars({
 AddMixinNetworkVars(CloakableMixin, infiltratorNetworkVars)
 
 function VTInfiltrator:OnCreate()
-    Marine.OnCreate(self)
+    VTBase.Marine.OnCreate(self)
     InitMixin(self, CloakableMixin)
     InitVTFields(self)
     self.vtHackReadyTime = 0
@@ -328,13 +334,13 @@ function VTInfiltrator:GetArmorAmount(armorLevels)
 end
 
 function VTInfiltrator:GetMaxSpeed(possible)
-    return Marine.GetMaxSpeed(self, possible) * kVTInfiltratorSpeedScalar
+    return VTBase.Marine.GetMaxSpeed(self, possible) * kVTInfiltratorSpeedScalar
 end
 
 -- Used by CloakableMixin: moving normally strips most of the cloak (alien
 -- camouflage rule). An active cloaking field is far less sensitive to speed.
 function VTInfiltrator:GetSpeedScalar()
-    local scalar = Marine.GetSpeedScalar(self)
+    local scalar = VTBase.Marine.GetSpeedScalar(self)
     if self:VT_GetAbilityActive() then
         scalar = scalar * kVTCloakMovementPenalty
     end
@@ -408,7 +414,7 @@ function VTInfiltrator:OnProcessMove(input)
         self:VT_UpdateEchoDetection()
     end
 
-    Marine.OnProcessMove(self, input)
+    VTBase.Marine.OnProcessMove(self, input)
 end
 
 function VTInfiltrator:PrimaryAttack()
@@ -420,7 +426,7 @@ function VTInfiltrator:PrimaryAttack()
             self:TriggerUncloak()
         end
     end
-    Marine.PrimaryAttack(self)
+    VTBase.Marine.PrimaryAttack(self)
 end
 
 if Server then
@@ -498,6 +504,9 @@ Shared.LinkClassToMap("VTInfiltrator", VTInfiltrator.kMapName, infiltratorNetwor
 -- ----------------------------------------------------------------------------
 class 'VTSubject' (Marine)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTSubject, { "Marine" })
+
 VTSubject.kMapName = kVTMapNames.Subject
 
 local subjectNetworkVars = AddVTNetworkVars({})
@@ -512,7 +521,7 @@ subjectNetworkVars.vtSprintReadyTime = "private compensated time"
 subjectNetworkVars.vtSprintEndTime   = "private compensated time"
 
 function VTSubject:OnCreate()
-    Marine.OnCreate(self)
+    VTBase.Marine.OnCreate(self)
     InitVTFields(self)
     self.vtAirJumpsUsed = 0
     self.vtDodgeReadyTime = 0
@@ -785,7 +794,7 @@ function VTSubject:GetArmorAmount(armorLevels)
 end
 
 function VTSubject:GetMaxSpeed(possible)
-    return Marine.GetMaxSpeed(self, possible) * kVTSubjectSpeedScalar
+    return VTBase.Marine.GetMaxSpeed(self, possible) * kVTSubjectSpeedScalar
 end
 
 function VTSubject:OnAdjustModelCoords(modelCoords)
@@ -822,6 +831,9 @@ Shared.LinkClassToMap("VTSubject", VTSubject.kMapName, subjectNetworkVars, true)
 -- ----------------------------------------------------------------------------
 class 'VTPraetor' (Exo)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTPraetor, { "Exo" })
+
 VTPraetor.kMapName = kVTMapNames.Praetor
 
 local praetorNetworkVars = AddVTNetworkVars({
@@ -831,7 +843,7 @@ local praetorNetworkVars = AddVTNetworkVars({
 AddMixinNetworkVars(JumpMoveMixin, praetorNetworkVars)
 
 function VTPraetor:OnCreate()
-    Exo.OnCreate(self)
+    VTBase.Exo.OnCreate(self)
     -- Exos can't launch predicted projectiles; the plasma miniguns need it (Marine.lua does the same).
     InitMixin(self, PredictedProjectileShooterMixin)
     InitMixin(self, JumpMoveMixin)
@@ -848,7 +860,7 @@ kVTPraetorPlayerModel = PrecacheAsset("models/vaelthor/titan/titan_player.model"
 -- Exo:InitExoModel picks the vanilla model by layout; the Praetor is always dual minigun.
 function VTPraetor:InitExoModel()
     self.hasDualGuns = true
-    self:SetModel(kVTPraetorPlayerModel, Exo.kDualAnimationGraph)
+    self:SetModel(kVTPraetorPlayerModel, VTBase.Exo.kDualAnimationGraph)
     self.lastExoLayout = self.layout
 end
 
@@ -860,7 +872,7 @@ function VTPraetor:HandleButtons(input)
     if Server and self.exoVariant ~= kDefaultExoVariant then
         self.exoVariant = kDefaultExoVariant
     end
-    Exo.HandleButtons(self, input)
+    VTBase.Exo.HandleButtons(self, input)
 end
 
 -- Energy pool for the plasma miniguns (server only; spent per bolt in VTPlasmaMinigun's FireBolt).
@@ -884,7 +896,7 @@ function VTPraetor:VT_UpdateEnergy(deltaTime)
 end
 
 function VTPraetor:OnProcessMove(input)
-    Exo.OnProcessMove(self, input)
+    VTBase.Exo.OnProcessMove(self, input)
     self:VT_UpdateEnergy(input.time)
 end
 
@@ -948,7 +960,7 @@ InstallNoFlashlight(VTPraetor)
 
 -- Exo chassis armor without the vanilla armor levels (Shield Matrix raises the shield instead).
 function VTPraetor:GetArmorAmount(armorLevels)
-    return Exo.GetArmorAmount(self, 0)
+    return VTBase.Exo.GetArmorAmount(self, 0)
 end
 
 VT_InstallShield(VTPraetor, true)

@@ -59,6 +59,11 @@ local kNewTechIds =
     -- Infiltrator scouting tool (weapon slot 2)
     "VTEchoPulse",
 
+    -- Plasma Calibration I-III / Shield Matrix I-III: own upgrade ids (isolation from the
+    -- marine Weapons1-3 / Armor1-3 research, whose cost, time and damage mods may change)
+    "VTPlasmaCalibration1", "VTPlasmaCalibration2", "VTPlasmaCalibration3",
+    "VTShieldMatrix1", "VTShieldMatrix2", "VTShieldMatrix3",
+
     -- Shield Generator research: vision mode on the flashlight key (prereq VTShieldGenerator)
     "VTTargetingVisorTech",
 
@@ -383,7 +388,13 @@ kVTMaxShield =
     VTSentinelObelisk   = 200,
     VTPsionicSpire      = 550,
 }
-kVTShieldPerUpgradeLevel    = 15     -- Shield Matrix I-III (Armor1-3 ids): + max shield per level, soldiers only
+kVTShieldPerUpgradeLevel    = 15     -- Shield Matrix I-III: + max shield per level, soldiers only
+-- Plasma Calibration / Shield Matrix research (values as the vanilla Weapons / Armor 1-3)
+kVTPlasmaCalibrationCost    = { 20, 30, 40 }
+kVTPlasmaCalibrationTime    = { 75, 90, 120 }
+kVTPlasmaCalibrationScalars = { 1.1, 1.2, 1.3 }   -- damage of weapons affected by upgrades, per level
+kVTShieldMatrixCost         = { 20, 30, 40 }
+kVTShieldMatrixTime         = { 75, 90, 120 }
 kVTShieldGlowFadeTime       = 0.4    -- purple shell after a shield hit
 kVTInfestationRegenBlock    = 1.5    -- structures on infestation: no shield regen (the creep drains it instead)
 

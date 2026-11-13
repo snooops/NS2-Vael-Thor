@@ -53,6 +53,17 @@ end
 if not VT_HookedDamageTypes then
 VT_HookedDamageTypes = true
 
+-- Plasma Calibration: the Vael'Thor have their own upgrade ids, so the vanilla
+-- Weapons1-3 scaling (and any mod changing it) never applies to them.
+local oldGetUpgradedDamageScalar = NS2Gamerules_GetUpgradedDamageScalar
+function NS2Gamerules_GetUpgradedDamageScalar(attacker, weaponTechId)
+    if VT_GetIsVTEntity(attacker) then
+        local level = VT_GetPlasmaCalibrationLevel and VT_GetPlasmaCalibrationLevel(attacker) or 0
+        return kVTPlasmaCalibrationScalars[level] or 1
+    end
+    return oldGetUpgradedDamageScalar(attacker, weaponTechId)
+end
+
 local function GetIsBileBomb(doer)
     return doer ~= nil and doer.GetTechId ~= nil and doer:GetTechId() == kTechId.BileBomb
 end

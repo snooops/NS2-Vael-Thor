@@ -4,7 +4,10 @@
 --
 -- New entries are cloned from the marine entry they are prototyped on, so
 -- every engine-required field (extents, ghost model class, damage type...)
--- is present, then overridden. Map names are literal strings because
+-- is present, then overridden. Isolation: the clone source is the *vanilla*
+-- marine entry (the frozen vanilla BuildTechData, run with the vanilla balance
+-- values - Baseline/Freeze.lua), so mods changing marine tech data or balance
+-- values don't leak into the Vael'Thor entries. Map names are literal strings because
 -- BuildTechData() may run before the Vael'Thor classes are loaded.
 -- ============================================================================
 
@@ -18,8 +21,24 @@ local function FindEntry(techData, techId)
     end
 end
 
+-- Vanilla tech data to clone from (nil without the baseline: then the live entries are used).
+local cloneSource
+
+local function BuildVanillaTechData()
+    local build = VTBaseline and VTBaseline.functions and VTBaseline.functions.BuildTechData
+    if not (build and VTFreeze) then
+        return nil
+    end
+    local ok, data = pcall(VTFreeze.Clone(build))
+    if not ok then
+        Print("[Vael'Thor] Warning: vanilla tech data failed (%s); cloning from live entries", tostring(data))
+        return nil
+    end
+    return data
+end
+
 local function Clone(techData, baseTechId, overrides)
-    local base = FindEntry(techData, baseTechId)
+    local base = FindEntry(cloneSource or techData, baseTechId) or FindEntry(techData, baseTechId)
     local entry = {}
     if base then
         for k, v in pairs(base) do entry[k] = v end
@@ -43,6 +62,7 @@ local oldBuildTechData = BuildTechData
 function BuildTechData()
 
     local techData = oldBuildTechData()
+    cloneSource = BuildVanillaTechData()
 
     -- Imperial Nexus: own tech id + class (VTNexus, a CommandStation subclass) so
     -- vanilla marines in the same match keep the normal Command Station.
@@ -391,9 +411,30 @@ function BuildTechData()
         })
     end
 
-    -- The re-used marine upgrades (Weapons1-3 / Armor1-3) keep their vanilla
-    -- labels here; Vael'Thor players see them as Plasma Calibration / Shield
-    -- Matrix through the per-viewer locale overrides in Strings.lua.
+    -- Plasma Calibration I-III / Shield Matrix I-III: own ids, cloned from the vanilla
+    -- Weapons1-3 / Armor1-3 entries (marines keep theirs untouched).
+    local kWeaponIds = { kTechId.Weapons1, kTechId.Weapons2, kTechId.Weapons3 }
+    local kArmorIds  = { kTechId.Armor1, kTechId.Armor2, kTechId.Armor3 }
+    for level = 1, 3 do
+        local name = "VT_PLASMA_CALIBRATION_" .. level
+        Clone(techData, kWeaponIds[level], {
+            [kTechDataId] = kTechId["VTPlasmaCalibration" .. level],
+            [kTechDataDisplayName] = name,
+            [kTechDataResearchName] = name,
+            [kTechDataTooltipInfo] = "VT_PLASMA_CALIBRATION_TOOLTIP",
+            [kTechDataCostKey] = kVTPlasmaCalibrationCost[level],
+            [kTechDataResearchTimeKey] = kVTPlasmaCalibrationTime[level],
+        })
+        name = "VT_SHIELD_MATRIX_" .. level
+        Clone(techData, kArmorIds[level], {
+            [kTechDataId] = kTechId["VTShieldMatrix" .. level],
+            [kTechDataDisplayName] = name,
+            [kTechDataResearchName] = name,
+            [kTechDataTooltipInfo] = "VT_SHIELD_MATRIX_TOOLTIP",
+            [kTechDataCostKey] = kVTShieldMatrixCost[level],
+            [kTechDataResearchTimeKey] = kVTShieldMatrixTime[level],
+        })
+    end
 
     -- ----------------------------------------------------------------- weapons
     Clone(techData, kTechId.Rifle, {
@@ -449,6 +490,7 @@ function BuildTechData()
         [kStructureAttachRequiresPower] = REMOVE,
     })
 
+    cloneSource = nil
     return techData
 
 end

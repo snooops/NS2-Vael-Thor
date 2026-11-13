@@ -10,6 +10,9 @@
 
 class 'VTTeam' (MarineTeam)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTTeam, { "MarineTeam" })
+
 local N = kTechId.None
 local kMatrixUpdateInterval = 0.25
 local kNoSpawnMessageInterval = 20
@@ -62,7 +65,7 @@ end
 -- ----------------------------------------------------------------------------
 function VTTeam:Initialize(teamName, teamNumber)
 
-    MarineTeam.Initialize(self, teamName, teamNumber)
+    VTBase.MarineTeam.Initialize(self, teamName, teamNumber)
 
     self.respawnEntity = VTVanguard.kMapName
     self.vtNextFieldUpdate = 0
@@ -257,16 +260,15 @@ function VTTeam:InitTechTree()
     t:AddResearchNode(kTechId.VTShieldOverdriveTech, kTechId.VTAuthorizationTier2, N)
     t:AddResearchNode(kTechId.VTSingularityTech,     kTechId.VTAuthorizationTier3, N)
 
-    -- Plasma Calibration / Shield Matrix (re-used marine upgrade ids so the
-    -- engine's damage and armor scaling applies automatically). Prereqs must
-    -- have lower tech ids than Weapons1/Armor1, so the Vael'Thor ids can't be
-    -- used here; the buttons only exist on the Synthesis Chamber anyway.
-    t:AddResearchNode(kTechId.Weapons1, N, N)
-    t:AddResearchNode(kTechId.Weapons2, kTechId.Weapons1,       N)
-    t:AddResearchNode(kTechId.Weapons3, kTechId.Weapons2,       N)
-    t:AddResearchNode(kTechId.Armor1,   N, N)
-    t:AddResearchNode(kTechId.Armor2,   kTechId.Armor1,         N)
-    t:AddResearchNode(kTechId.Armor3,   kTechId.Armor2,         N)
+    -- Plasma Calibration / Shield Matrix: own ids (isolation from the marine Weapons /
+    -- Armor research). Damage scaling: Hooks/DamageTypes.lua; shield: VT_GetShieldMatrixLevel.
+    -- Each level's prereq is the level before (a lower tech id, as the tree requires).
+    t:AddResearchNode(kTechId.VTPlasmaCalibration1, N, N)
+    t:AddResearchNode(kTechId.VTPlasmaCalibration2, kTechId.VTPlasmaCalibration1, N)
+    t:AddResearchNode(kTechId.VTPlasmaCalibration3, kTechId.VTPlasmaCalibration2, N)
+    t:AddResearchNode(kTechId.VTShieldMatrix1,      N, N)
+    t:AddResearchNode(kTechId.VTShieldMatrix2,      kTechId.VTShieldMatrix1, N)
+    t:AddResearchNode(kTechId.VTShieldMatrix3,      kTechId.VTShieldMatrix2, N)
 
     -- Items handed out by the matrix
     t:AddBuyNode(kTechId.VTPlasmaCarbine,       N, N)
@@ -305,7 +307,7 @@ function VTTeam:OnResearchComplete(structure, researchId)
         end
     end
 
-    MarineTeam.OnResearchComplete(self, structure, researchId)
+    VTBase.MarineTeam.OnResearchComplete(self, structure, researchId)
 
 end
 
@@ -315,9 +317,9 @@ end
 local function GetArmorLevel(self)
     local tree = self:GetTechTree()
     if tree then
-        if tree:GetHasTech(kTechId.Armor3) then return 3 end
-        if tree:GetHasTech(kTechId.Armor2) then return 2 end
-        if tree:GetHasTech(kTechId.Armor1) then return 1 end
+        if tree:GetHasTech(kTechId.VTShieldMatrix3) then return 3 end
+        if tree:GetHasTech(kTechId.VTShieldMatrix2) then return 2 end
+        if tree:GetHasTech(kTechId.VTShieldMatrix1) then return 1 end
     end
     return 0
 end

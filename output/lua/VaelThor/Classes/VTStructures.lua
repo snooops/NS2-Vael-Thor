@@ -17,6 +17,9 @@ local N = kTechId.None
 -- ----------------------------------------------------------------------------
 class 'VTSubventionPylon' (SentryBattery)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTSubventionPylon, { "SentryBattery" })
+
 VTSubventionPylon.kMapName = kVTMapNames.Pylon
 
 local pylonNetworkVars =
@@ -25,7 +28,7 @@ local pylonNetworkVars =
 }
 
 function VTSubventionPylon:OnCreate()
-    SentryBattery.OnCreate(self)
+    VTBase.SentryBattery.OnCreate(self)
     self.vtResonant = false
 end
 
@@ -61,7 +64,7 @@ end
 kVTPylonModel = PrecacheAsset("models/vaelthor/pylon/pylon.model")
 
 function VTSubventionPylon:OnInitialized()
-    SentryBattery.OnInitialized(self)
+    VTBase.SentryBattery.OnInitialized(self)
     self:SetModel(kVTPylonModel)
 end
 
@@ -72,7 +75,7 @@ if Client then
 
     function VTSubventionPylon:OnDestroy()
         VT_DestroyGlowLight(self, "vtCrystalLight")
-        SentryBattery.OnDestroy(self)
+        VTBase.SentryBattery.OnDestroy(self)
     end
 end
 
@@ -120,6 +123,9 @@ Shared.LinkClassToMap("VTSubventionPylon", VTSubventionPylon.kMapName, VT_AddShi
 -- ----------------------------------------------------------------------------
 class 'VTSynthesisChamber' (ArmsLab)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTSynthesisChamber, { "ArmsLab" })
+
 VTSynthesisChamber.kMapName = kVTMapNames.Chamber
 
 local function NextLevel(self, level1, level2, level3)
@@ -134,8 +140,8 @@ end
 function VTSynthesisChamber:GetTechButtons(techId)
     return
     {
-        NextLevel(self, kTechId.Weapons1, kTechId.Weapons2, kTechId.Weapons3),
-        NextLevel(self, kTechId.Armor1, kTechId.Armor2, kTechId.Armor3),
+        NextLevel(self, kTechId.VTPlasmaCalibration1, kTechId.VTPlasmaCalibration2, kTechId.VTPlasmaCalibration3),
+        NextLevel(self, kTechId.VTShieldMatrix1, kTechId.VTShieldMatrix2, kTechId.VTShieldMatrix3),
         kTechId.VTAuthorizationTier2,
         kTechId.VTAuthorizationTier3,
         kTechId.VTOverchargeTech,
@@ -155,7 +161,7 @@ end
 kVTChamberModel = PrecacheAsset("models/vaelthor/chamber/chamber.model")
 
 function VTSynthesisChamber:OnInitialized()
-    ArmsLab.OnInitialized(self)
+    VTBase.ArmsLab.OnInitialized(self)
     self:SetModel(kVTChamberModel)
 end
 
@@ -168,7 +174,7 @@ if Client then
 
     function VTSynthesisChamber:OnDestroy()
         VT_DestroyGlowLight(self, "vtVatLight")
-        ArmsLab.OnDestroy(self)
+        VTBase.ArmsLab.OnDestroy(self)
     end
 
 end
@@ -182,6 +188,9 @@ Shared.LinkClassToMap("VTSynthesisChamber", VTSynthesisChamber.kMapName, VT_AddS
 -- ----------------------------------------------------------------------------
 class 'VTShieldGenerator' (Observatory)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTShieldGenerator, { "Observatory" })
+
 VTShieldGenerator.kMapName = kVTMapNames.ShieldGen
 
 local shieldGenNetworkVars =
@@ -190,7 +199,7 @@ local shieldGenNetworkVars =
 }
 
 function VTShieldGenerator:OnCreate()
-    Observatory.OnCreate(self)
+    VTBase.Observatory.OnCreate(self)
     self.vtAegis = false
 end
 
@@ -206,7 +215,7 @@ end
 kVTShieldGenModel = PrecacheAsset("models/vaelthor/shieldgen/shieldgen.model")
 
 function VTShieldGenerator:OnInitialized()
-    Observatory.OnInitialized(self)
+    VTBase.Observatory.OnInitialized(self)
     self:SetModel(kVTShieldGenModel)
 end
 
@@ -217,7 +226,7 @@ if Client then
 
     function VTShieldGenerator:OnDestroy()
         VT_DestroyGlowLight(self, "vtEmitterLight")
-        Observatory.OnDestroy(self)
+        VTBase.Observatory.OnDestroy(self)
     end
 end
 
@@ -250,6 +259,9 @@ Shared.LinkClassToMap("VTShieldGenerator", VTShieldGenerator.kMapName, VT_AddShi
 -- ----------------------------------------------------------------------------
 class 'VTSentinelObelisk' (Sentry)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTSentinelObelisk, { "Sentry" })
+
 VTSentinelObelisk.kMapName = kVTMapNames.Obelisk
 
 local kMaxBeams = 3
@@ -269,7 +281,7 @@ local obeliskNetworkVars =
 }
 
 function VTSentinelObelisk:OnCreate()
-    Sentry.OnCreate(self)
+    VTBase.Sentry.OnCreate(self)
     -- Never run Sentry's battery search (it only runs when this time is past).
     self.lastBatteryCheckTime = math.huge
     -- No idle scan "ping": Sentry's client timer plays sentry_scan when
@@ -298,7 +310,7 @@ kVTObeliskModel = PrecacheAsset("models/vaelthor/obelisk/obelisk.model")
 local kObeliskHeadHeight = 3.3   -- on the unscaled model; ObeliskHead applies kVTStructureModelScale
 
 function VTSentinelObelisk:OnInitialized()
-    Sentry.OnInitialized(self)
+    VTBase.Sentry.OnInitialized(self)
     self:SetModel(kVTObeliskModel)
     if Server then
         VT_InitObeliskTargeting(self)
@@ -733,7 +745,7 @@ if Client then
 
     function VTSentinelObelisk:OnUpdateRender()
         if Sentry.OnUpdateRender then
-            Sentry.OnUpdateRender(self)
+            VTBase.Sentry.OnUpdateRender(self)
         end
         VT_UpdateGlowLight(self, "vtHeadLight", kObeliskHeadHeight, 5, 4, 2.4)
         UpdateBeams(self)
@@ -745,7 +757,7 @@ if Client then
             DestroyBeamFx(fx)
         end
         self.vtBeamFx = nil
-        Sentry.OnDestroy(self)
+        VTBase.Sentry.OnDestroy(self)
     end
 end
 
@@ -757,6 +769,9 @@ Shared.LinkClassToMap("VTSentinelObelisk", VTSentinelObelisk.kMapName, VT_AddShi
 -- Psionic Spire (Prototype Lab): psionic research.
 -- ----------------------------------------------------------------------------
 class 'VTPsionicSpire' (PrototypeLab)
+
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTPsionicSpire, { "PrototypeLab" })
 
 VTPsionicSpire.kMapName = kVTMapNames.Spire
 
@@ -778,7 +793,7 @@ end
 kVTSpireModel = PrecacheAsset("models/vaelthor/spire/spire.model")
 
 function VTPsionicSpire:OnInitialized()
-    PrototypeLab.OnInitialized(self)
+    VTBase.PrototypeLab.OnInitialized(self)
     self:SetModel(kVTSpireModel)
 end
 
@@ -796,7 +811,7 @@ if Client then
 
     function VTPsionicSpire:OnDestroy()
         VT_DestroyGlowLight(self, "vtCrownLight")
-        PrototypeLab.OnDestroy(self)
+        VTBase.PrototypeLab.OnDestroy(self)
     end
 
 end

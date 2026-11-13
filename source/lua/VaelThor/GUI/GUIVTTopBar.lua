@@ -155,7 +155,7 @@ end
 
 function GUIVTTopBar:UpdateTopRow(info)
     local res = math.floor(PlayerUI_GetTeamResources and PlayerUI_GetTeamResources() or 0)
-    local income = info.statusSiphons * kTeamResourcePerTick * 60 / kResourceTowerResourceInterval
+    local income = info.statusSiphons * VT_Vanilla("kTeamResourcePerTick") * 60 / VT_Vanilla("kResourceTowerResourceInterval")
     self.cells.res.value:SetText(string.format("%d   +%d/min", res, income))
     self.cells.res.value:SetColor(income > 0 and kColValue or kColWarn)
 

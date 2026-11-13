@@ -76,6 +76,9 @@ end
 
 class 'VTNexus' (CommandStation)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTNexus, { "CommandStation", "CommandStructure" })
+
 VTNexus.kMapName = kVTMapNames.Nexus
 
 -- Own static model (art/buildings/build_all.sh nexus): 5.0 x 5.0 x 4.2 m, collision = stepped base + frame.
@@ -84,7 +87,7 @@ VTNexus.kMapName = kVTMapNames.Nexus
 kVTNexusModel = PrecacheAsset("models/vaelthor/nexus/nexus.model")
 
 function VTNexus:OnInitialized()
-    CommandStation.OnInitialized(self)
+    VTBase.CommandStation.OnInitialized(self)
     self:SetModel(kVTNexusModel)
 end
 
@@ -110,12 +113,12 @@ if Server then
     -- 1.5 m above the origin) - on the Nexus that spot is inside the core crystal, so every login was
     -- rejected right after the "login" sound. Hive: any living team member who used it, wherever they stand.
     function VTNexus:GetIsPlayerValidForCommander(player)
-        return player ~= nil and player:isa("Marine") and CommandStructure.GetIsPlayerValidForCommander(self, player)
+        return player ~= nil and player:isa("Marine") and VTBase.CommandStructure.GetIsPlayerValidForCommander(self, player)
     end
 
     -- Command Station also kills every other player standing "inside" it on login; the Hive doesn't.
     function VTNexus:LoginPlayer(player, forced)
-        return CommandStructure.LoginPlayer(self, player, forced)
+        return VTBase.CommandStructure.LoginPlayer(self, player, forced)
     end
 
     -- vanilla sets loginAllowed on the "opened" animation tag (Command Station hatch / Hive); there is none.
@@ -124,7 +127,7 @@ if Server then
         if not self.occupied then
             self.loginAllowed = true
         end
-        CommandStation.OnUse(self, player, elapsedTime, useSuccessTable)
+        VTBase.CommandStation.OnUse(self, player, elapsedTime, useSuccessTable)
     end
 
     -- Why this player can't take command here (nil = can).
@@ -152,7 +155,7 @@ if Server then
         end
         self.loginAllowed = true
         local result = { useSuccess = true }
-        CommandStation.OnUse(self, player, 0, result)
+        VTBase.CommandStation.OnUse(self, player, 0, result)
         if self.occupied and self.playerIdStartedLogin == player:GetId() then
             return true
         end
@@ -195,13 +198,13 @@ if Client then
 
     -- core crystal glow instead of the command station screens
     function VTNexus:OnUpdateRender()
-        CommandStation.OnUpdateRender(self)
+        VTBase.CommandStation.OnUpdateRender(self)
         VT_UpdateGlowLight(self, "vtCoreLight", 2.6, 9, 6, 1.6)
     end
 
     function VTNexus:OnDestroy()
         VT_DestroyGlowLight(self, "vtCoreLight")
-        CommandStation.OnDestroy(self)
+        VTBase.CommandStation.OnDestroy(self)
     end
 
 end
@@ -330,6 +333,9 @@ Shared.LinkClassToMap("VTNexus", VTNexus.kMapName, VT_AddShieldNetworkVars({}))
 -- ----------------------------------------------------------------------------
 class 'VTSiphon' (Extractor)
 
+-- isolation: vanilla behaviour for everything not overridden below (Baseline/Freeze.lua)
+VT_FreezeClass(VTSiphon, { "Extractor", "ResourceTower" })
+
 VTSiphon.kMapName = kVTMapNames.Siphon
 
 function VTSiphon:GetMapBlipType()
@@ -340,7 +346,7 @@ end
 kVTSiphonModel = PrecacheAsset("models/vaelthor/siphon/siphon.model")
 
 function VTSiphon:OnInitialized()
-    Extractor.OnInitialized(self)
+    VTBase.Extractor.OnInitialized(self)
     self:SetModel(kVTSiphonModel)
 end
 
@@ -351,7 +357,7 @@ if Client then
 
     function VTSiphon:OnDestroy()
         VT_DestroyGlowLight(self, "vtSiphonLight")
-        Extractor.OnDestroy(self)
+        VTBase.Extractor.OnDestroy(self)
     end
 end
 

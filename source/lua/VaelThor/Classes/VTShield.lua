@@ -41,11 +41,19 @@ if Client then
     Shared.PrecacheSurfaceShader("cinematics/vaelthor/shield/psi_shield_view.surface_shader")
 end
 
--- Shield Matrix I-III (re-used Armor1-3 research).
+-- Shield Matrix I-III (own research ids).
 function VT_GetShieldMatrixLevel(entity)
-    if GetHasTech(entity, kTechId.Armor3, true) then return 3 end
-    if GetHasTech(entity, kTechId.Armor2, true) then return 2 end
-    if GetHasTech(entity, kTechId.Armor1, true) then return 1 end
+    if GetHasTech(entity, kTechId.VTShieldMatrix3, true) then return 3 end
+    if GetHasTech(entity, kTechId.VTShieldMatrix2, true) then return 2 end
+    if GetHasTech(entity, kTechId.VTShieldMatrix1, true) then return 1 end
+    return 0
+end
+
+-- Plasma Calibration I-III (own research ids; damage scaling in Hooks/DamageTypes.lua).
+function VT_GetPlasmaCalibrationLevel(entity)
+    if GetHasTech(entity, kTechId.VTPlasmaCalibration3, true) then return 3 end
+    if GetHasTech(entity, kTechId.VTPlasmaCalibration2, true) then return 2 end
+    if GetHasTech(entity, kTechId.VTPlasmaCalibration1, true) then return 1 end
     return 0
 end
 

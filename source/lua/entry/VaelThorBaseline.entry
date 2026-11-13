@@ -1,0 +1,4 @@
+modEntry = {
+    FileHooks = "lua/VaelThor/Baseline/FileHooks.lua",
+    Priority  = 1000
+}
