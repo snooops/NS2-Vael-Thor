@@ -18,14 +18,17 @@ Shared.RegisterNetworkMessage("VTMatrixLoadout",
     module    = "integer (0 to 15)",
     primary   = "integer (0 to 15)",
     secondary = "integer (0 to 15)",
+    readyTime = "float",       -- when synthesis becomes possible (0 = not queued yet)
+    armed     = "boolean",     -- the player asked to be synthesized
 })
 
--- Client -> server: a Synthesis Matrix menu key pressed while following a
--- teammate in first person (moves don't reach the VTSpectator then).
--- 1-4 caste, 5 module, 6 primary mod, 7 secondary (VTSpectator:VT_ApplyChoice).
+-- Client -> server: a Synthesis Matrix menu choice (GUIVTMatrixMenu: clicks and
+-- keys, sent as a message so it works in every spectator camera mode).
+-- 1-4 caste, 5 module, 6 primary mod, 7 secondary, 8 toggle "synthesize me",
+-- 9-11 cycle module / primary / secondary backwards (VTSpectator:VT_ApplyChoice).
 Shared.RegisterNetworkMessage("VTMatrixChoice",
 {
-    choice = "integer (1 to 7)",
+    choice = "integer (1 to 11)",
 })
 
 -- Server -> players near a plasma bolt impact: play the impact locally

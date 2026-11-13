@@ -20,6 +20,7 @@ end
 
 Script.Load("lua/VaelThor/GUI/GUIVTHud.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTGateMenu.lua")
+Script.Load("lua/VaelThor/GUI/GUIVTMatrixMenu.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTVision.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTPlayerHUD.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTCrosshair.lua")
@@ -35,6 +36,7 @@ Event.Hook("UpdateClient", function()
         if manager then
             hud = manager:CreateGUIScript("VaelThor/GUI/GUIVTHud")
             gateMenu = manager:CreateGUIScript("VaelThor/GUI/GUIVTGateMenu")
+            VT_MatrixMenu = manager:CreateGUIScript("VaelThor/GUI/GUIVTMatrixMenu")
             VT_VisionScript = manager:CreateGUIScript("VaelThor/GUI/GUIVTVision")
             VT_PlayerHUD = manager:CreateGUIScript("VaelThor/GUI/GUIVTPlayerHUD")
             VT_CrosshairScript = manager:CreateGUIScript("VaelThor/GUI/GUIVTCrosshair")
@@ -445,8 +447,9 @@ end
 
 Event.Hook("UpdateRender", UpdatePraetorCockpit)
 
--- Synthesis Matrix choices of this client's dead player (read by GUIVTHud while
--- spectating a teammate, when the local player is that teammate).
+-- Synthesis Matrix state of this client's dead player (read by GUIVTMatrixMenu;
+-- while spectating a teammate the local player is that teammate, so the menu
+-- can't read the VTSpectator's fields directly).
 VT_MatrixLoadout = nil
 Client.HookNetworkMessage("VTMatrixLoadout", function(message)
     VT_MatrixLoadout =
@@ -455,6 +458,8 @@ Client.HookNetworkMessage("VTMatrixLoadout", function(message)
         vtModule       = message.module,
         vtPrimaryMod   = message.primary,
         vtSecondary    = message.secondary,
+        readyTime      = message.readyTime,
+        armed          = message.armed,
     }
 end)
 

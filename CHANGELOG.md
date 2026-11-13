@@ -6,6 +6,21 @@ Balance numbers are always first pass.
 
 ---
 
+## 2026-11-13
+
+### Changed
+- **Synthesis Matrix menu and manual respawn** ([#1](https://github.com/snooops/NS2-Vael-Thor/issues/1)): dead
+  soldiers are no longer synthesized automatically when the 9 s timer ends. A new menu like the alien evolve menu
+  (`GUI/GUIVTMatrixMenu.lua`) opens on death with a mouse cursor: four caste cards (quota, cost, lock state,
+  description of the selected caste), three loadout rows (left/right click cycles) and a **SYNTHESIZE** button.
+  Clicking it (or Space) before the timer ends *arms* the request, and synthesis happens as soon as the timer runs out.
+  Click again to cancel. B hides/shows the menu, and the keys 1–5 / R / E still work. Bots are synthesized
+  automatically. The old text menu in `GUIVTHud` is removed (it keeps only the cloak tint). All choices now go
+  through the `VTMatrixChoice` message (choices 8–11 added), and `VTMatrixLoadout` also carries the ready time
+  and armed flag. ✅ *Why:* players want to decide when to respawn and pick their class from a real menu.
+
+---
+
 ## 2026-11-03
 
 ### Open issues

@@ -1,10 +1,15 @@
 -- ============================================================================
 -- VTSpectator - a dead Vael'Thor soldier waiting in the Synthesis Matrix.
 --
--- Choose the caste and loadout for the next synthesis while waiting:
+-- Choose the caste and loadout for the next synthesis in the Synthesis Matrix
+-- menu (GUI/GUIVTMatrixMenu.lua; mouse or keys):
 --   1 Vanguard   2 Infiltrator   3 Subject   4 Praetor
 --   5 cycle tactical module   R cycle primary mod   E cycle secondary
--- The choice is remembered per client across lives.
+--   Space / SYNTHESIZE button: request synthesis
+-- There is no automatic respawn: once the matrix timer (kVTRespawnTime) has run
+-- out the player is synthesized only after asking for it. Asking early arms the
+-- request so synthesis happens the moment the timer ends. Bots are synthesized
+-- automatically. The loadout is remembered per client across lives.
 -- ============================================================================
 
 class 'VTSpectator' (MarineSpectator)
@@ -22,6 +27,11 @@ local networkVars =
 local function Cycle(value, enumTable)
     local count = GetEnumCount(enumTable)
     return (value % count) + 1
+end
+
+local function CycleBack(value, enumTable)
+    local count = GetEnumCount(enumTable)
+    return ((value - 2) % count) + 1
 end
 
 function VTSpectator:OnCreate()
@@ -75,9 +85,9 @@ if Server then
 
     local kChoiceClasses = { kVTClass.Vanguard, kVTClass.Infiltrator, kVTClass.Subject, kVTClass.Praetor }
 
-    -- choice: 1-4 caste, 5 cycle module, 6 cycle primary mod, 7 cycle secondary.
-    -- Fed by OnProcessMove (own camera) and by the VTMatrixChoice message (while
-    -- following a teammate in first person, when moves don't carry the keys).
+    -- choice: 1-4 caste, 5 cycle module, 6 cycle primary mod, 7 cycle secondary,
+    -- 8 toggle the synthesis request, 9-11 cycle module/primary/secondary back.
+    -- Fed by the VTMatrixChoice message from GUIVTMatrixMenu.
     function VTSpectator:VT_ApplyChoice(choice)
         self:VT_EnsurePreferences()
         if kChoiceClasses[choice] then
@@ -88,6 +98,14 @@ if Server then
             self.vtPrimaryMod = Cycle(self.vtPrimaryMod, kVTPrimaryMod)
         elseif choice == 7 then
             self.vtSecondary = Cycle(self.vtSecondary, kVTSecondary)
+        elseif choice == 8 then
+            self.vtSynthArmed = not self.vtSynthArmed
+        elseif choice == 9 then
+            self.vtModule = CycleBack(self.vtModule, kVTModule)
+        elseif choice == 10 then
+            self.vtPrimaryMod = CycleBack(self.vtPrimaryMod, kVTPrimaryMod)
+        elseif choice == 11 then
+            self.vtSecondary = CycleBack(self.vtSecondary, kVTSecondary)
         else
             return
         end
@@ -99,23 +117,48 @@ if Server then
     function VTSpectator:OnUpdate(deltaTime)
         MarineSpectator.OnUpdate(self, deltaTime)
         self:VT_EnsurePreferences()
-        if self.vtPrefsLoaded and Shared.GetTime() >= (self.vtNextLoadoutSync or 0) then
-            self:VT_SendLoadoutToOwner()   -- cheap periodic resync
+        if self.vtPrefsLoaded and (Shared.GetTime() >= (self.vtNextLoadoutSync or 0)
+                or self.vtSentReadyTime ~= self:VT_GetSynthReadyTime()) then
+            self:VT_SendLoadoutToOwner()   -- cheap periodic resync, or the queue timer changed
         end
+    end
+
+    -- Time from which the matrix may synthesize this player (0 = not queued).
+    function VTSpectator:VT_GetSynthReadyTime()
+        local entryTime = self.GetRespawnQueueEntryTime and self:GetRespawnQueueEntryTime()
+        return entryTime and (entryTime + kVTRespawnTime) or 0
+    end
+
+    -- Checked by VTTeam:UpdateSynthesisMatrix once the timer has run out.
+    function VTSpectator:VT_GetWantsSynthesis()
+        if self.vtSynthArmed then
+            return true
+        end
+        local client = self:GetClient()
+        return client ~= nil and client:GetIsVirtual()   -- bots can't click
+    end
+
+    function VTSpectator:VT_SetSynthArmed(armed)
+        self.vtSynthArmed = armed == true
     end
 
     -- Mirror the choices to the owning client for the HUD (see VTMatrixLoadout).
     function VTSpectator:VT_SendLoadoutToOwner()
-        if not self:GetClient() then
+        local client = self:GetClient()
+        if not client or client:GetIsVirtual() then
             return
         end
+        local readyTime = self:VT_GetSynthReadyTime()
         Server.SendNetworkMessage(self, "VTMatrixLoadout",
         {
             class     = self.vtDesiredClass,
             module    = self.vtModule,
             primary   = self.vtPrimaryMod,
             secondary = self.vtSecondary,
+            readyTime = readyTime,
+            armed     = self.vtSynthArmed == true,
         }, true)
+        self.vtSentReadyTime = readyTime
         self.vtNextLoadoutSync = Shared.GetTime() + 2
     end
 
@@ -144,27 +187,9 @@ end
 
 local kChoiceMask = bit.bor(Move.Weapon1, Move.Weapon2, Move.Weapon3, Move.Weapon4, Move.Weapon5, Move.Reload, Move.Use)
 
+-- The menu keys are caught client-side by GUIVTMatrixMenu and sent as
+-- VTMatrixChoice messages (that works in every camera mode).
 function VTSpectator:OnProcessMove(input)
-
-    if Server then
-
-        local commands = input.commands
-        local last = self.vtLastCommands or 0
-        local function Pressed(bitMask)
-            return bit.band(commands, bitMask) ~= 0 and bit.band(last, bitMask) == 0
-        end
-
-        local keys = { Move.Weapon1, Move.Weapon2, Move.Weapon3, Move.Weapon4, Move.Weapon5, Move.Reload, Move.Use }
-        for choice, bitMask in ipairs(keys) do
-            if Pressed(bitMask) then
-                self:VT_ApplyChoice(choice)
-                break
-            end
-        end
-
-        self.vtLastCommands = commands
-
-    end
 
     -- These keys belong to the matrix menu, not to spectator camera modes.
     input.commands = bit.band(input.commands, bit.bnot(kChoiceMask))

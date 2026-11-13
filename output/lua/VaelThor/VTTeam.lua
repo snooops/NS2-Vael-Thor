@@ -640,6 +640,9 @@ function VTTeam:SynthesizePlayer(player, host)
     if not self:RespawnPlayer(newPlayer, spawnOrigin, angles) then
         newPlayer = newPlayer:Replace(newPlayer:GetDeathMapName())
         self:PutPlayerInRespawnQueue(newPlayer)
+        if newPlayer.VT_SetSynthArmed then
+            newPlayer:VT_SetSynthArmed(true)   -- they already asked; retry without another click
+        end
         return false
     end
 
@@ -687,10 +690,13 @@ function VTTeam:UpdateSynthesisMatrix()
     end
 
     -- Copy first: synthesizing modifies the respawn queue.
+    -- No automatic respawn (issue #1): after the timer the player must ask for
+    -- synthesis in the matrix menu (bots always want it, see VTSpectator).
     local ready = {}
     for _, player in ipairs(queue) do
-        if player and player.GetRespawnQueueEntryTime
-                and now - player:GetRespawnQueueEntryTime() >= kVTRespawnTime then
+        if player and player.GetRespawnQueueEntryTime and player:GetRespawnQueueEntryTime()
+                and now - player:GetRespawnQueueEntryTime() >= kVTRespawnTime
+                and (not player.VT_GetWantsSynthesis or player:VT_GetWantsSynthesis()) then
             ready[#ready + 1] = player
         end
     end

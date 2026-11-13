@@ -6,7 +6,7 @@
 --   top left:     location, Nexus commander, team resources, active directives
 --   bottom left:  vitals (integrity = health, armor, psi shield = vtShield) + ability chips above
 --   bottom right: active weapon, energy/ammo bar, weapon slots
--- The dead-player Synthesis Matrix menu and the cloak tint stay in GUIVTHud.
+-- The dead-player Synthesis Matrix menu is GUIVTMatrixMenu, the cloak tint GUIVTHud.
 -- ============================================================================
 
 class 'GUIVTPlayerHUD' (GUIScript)

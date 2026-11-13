@@ -55,7 +55,7 @@ Every feature in this README has one of these markers:
 | **Bile Bomb** | Hits the psi shield first. Against soldiers 10 % of the raw bile damage drains the shield, the rest removes armor; it never touches health. Against structures the shield absorbs the bile first, the remainder takes vanilla bile damage. | 🔧 |
 | **Infestation** | Drains the psi shield of empire structures (30/s) instead of their armor and blocks its regeneration while they stand on creep. | 🔧 |
 | **Nexus Gate** | A Nexus upgrade (20 res / 45 s). Any soldier can press **E** on any Pylon and teleport to the gate (8 s cooldown). | 🟡 |
-| **Synthesis Matrix** | Dead players pick caste and loadout (keys 1–5 / R / E) while following a teammate. Respawn takes 9 s. | 🔧 (rewritten for spectator follow mode) |
+| **Synthesis Matrix** | Dead players pick caste and loadout in a clickable menu (or keys 1–5 / R / E; B hides it) and respawn with SYNTHESIZE / Space once the 9 s timer is over. No automatic respawn (bots excepted). | ✅ (menu + manual respawn, #1) |
 | **Caste quotas** | The commander sets how many Infiltrators, Subjects and Praetors are allowed (defaults 2/2/1, max 3/4/2). If a caste is full, locked or unaffordable, the player spawns as a Vanguard. | 🟡 |
 | **Authorization rank** | Personal score unlocks loadout tiers: rank II at 15 points, rank III at 40. | 🟡 |
 | **No sprint, no flashlight** | Sprinting is removed for every caste (the Subject uses Shift for its sprint burst / wall hold instead). The flashlight key toggles the Targeting Visor instead. Praetors can't eject. | 🟡 |
