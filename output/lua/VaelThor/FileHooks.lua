@@ -39,6 +39,8 @@ ModLoader.SetupFileHook("lua/OrderSelfMixin.lua",    H .. "OrderSelfMixin.lua", 
 -- HUD: no corner minimap for the Vael'Thor (marine HUD).
 ModLoader.SetupFileHook("lua/Hud/Marine/GUIMarineHUD.lua", H .. "GUIMarineHUD.lua", "post")
 ModLoader.SetupFileHook("lua/GUIClassicAmmo.lua", H .. "GUIClassicAmmo.lua", "post")
+-- Damage numbers / world texts in Vael'Thor colours for Vael'Thor players.
+ModLoader.SetupFileHook("lua/GUIWorldText.lua",    H .. "GUIWorldText.lua",    "post")
 -- Commander ghost preview of the (scaled) Vael'Thor buildings.
 ModLoader.SetupFileHook("lua/GhostModelUI.lua",   H .. "GhostModelUI.lua",    "post")
 

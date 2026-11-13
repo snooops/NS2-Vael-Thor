@@ -9,6 +9,13 @@ Balance numbers are always first pass.
 ## 2026-11-13
 
 ### Added
+- **Vael'Thor colours instead of marine blue** (`VTPalette.lua`, `Hooks/GUIWorldText.lua`):
+  - **Vael'Thor vs. Aliens:** on every client the marine-type colours become violet: chat names and text, name tags,
+    scoreboard, team messages, voice chat names, end screen, unit status names, world texts (including the vanilla
+    GUIs' own copies of those colours). Re-applied every second because some GUIs load lazily.
+  - **Every matchup, for Vael'Thor players:** the use prompt (the "E", "Start Commanding", pickup hints, its progress
+    bar) and the damage numbers / world texts are violet. A damage-number colour picked in the advanced options is
+    kept. In Vael'Thor vs. Marines the rest stays marine blue, since real marines share the marine team type. ✅
 - **Isolation from other mods** (instead of a "team 3", which NS2 can't do: team 3 is the spectator team and
   everything assumes two playing teams). Balance and gameplay mods for marines no longer reach the Vael'Thor:
   - **Vanilla snapshot:** a second entry `lua/entry/VaelThorBaseline.entry` (Priority 1000, loads before every other

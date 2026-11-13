@@ -4,8 +4,10 @@
 
 -- Faction matchup of this map (sent by the server on connect, Server.lua).
 Script.Load("lua/VaelThor/VTMatchupVote.lua")
+Script.Load("lua/VaelThor/VTPalette.lua")
 Client.HookNetworkMessage("VTMatchup", function(message)
     VT_ApplyMatchup(message.matchup)
+    VT_ApplyPalette()
 end)
 
 -- One-time log lines before risky first steps of the client hooks: a hard crash ends the log, so its last
@@ -43,6 +45,24 @@ Event.Hook("UpdateClient", function()
             VT_CrosshairScript = manager:CreateGUIScript("VaelThor/GUI/GUIVTCrosshair")
             VT_TopBarScript = manager:CreateGUIScript("VaelThor/GUI/GUIVTTopBar")
         end
+    end
+end)
+
+-- Team palette (VTPalette.lua): vanilla GUI classes load lazily, so re-apply now and then.
+-- Use prompt ("E", "Start Commanding", pickup hints, its progress bar): MarineActionFinderMixin
+-- tints it marine blue when the player is created; recolour it for Vael'Thor players.
+local nextPaletteUpdate = 0
+Event.Hook("UpdateClient", function()
+    local now = Shared.GetTime()
+    if now >= nextPaletteUpdate then
+        nextPaletteUpdate = now + 1
+        VT_ApplyPalette()
+    end
+    local player = Client.GetLocalPlayer()
+    local icon = player and player.actionIconGUI
+    if icon and player.vtActionIconColored ~= icon and VT_GetIsVTEntity(player) then
+        icon:SetColor(kVTFontColor)
+        player.vtActionIconColored = icon
     end
 end)
 
