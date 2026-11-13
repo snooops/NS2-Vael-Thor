@@ -209,7 +209,6 @@ function VTTeam:InitTechTree()
     t:AddBuildNode(kTechId.VTSubventionPylon,     N,                          N)
     t:AddBuildNode(kTechId.VTSynthesisChamber,    kTechId.VTNexus,     N)
     t:AddBuildNode(kTechId.VTShieldGenerator,     kTechId.VTSynthesisChamber, N)
-    t:AddBuildNode(kTechId.VTRiftPortal,          kTechId.VTAuthorizationTier2, N, true)
     t:AddBuildNode(kTechId.VTSentinelObelisk,     kTechId.VTSynthesisChamber, N)
     t:AddBuildNode(kTechId.VTPsionicSpire,        kTechId.VTAuthorizationTier2, N)
 
@@ -237,7 +236,7 @@ function VTTeam:InitTechTree()
 
     -- Commander support abilities (Assist menu)
     t:AddTargetedActivation(kTechId.VTShieldPulse,   N, N)
-    t:AddTargetedActivation(kTechId.VTRiftRecall,    kTechId.VTRiftPortal, N)
+    t:AddTargetedActivation(kTechId.VTNexusRecall,   kTechId.VTNexusGate, N)
 
     -- Directives and caste quotas (Nexus)
     t:AddActivation(kTechId.VTEdictRequisition,   N, N)

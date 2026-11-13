@@ -8,6 +8,15 @@ Balance numbers are always first pass.
 
 ## 2026-11-13
 
+### Removed
+- **Rift Portal** (a reskinned Phase Gate). The empire's mobility now runs only through the pylons and Nexus Gates.
+  Getting to the front fast means building a gated Nexus there (25 + 20 res) on purpose, and the Nexus Gate becomes
+  the high-value target for aliens to hunt. **Rift Recall** became **Nexus Recall** (Assist menu, 4 res, 20 s
+  cooldown, unlocked by a Nexus Gate): it pulls the targeted soldier to the nearest active Nexus Gate. The Tier 2 build
+  slot is free again. The rift model and art stay in the repo (`art/buildings/`, `output/models/vaelthor/rift/`) but
+  are no longer loaded. ✅ *Why:* two teleport networks blurred the faction's identity, and the pylons are meant to
+  be its infrastructure.
+
 ### Changed
 - **Synthesis Matrix menu, second pass** (feedback on #1): more opaque (solid dark panel and card bodies under the
   crystal frames, plus a dimmed screen behind the menu). Clicks now arrive through a MouseTracker listener, which

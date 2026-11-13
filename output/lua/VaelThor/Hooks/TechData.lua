@@ -187,23 +187,6 @@ function BuildTechData()
         [kTechDataShowBeaconToLocation] = REMOVE,
     })
 
-    Clone(techData, kTechId.PhaseGate, {
-        [kTechDataId] = kTechId.VTRiftPortal,
-        [kTechDataModel] = PrecacheAsset("models/vaelthor/rift/rift.model"),   -- commander ghost
-        [kTechDataMapName] = kVTMapNames.Rift,
-        [kTechDataDisplayName] = "VT_RIFT",
-        [kTechDataTooltipInfo] = "VT_RIFT_TOOLTIP",
-        [kTechDataHint] = "VT_RIFT_TOOLTIP",
-        [kTechDataCostKey] = kVTRiftCost,
-        [kTechDataBuildTime] = kVTRiftBuildTime,
-        [kTechDataMaxHealth] = kVTRiftHealth,
-        [kTechDataMaxArmor] = kVTRiftArmor,
-        [kTechDataHotkey] = Move.R,
-        [kTechDataRequiresPower] = false,
-        [kTechDataGhostGuidesMethod] = VT_GetSubventionFieldGuides,
-        [kTechDataSupply] = REMOVE,
-    })
-
     Clone(techData, kTechId.Sentry, {
         [kTechDataId] = kTechId.VTSentinelObelisk,
         [kTechDataModel] = PrecacheAsset("models/vaelthor/obelisk/obelisk.model"),   -- commander ghost
@@ -323,11 +306,11 @@ function BuildTechData()
     })
 
     Add(techData, {
-        [kTechDataId] = kTechId.VTRiftRecall,
-        [kTechDataDisplayName] = "VT_RIFT_RECALL",
-        [kTechDataTooltipInfo] = "VT_RIFT_RECALL_TOOLTIP",
-        [kTechDataCostKey] = kVTRiftRecallCost,
-        [kTechDataCooldown] = kVTRiftRecallCooldown,
+        [kTechDataId] = kTechId.VTNexusRecall,
+        [kTechDataDisplayName] = "VT_NEXUS_RECALL",
+        [kTechDataTooltipInfo] = "VT_NEXUS_RECALL_TOOLTIP",
+        [kTechDataCostKey] = kVTNexusRecallCost,
+        [kTechDataCooldown] = kVTNexusRecallCooldown,
         [kTechDataHotkey] = Move.R,
     })
 

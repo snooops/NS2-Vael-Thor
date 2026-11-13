@@ -3,7 +3,6 @@
 --   Subvention Pylon   -> Sentry Battery  (projects the Subvention field)
 --   Synthesis Chamber  -> Arms Lab        (spawn point + research)
 --   Shield Generator   -> Observatory     (ranged damage reduction aura)
---   Rift Portal        -> Phase Gate      (two-way teleport network)
 -- The Imperial Nexus and Resource Siphon live in Classes/VTNexus.lua.
 -- Every structure has a psi shield (Classes/VTShield.lua), filled on completion.
 --
@@ -232,51 +231,6 @@ end
 VT_InstallShield(VTShieldGenerator, false)
 VT_InstallStructureScale(VTShieldGenerator, "shieldgen")
 Shared.LinkClassToMap("VTShieldGenerator", VTShieldGenerator.kMapName, VT_AddShieldNetworkVars(shieldGenNetworkVars))
-
--- ----------------------------------------------------------------------------
--- Rift Portal
--- ----------------------------------------------------------------------------
-class 'VTRiftPortal' (PhaseGate)
-
-VTRiftPortal.kMapName = kVTMapNames.Rift
-
-function VTRiftPortal:GetMapBlipType()
-    return kMinimapBlipType.PhaseGate
-end
-
--- Own static model (art/buildings/build_all.sh rift): 3.3 x 2.6 x 3.0 m gate ring on a pad. Collision is only
--- the low pad: players must reach its centre (within 0.5 m of the origin) to teleport.
-kVTRiftModel = PrecacheAsset("models/vaelthor/rift/rift.model")
-
-function VTRiftPortal:OnInitialized()
-    PhaseGate.OnInitialized(self)
-    self:SetModel(kVTRiftModel)
-end
-
--- vanilla sets 'deployed' on the deploy animation's "deploy_end" tag, and only deployed gates link/teleport
-function VTRiftPortal:OnConstructionComplete()
-    self.deployed = true
-end
-
-function VTRiftPortal:GetIsDeployed()
-    return self:GetIsBuilt()
-end
-
-if Client then
-    function VTRiftPortal:OnUpdateRender()
-        PhaseGate.OnUpdateRender(self)
-        VT_UpdateGlowLight(self, "vtRiftLight", 1.5, 6, 4, 3.0)
-    end
-
-    function VTRiftPortal:OnDestroy()
-        VT_DestroyGlowLight(self, "vtRiftLight")
-        PhaseGate.OnDestroy(self)
-    end
-end
-
-VT_InstallShield(VTRiftPortal, false)
-VT_InstallStructureScale(VTRiftPortal, "rift")
-Shared.LinkClassToMap("VTRiftPortal", VTRiftPortal.kMapName, VT_AddShieldNetworkVars({}))
 
 -- ----------------------------------------------------------------------------
 -- Sentinel Obelisk (Sentry): psionic beam turret powered by the Subvention field.

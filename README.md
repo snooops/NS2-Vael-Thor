@@ -152,7 +152,6 @@ Shield Matrix I–III adds +15 max psi shield per level (armor stays fixed).
 | Synthesis Chamber | 15 | 18 s | 1600 / 300 / 500 | 2.4 × 2.4 × 2.6 m | Spawn point and main research | 🟡 🔧 |
 | Shield Generator | 12 | 14 s | 1100 / 250 / 400 | 3.3 × 3.3 × 2.4 m | Halves ranged and artillery damage to structures within 9 m | 🟡 🔧 |
 | Sentinel Obelisk | 12 | 10 s | 600 / 150 / 200 | 1.9 × 1.9 × 3.8 m | Psionic beam turret: steady violet beam(s) from its crystal head, 33 DPS base, 20 m (from the head), fires 360°, needs no battery. Lenses split it into 2-3 beams; the commander can focus a target and pick the beam count | 🟡 🔧 |
-| Rift Portal | 15 | 15 s | 1500 / 200 / 450 | 3.3 × 2.6 × 3.0 m | Two-way teleport; ring and pillars solid, membrane and centre open to walk in | 🟡 🔧 |
 | Psionic Spire | 25 | 20 s | 1800 / 300 / 550 | 2.3 × 2.3 × 5.0 m | Psionic research only (no buy menu) | 🟡 🔧 |
 
 Structures get their full psi shield when construction completes. All eight use **own models** (generated in
@@ -172,6 +171,7 @@ re-checked in-game.
 ```
 Imperial Nexus  [25]  (build anywhere)                                   🟡
 ├── Upgrade: Nexus Gate  [20 / 45s]  → teleport from any Pylon            🟡
+│   └── Assist: Nexus Recall  [4]  pull soldier to nearest Nexus Gate    🟡
 ├── Directive: Requisition Mandate  [10]  +75% build speed 30s, CD 90s    🟡
 ├── Directive: Relentless Advance   [15]  +20% damage 20s, CD 120s        🟡
 ├── Caste Quotas menu (Infiltrator / Subject / Praetor ±1)                🟡
@@ -202,8 +202,6 @@ Imperial Nexus  [25]  (build anywhere)                                   🟡
         │     aura also halves ranged damage to soldiers
         ├── Archon's Throne  [30 / 75s]  (researched at the Nexus)        🟡
         │   └── Directive: Iron Discipline  [15]  -23% dmg taken 20s     🟡
-        ├── Rift Portal  [15]                                             🟡
-        │   └── Assist: Rift Recall  [4]  pull soldier to nearest Rift   🟡
         ├── Psionic Spire  [25]                                           🟡
         │   ├── Phase Cloak       [15 / 45s]  cloak 10 → 15 s             🔧
         │   ├── Neural Override   [20 / 60s]  hack 9 m / 15 s             🟡

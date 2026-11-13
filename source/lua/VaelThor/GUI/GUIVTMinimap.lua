@@ -26,7 +26,7 @@ Cell("SentryBattery",  3, 9)    -- Subvention Pylon
 Cell("ArmsLab",        4, 9)    -- Synthesis Chamber
 Cell("Observatory",    5, 9)    -- Shield Generator
 Cell("Sentry",         6, 9)    -- Sentinel Obelisk
-Cell("PhaseGate",      7, 9)    -- Rift Portal
+Cell("PhaseGate",      7, 9)
 Cell("PrototypeLab",   8, 9)    -- Psionic Spire
 Cell("Marine",         1, 10)   -- soldier (Vanguard / Infiltrator / Subject share the Marine blip type)
 Cell("JetpackMarine",  1, 10)

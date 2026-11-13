@@ -10,13 +10,13 @@ local gVTMenuButtons =
     [kTechId.BuildMenu] =
     {
         kTechId.VTNexus, kTechId.VTSiphon, kTechId.VTSubventionPylon, kTechId.VTSynthesisChamber,
-        kTechId.VTShieldGenerator, kTechId.VTRiftPortal, kTechId.VTSentinelObelisk, kTechId.VTPsionicSpire,
+        kTechId.VTShieldGenerator, kTechId.VTSentinelObelisk, kTechId.VTPsionicSpire, N,
     },
 
     -- Directives are issued from the Imperial Nexus (select it). The Assist
     -- menu holds the cheap, repeatable support abilities.
     [kTechId.AdvancedMenu] = { N, N, N, N, N, N, N, N },
-    [kTechId.AssistMenu]   = { kTechId.VTShieldPulse, kTechId.VTRiftRecall, N, N, N, N, N, N },
+    [kTechId.AssistMenu]   = { kTechId.VTShieldPulse, kTechId.VTNexusRecall, N, N, N, N, N, N },
 }
 
 local gVTMenuIds = {}
@@ -107,15 +107,15 @@ local function TriggerShieldPulse(self, position)
 
 end
 
--- Rift Recall: teleport one soldier next to the nearest active Rift Portal.
-local function TriggerRiftRecall(self, position, targetId)
+-- Nexus Recall: teleport one soldier next to the nearest active Nexus Gate.
+local function TriggerNexusRecall(self, position, targetId)
 
     local teamNumber = self:GetTeamNumber()
 
     local target = targetId and targetId ~= Entity.invalidId and Shared.GetEntity(targetId)
     if not (target and target:isa("Player") and target:GetTeamNumber() == teamNumber and target:GetIsAlive()
             and not target:isa("Commander")) then
-        local nearby = GetSoldiers(teamNumber, position, kVTRiftRecallTargetRange)
+        local nearby = GetSoldiers(teamNumber, position, kVTNexusRecallTargetRange)
         Shared.SortEntitiesByDistance(position, nearby)
         target = nearby[1]
     end
@@ -124,19 +124,21 @@ local function TriggerRiftRecall(self, position, targetId)
         return false
     end
 
-    local portals = {}
-    for _, portal in ipairs(GetEntitiesForTeam("VTRiftPortal", teamNumber)) do
-        if GetIsUnitActive(portal) then
-            portals[#portals + 1] = portal
+    local gates = {}
+    for _, nexus in ipairs(GetEntitiesForTeam("VTNexus", teamNumber)) do
+        if VT_GetIsActiveNexusGate(nexus) then
+            gates[#gates + 1] = nexus
         end
     end
-    if #portals == 0 then
+    if #gates == 0 then
         return false
     end
-    Shared.SortEntitiesByDistance(target:GetOrigin(), portals)
+    Shared.SortEntitiesByDistance(target:GetOrigin(), gates)
 
+    -- same arrival ring as a pylon jump (the Nexus base is wide)
     local height, radius = target:GetTraceCapsule()
-    local destination = GetRandomSpawnForCapsule(height, radius, portals[1]:GetOrigin(), 1.5, 4, EntityFilterAll())
+    local destination = GetRandomSpawnForCapsule(height, radius, gates[1]:GetOrigin(),
+            kVTGateArrivalMinRange, kVTGateArrivalMaxRange, EntityFilterAll())
     if not destination then
         return false
     end
@@ -153,7 +155,7 @@ end
 local kAbilityHandlers =
 {
     [kTechId.VTShieldPulse] = TriggerShieldPulse,
-    [kTechId.VTRiftRecall]  = TriggerRiftRecall,
+    [kTechId.VTNexusRecall] = TriggerNexusRecall,
 }
 
 -- Focus Beam (selected Sentinel Obelisks): the clicked enemy, or the nearest enemy within 2.5 m of the click.

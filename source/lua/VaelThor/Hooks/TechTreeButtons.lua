@@ -19,7 +19,6 @@ local kVTIconAlias =
     [kTechId.VTSubventionPylon]      = kTechId.SentryBattery,
     [kTechId.VTSynthesisChamber]     = kTechId.ArmsLab,
     [kTechId.VTShieldGenerator]      = kTechId.Observatory,
-    [kTechId.VTRiftPortal]           = kTechId.PhaseGate,
 
     [kTechId.VTEdictRequisition]     = kTechId.PowerSurge,
     [kTechId.VTEdictRelentless]      = kTechId.CatPack,
@@ -57,7 +56,7 @@ local kVTIconAlias =
     [kTechId.VTEdictIronDiscipline]  = kTechId.NanoShield,
     [kTechId.VTQuotaMenu]            = kTechId.Marine,
     [kTechId.VTShieldPulse]          = kTechId.NanoShield,
-    [kTechId.VTRiftRecall]           = kTechId.PhaseGate,
+    [kTechId.VTNexusRecall]          = kTechId.PhaseGate,
     [kTechId.VTNexusGate]            = kTechId.CommandStation,
     [kTechId.VTNexusGateUpgrade]     = kTechId.PhaseTech,
     [kTechId.VTObeliskPrismUpgrade]  = kTechId.Weapons2,
@@ -77,7 +76,6 @@ local kVTIconCellList =
     { "VTSynthesisChamber", 3, 16 },
     { "VTShieldGenerator", 4, 16 },
     { "VTSentinelObelisk", 5, 16 },
-    { "VTRiftPortal", 6, 16 },
     { "VTPsionicSpire", 7, 16 },
     { "VTNexusGate", 8, 16 },
     { "VTNexusGateUpgrade", 9, 16 },
@@ -99,7 +97,7 @@ local kVTIconCellList =
     { "VTEdictRelentless", 1, 18 },
     { "VTEdictIronDiscipline", 2, 18 },
     { "VTShieldPulse", 3, 18 },
-    { "VTRiftRecall", 4, 18 },
+    { "VTNexusRecall", 8, 16 },   -- Nexus Gate icon (cell 4,18 is the old rift-themed recall icon)
     { "VTAuthorizationTier2", 5, 18 },
     { "VTAuthorizationTier3", 6, 18 },
     { "VTOverchargeTech", 7, 18 },

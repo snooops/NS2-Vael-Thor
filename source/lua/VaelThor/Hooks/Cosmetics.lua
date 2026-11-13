@@ -27,7 +27,6 @@ kVTCosmeticClassAliases =
     VTSubventionPylon     = "SentryBattery",
     VTSynthesisChamber    = "ArmsLab",
     VTShieldGenerator     = "Observatory",
-    VTRiftPortal          = "PhaseGate",
     VTSentinelObelisk     = "Sentry",
     VTPsionicSpire        = "PrototypeLab",
 }

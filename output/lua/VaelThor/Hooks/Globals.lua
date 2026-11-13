@@ -28,9 +28,6 @@ local kNewTechIds =
     "VTAuthorizationTier2", "VTAuthorizationTier3",
     "VTOverchargeTech", "VTPhaseDashTech", "VTShieldOverdriveTech", "VTSingularityTech",
 
-    -- Structures that depend on research
-    "VTRiftPortal",
-
     -- Directives (global edicts issued from the Nexus)
     "VTEdictRequisition", "VTEdictRelentless",
 
@@ -54,7 +51,7 @@ local kNewTechIds =
     -- Nexus sub menu
     "VTQuotaMenu",
     -- Commander support abilities (Assist menu)
-    "VTShieldPulse", "VTRiftRecall",
+    "VTShieldPulse", "VTNexusRecall",
 
     -- Nexus Gate: upgraded Nexus (structure tech id) and its upgrade
     "VTNexusGate", "VTNexusGateUpgrade",
@@ -153,7 +150,6 @@ kVTMapNames =
     Pylon           = "vt_subventionpylon",
     Chamber         = "vt_synthesischamber",
     ShieldGen       = "vt_shieldgenerator",
-    Rift            = "vt_riftportal",
 
     Carbine         = "vt_plasmacarbine",
     Blade           = "vt_psionicblade",
@@ -238,9 +234,9 @@ kVTPsionicEdictsCooldownScalar = 0.75
 kVTShieldPulseCost          = 3
 kVTShieldPulseCooldown      = 8
 kVTShieldPulseRadius        = 6
-kVTRiftRecallCost           = 4
-kVTRiftRecallCooldown       = 20
-kVTRiftRecallTargetRange    = 2.5    -- how close to the click a soldier must be
+kVTNexusRecallCost          = 4
+kVTNexusRecallCooldown      = 20
+kVTNexusRecallTargetRange   = 2.5    -- how close to the click a soldier must be
 
 -- ----------------------------------------------------------------------------
 -- Structures
@@ -248,7 +244,6 @@ kVTRiftRecallTargetRange    = 2.5    -- how close to the click a soldier must be
 kVTPylonCost = 8        kVTPylonBuildTime = 8         kVTPylonHealth = 700      kVTPylonArmor = 100
 kVTChamberCost = 15     kVTChamberBuildTime = 18      kVTChamberHealth = 1600   kVTChamberArmor = 300
 kVTShieldGenCost = 12   kVTShieldGenBuildTime = 14    kVTShieldGenHealth = 1100 kVTShieldGenArmor = 250
-kVTRiftCost = 15        kVTRiftBuildTime = 15         kVTRiftHealth = 1500      kVTRiftArmor = 200
 kVTNexusCost = 25       -- free placement: not bound to tech points
 
 -- Nexus Gate network
@@ -316,7 +311,7 @@ kVTStructureModelScale = 0.8
 kVTStructureModelHeights =
 {
     nexus = 4.2, chamber = 2.6, spire = 5.0, pylon = 3.2,
-    siphon = 3.2, shieldgen = 2.4, obelisk = 3.8, rift = 3.0,
+    siphon = 3.2, shieldgen = 2.4, obelisk = 3.8,
 }
 
 -- Model files of the scaled buildings (the commander ghost preview is scaled too, Hooks/GhostModelUI.lua).
@@ -385,7 +380,6 @@ kVTMaxShield =
     VTSubventionPylon   = 250,
     VTSynthesisChamber  = 500,
     VTShieldGenerator   = 400,
-    VTRiftPortal        = 450,
     VTSentinelObelisk   = 200,
     VTPsionicSpire      = 550,
 }

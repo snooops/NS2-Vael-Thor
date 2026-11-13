@@ -25,8 +25,6 @@ kVTStrings =
     VT_CHAMBER_TOOLTIP             = "Spawn point of the Synthesis Matrix. Researches authorization tiers and weapon modifications.",
     VT_SHIELDGEN                   = "Shield Generator",
     VT_SHIELDGEN_TOOLTIP           = "Halves ranged and artillery damage taken by nearby imperial structures.",
-    VT_RIFT                        = "Rift Portal",
-    VT_RIFT_TOOLTIP                = "Instant two-way teleportation between Rift Portals.",
 
     VT_EDICT_REQUISITION           = "Directive: Requisition Mandate",
     VT_EDICT_REQUISITION_TOOLTIP   = "For 30 seconds all imperial construction is 75% faster.",
@@ -117,8 +115,8 @@ kVTStrings =
     VT_QUOTA_MENU                  = "Caste Quotas",
     VT_SHIELD_PULSE                = "Shield Pulse",
     VT_SHIELD_PULSE_TOOLTIP        = "Instantly recharges the shields of all soldiers within 6 m of the target point.",
-    VT_RIFT_RECALL                 = "Rift Recall",
-    VT_RIFT_RECALL_TOOLTIP         = "Teleports the targeted soldier to the nearest Rift Portal.",
+    VT_NEXUS_RECALL                = "Nexus Recall",
+    VT_NEXUS_RECALL_TOOLTIP        = "Teleports the targeted soldier to the nearest Nexus Gate.",
 
     VT_NEXUS_GATE                  = "Nexus Gate",
     VT_NEXUS_GATE_TOOLTIP          = "Once upgraded, any soldier can teleport here from any Pylon on the map: press E on a Pylon and pick the gate.",

@@ -135,7 +135,7 @@ Event.Hook("UpdateRender", UpdateHackGlows)
 local kShieldGlowClasses =
 {
     "Player", "VTNexus", "VTSiphon", "VTSubventionPylon", "VTSynthesisChamber",
-    "VTShieldGenerator", "VTRiftPortal", "VTSentinelObelisk", "VTPsionicSpire",
+    "VTShieldGenerator", "VTSentinelObelisk", "VTPsionicSpire",
 }
 local kShieldHitThreshold = 0.5   -- ignore network quantization noise
 
