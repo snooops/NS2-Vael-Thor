@@ -39,6 +39,8 @@ ModLoader.SetupFileHook("lua/OrderSelfMixin.lua",    H .. "OrderSelfMixin.lua", 
 -- HUD: no corner minimap for the Vael'Thor (marine HUD).
 ModLoader.SetupFileHook("lua/Hud/Marine/GUIMarineHUD.lua", H .. "GUIMarineHUD.lua", "post")
 ModLoader.SetupFileHook("lua/GUIClassicAmmo.lua", H .. "GUIClassicAmmo.lua", "post")
+-- Commander ghost preview of the (scaled) Vael'Thor buildings.
+ModLoader.SetupFileHook("lua/GhostModelUI.lua",   H .. "GhostModelUI.lua",    "post")
 
 -- Bots: turn-speed table is keyed by class name and has no fallback.
 ModLoader.SetupFileHook("lua/bots/BotAim.lua",      H .. "BotAim.lua",          "post")

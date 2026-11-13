@@ -305,6 +305,49 @@ kVTInfiltratorHealth = 85       kVTInfiltratorArmor = 20     kVTInfiltratorSpeed
 kVTSubjectHealth = 320          kVTSubjectArmor = 80         kVTSubjectSpeedScalar = 1.15
 kVTSubjectModelScale = 1.3
 
+-- ----------------------------------------------------------------------------
+-- Building model scale (VT_InstallStructureScale): every Vael'Thor building is
+-- drawn at this size via OnAdjustModelCoords; the models themselves are built
+-- at the heights in art/buildings/build_all.sh (= kVTStructureModelHeights).
+-- ----------------------------------------------------------------------------
+kVTStructureModelScale = 0.8
+
+-- Model heights in m as built (art/buildings/build_all.sh), before kVTStructureModelScale.
+kVTStructureModelHeights =
+{
+    nexus = 4.2, chamber = 2.6, spire = 5.0, pylon = 3.2,
+    siphon = 3.2, shieldgen = 2.4, obelisk = 3.8, rift = 3.0,
+}
+
+-- Model files of the scaled buildings (the commander ghost preview is scaled too, Hooks/GhostModelUI.lua).
+kVTScaledStructureModels = {}
+for name in pairs(kVTStructureModelHeights) do
+    kVTScaledStructureModels[string.format("models/vaelthor/%s/%s.model", name, name)] = true
+end
+
+-- Draws cls at kVTStructureModelScale (rendering, attach points, model origin
+-- and - as far as the engine applies the scale - the collision model all follow
+-- _modelCoords) and puts its health bar just above the scaled model.
+function VT_InstallStructureScale(cls, modelName)
+    local previous = cls.OnAdjustModelCoords
+    function cls:OnAdjustModelCoords(modelCoords)
+        if previous then
+            modelCoords = previous(self, modelCoords)
+        end
+        local s = kVTStructureModelScale
+        modelCoords.xAxis = modelCoords.xAxis * s
+        modelCoords.yAxis = modelCoords.yAxis * s
+        modelCoords.zAxis = modelCoords.zAxis * s
+        return modelCoords
+    end
+    local height = kVTStructureModelHeights[modelName]
+    if height then
+        function cls:GetHealthbarOffset()
+            return height * kVTStructureModelScale + 0.4
+        end
+    end
+end
+
 -- Subject mobility (Unreal Tournament style)
 kVTDodgeTapWindow           = 0.25   -- max seconds between the two taps of a direction key
 kVTDodgeSpeed               = 9      -- horizontal launch speed (marine run speed is 5.75)

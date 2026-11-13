@@ -113,6 +113,7 @@ if Client then
 end
 
 VT_InstallShield(VTSubventionPylon, false)
+VT_InstallStructureScale(VTSubventionPylon, "pylon")
 Shared.LinkClassToMap("VTSubventionPylon", VTSubventionPylon.kMapName, VT_AddShieldNetworkVars(pylonNetworkVars))
 
 -- ----------------------------------------------------------------------------
@@ -174,6 +175,7 @@ if Client then
 end
 
 VT_InstallShield(VTSynthesisChamber, false)
+VT_InstallStructureScale(VTSynthesisChamber, "chamber")
 Shared.LinkClassToMap("VTSynthesisChamber", VTSynthesisChamber.kMapName, VT_AddShieldNetworkVars({}))
 
 -- ----------------------------------------------------------------------------
@@ -228,6 +230,7 @@ if Server then
 end
 
 VT_InstallShield(VTShieldGenerator, false)
+VT_InstallStructureScale(VTShieldGenerator, "shieldgen")
 Shared.LinkClassToMap("VTShieldGenerator", VTShieldGenerator.kMapName, VT_AddShieldNetworkVars(shieldGenNetworkVars))
 
 -- ----------------------------------------------------------------------------
@@ -272,6 +275,7 @@ if Client then
 end
 
 VT_InstallShield(VTRiftPortal, false)
+VT_InstallStructureScale(VTRiftPortal, "rift")
 Shared.LinkClassToMap("VTRiftPortal", VTRiftPortal.kMapName, VT_AddShieldNetworkVars({}))
 
 -- ----------------------------------------------------------------------------
@@ -337,7 +341,7 @@ end
 -- The vanilla sentry aims and fires from attach points (fxnode_sentrymuzzle / fxnode_eye) and turns its
 -- barrel with pose parameters; the obelisk fires from its crystal head and doesn't need to turn.
 kVTObeliskModel = PrecacheAsset("models/vaelthor/obelisk/obelisk.model")
-local kObeliskHeadHeight = 3.3
+local kObeliskHeadHeight = 3.3   -- on the unscaled model; ObeliskHead applies kVTStructureModelScale
 
 function VTSentinelObelisk:OnInitialized()
     Sentry.OnInitialized(self)
@@ -395,7 +399,7 @@ function VTSentinelObelisk:GetFov()
 end
 
 local function ObeliskHead(self)
-    return self:GetOrigin() + Vector(0, kObeliskHeadHeight, 0)
+    return self:GetOrigin() + Vector(0, kObeliskHeadHeight * kVTStructureModelScale, 0)
 end
 
 -- Range and line-of-sight checks of the target selector start here (vanilla: 0.8 m above the origin).
@@ -792,6 +796,7 @@ if Client then
 end
 
 VT_InstallShield(VTSentinelObelisk, false)
+VT_InstallStructureScale(VTSentinelObelisk, "obelisk")
 Shared.LinkClassToMap("VTSentinelObelisk", VTSentinelObelisk.kMapName, VT_AddShieldNetworkVars(obeliskNetworkVars))
 
 -- ----------------------------------------------------------------------------
@@ -843,4 +848,5 @@ if Client then
 end
 
 VT_InstallShield(VTPsionicSpire, false)
+VT_InstallStructureScale(VTPsionicSpire, "spire")
 Shared.LinkClassToMap("VTPsionicSpire", VTPsionicSpire.kMapName, VT_AddShieldNetworkVars({}))

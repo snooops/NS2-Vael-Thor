@@ -43,6 +43,7 @@ end
 if Client then
     local kGlowColor = Color(0.62, 0.25, 1.0)
 
+    -- height: on the unscaled model (scaled by kVTStructureModelScale here)
     function VT_UpdateGlowLight(self, key, height, radius, intensity, speed)
         local on = self:GetIsBuilt() and self:GetIsAlive() and (not self.GetIsPowered or self:GetIsPowered())
         local light = self[key]
@@ -60,7 +61,7 @@ if Client then
             if on then
                 local pulse = 0.75 + 0.25 * math.sin(Shared.GetTime() * (speed or 2.2) + self:GetId())
                 light:SetIntensity(intensity * pulse)
-                light:SetCoords(Coords.GetTranslation(self:GetOrigin() + Vector(0, height, 0)))
+                light:SetCoords(Coords.GetTranslation(self:GetOrigin() + Vector(0, height * kVTStructureModelScale, 0)))
             end
         end
     end
@@ -94,11 +95,7 @@ end
 
 -- The base is wide; allow use from the frame's distance (default 2 m from the eyes).
 function VTNexus:GetUseMaxRange()
-    return 3.5
-end
-
-function VTNexus:GetHealthbarOffset()
-    return 4.6
+    return 3.5 * kVTStructureModelScale
 end
 
 if Server then
@@ -325,6 +322,7 @@ if Server then
 end
 
 VT_InstallShield(VTNexus, false)
+VT_InstallStructureScale(VTNexus, "nexus")
 Shared.LinkClassToMap("VTNexus", VTNexus.kMapName, VT_AddShieldNetworkVars({}))
 
 -- ----------------------------------------------------------------------------
@@ -358,4 +356,5 @@ if Client then
 end
 
 VT_InstallShield(VTSiphon, false)
+VT_InstallStructureScale(VTSiphon, "siphon")
 Shared.LinkClassToMap("VTSiphon", VTSiphon.kMapName, VT_AddShieldNetworkVars({}))

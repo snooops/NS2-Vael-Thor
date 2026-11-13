@@ -9,6 +9,12 @@ Balance numbers are always first pass.
 ## 2026-11-13
 
 ### Changed
+- **All Vael'Thor buildings 20% smaller**, done in Lua without rebuilding the models: `kVTStructureModelScale = 0.8`
+  (`Hooks/Globals.lua`). `VT_InstallStructureScale` shrinks each building's model in `OnAdjustModelCoords`, so
+  rendering, attachment points and the model origin all scale with it. The obelisk head height (targeting, beam
+  origin), the glow lights, the health bars (scaled model height + 0.4 m), the Nexus use range and the commander's
+  ghost preview (`Hooks/GhostModelUI.lua`) were scaled by hand. The engine shrinks the collision hulls too
+  (checked with `collision server`). ✅ *Why:* the buildings felt too big.
 - **Synthesis Matrix menu and manual respawn** ([#1](https://github.com/snooops/NS2-Vael-Thor/issues/1)): dead
   soldiers are no longer synthesized automatically when the 9 s timer ends. A new menu like the alien evolve menu
   (`GUI/GUIVTMatrixMenu.lua`) opens on death with a mouse cursor: four caste cards (quota, cost, lock state,
