@@ -18,6 +18,12 @@ Balance numbers are always first pass.
   be its infrastructure.
 
 ### Changed
+- **Nexus Gate menu (pylon jump) redesigned** in the style of the Synthesis Matrix menu: dimmed screen, solid panel
+  with the crystal frame, a mouse cursor and one clickable row per active Nexus Gate (sector, live distance,
+  integrity in red below 50%). Keys 1–9 still work; Esc, right click or a click outside the panel cancels. While the
+  8 s jump cooldown runs (a client-side estimate, the server's timer isn't networked), the menu shows
+  "Gate recharging" and doesn't send jumps. The shared look moved to `GUI/VTGUIStyle.lua` (palette, framed boxes,
+  text fitting), which the death menu now uses too. ✅
 - **Synthesis Matrix menu, second pass** (feedback on #1): more opaque (solid dark panel and card bodies under the
   crystal frames, plus a dimmed screen behind the menu). Clicks now arrive through a MouseTracker listener, which
   runs before the other GUI scripts, and the cursor is kept visible while the menu is open. Every text is shortened

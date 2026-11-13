@@ -22,27 +22,29 @@
 
 class 'GUIVTMatrixMenu' (GUIScript)
 
-local kPanelTex     = PrecacheAsset("ui/vaelthor/hud_panel.dds")
-local kChipTex      = PrecacheAsset("ui/vaelthor/hud_chip.dds")
+local St = VTGUIStyle   -- shared look (GUI/VTGUIStyle.lua)
+
+local kPanelTex     = St.kPanelTex
+local kChipTex      = St.kChipTex
 local kPortraitTex  = PrecacheAsset("ui/vaelthor/caste_portraits.dds")
 local kPortraitCell = 256          -- atlas: 4 cells of 256x256, order as kCastes
 
-local kColDim       = Color(0, 0, 0, 0.55)                 -- full-screen dimming behind the menu
-local kColBody      = Color(0.035, 0.018, 0.07, 0.96)      -- solid panel body
-local kColCardBody  = Color(0.07, 0.035, 0.13, 0.97)
-local kColCardBodyHover = Color(0.13, 0.07, 0.22, 0.98)
-local kColCardBodySel   = Color(0.05, 0.16, 0.20, 0.98)
-local kColFrame     = Color(0.80, 0.70, 1.00, 1)
-local kColFrameHover = Color(1.00, 0.92, 1.00, 1)
-local kColSelected  = Color(0.45, 1.00, 1.00, 1)
-local kColLocked    = Color(0.45, 0.43, 0.52, 1)
-local kColText      = Color(0.92, 0.86, 1.00, 1)
-local kColDimText   = Color(0.68, 0.60, 0.82, 1)
-local kColKey       = Color(0.80, 0.50, 1.00, 1)
-local kColCyan      = Color(0.35, 0.95, 1.00, 1)
-local kColReady     = Color(0.55, 1.00, 0.85, 1)
-local kColWarn      = Color(1.00, 0.45, 0.45, 1)
-local kColActive    = Color(1.00, 0.85, 1.00, 1)
+local kColDim           = St.kColDim
+local kColBody          = St.kColBody
+local kColCardBody      = St.kColCardBody
+local kColCardBodyHover = St.kColCardBodyHover
+local kColCardBodySel   = St.kColCardBodySel
+local kColFrame         = St.kColFrame
+local kColFrameHover    = St.kColFrameHover
+local kColSelected      = St.kColSelected
+local kColLocked        = St.kColLocked
+local kColText          = St.kColText
+local kColDimText       = St.kColDimText
+local kColKey           = St.kColKey
+local kColCyan          = St.kColCyan
+local kColReady         = St.kColReady
+local kColWarn          = St.kColWarn
+local kColActive        = St.kColActive
 
 local kMargin = 28
 local kPanelW, kPanelH = 1100, 760
@@ -75,7 +77,7 @@ local kSynthesizeChoice = 8
 -- Keys work whether the menu is shown or hidden (same order as the choices 1-7).
 local kChoiceBindings = { "Weapon1", "Weapon2", "Weapon3", "Weapon4", "Weapon5", "Reload", "Use" }
 
-local function S(x, y) return GUIScale(Vector(x, y, 0)) end
+local S = St.S
 
 local function GetLocalRank()
     local ok, score = pcall(Scoreboard_GetPlayerData, Client.GetLocalClientIndex(), "Score")
@@ -96,27 +98,7 @@ local function LockReason(requirement, rank)
     return nil
 end
 
--- Sets text, shortened with "..." so it stays within maxWidth (unscaled GUI units).
-local function SetFittedText(item, text, maxWidth)
-    text = text or ""
-    local limit = GUIScale(maxWidth)
-    local scale = item:GetScale().x
-    if item:GetTextWidth(text) * scale <= limit then
-        item:SetText(text)
-        return
-    end
-    local chars = string.UTF8Encode(text)
-    local lo, hi = 0, #chars
-    while lo < hi do                                    -- longest prefix that fits with "..."
-        local mid = math.ceil((lo + hi) / 2)
-        if item:GetTextWidth(table.concat(chars, "", 1, mid) .. "...") * scale <= limit then
-            lo = mid
-        else
-            hi = mid - 1
-        end
-    end
-    item:SetText(table.concat(chars, "", 1, lo) .. "...")
-end
+local SetFittedText = St.SetFittedText
 
 -- The local client is a dead Vael'Thor soldier: either our own VTSpectator, or
 -- we are following someone (kill cam / first person) and the local player isn't us.
@@ -179,37 +161,15 @@ end
 -- construction
 -- ----------------------------------------------------------------------------
 function GUIVTMatrixMenu:Graphic(parent, tex, w, h, x, y, color, layer)
-    local item = GUIManager:CreateGraphicItem()
-    if tex then item:SetTexture(tex) end
-    item:SetSize(S(w, h))
-    item:SetPosition(S(x, y))
-    item:SetColor(color or Color(1, 1, 1, 1))
-    item:SetLayer(layer or kGUILayerPlayerHUDForeground1)
-    if parent then
-        parent:AddChild(item)
-    end
-    return item
+    return St.Graphic(parent, tex, w, h, x, y, color, layer)
 end
 
 function GUIVTMatrixMenu:Text(parent, font, x, y, alignX, color)
-    local t = GUIManager:CreateTextItem()
-    t:SetFontName(font)
-    t:SetScale(GetScaledVector())
-    GUIMakeFontScale(t)
-    t:SetTextAlignmentX(alignX or GUIItem.Align_Min)
-    t:SetTextAlignmentY(GUIItem.Align_Center)
-    t:SetPosition(S(x, y))
-    t:SetColor(color or kColText)
-    t:SetLayer(kGUILayerPlayerHUDForeground4)
-    parent:AddChild(t)
-    return t
+    return St.Text(parent, font, x, y, alignX, color)
 end
 
--- A solid body with the crystal frame texture on top (the frame texture alone is too translucent).
 function GUIVTMatrixMenu:Box(parent, tex, w, h, x, y, bodyColor, frameColor, layer)
-    local body = self:Graphic(parent, nil, w, h, x, y, bodyColor, layer)
-    local frame = self:Graphic(body, tex, w, h, 0, 0, frameColor, layer + 1)
-    return body, frame
+    return St.Box(parent, tex, w, h, x, y, bodyColor, frameColor, layer)
 end
 
 function GUIVTMatrixMenu:Initialize()
@@ -316,7 +276,7 @@ end
 function GUIVTMatrixMenu:SetCursorShown(shown)
     if shown ~= self.cursorShown then
         self.cursorShown = shown
-        MouseTracker_SetIsVisible(shown, "ui/Cursor_MenuDefault.dds", true)
+        MouseTracker_SetIsVisible(shown, St.kCursor, true)
     end
     -- Spectator camera modes may hide the OS cursor again; keep it up while the menu is open.
     if shown and not Client.GetMouseVisible() then
@@ -356,13 +316,7 @@ end
 -- ----------------------------------------------------------------------------
 -- update
 -- ----------------------------------------------------------------------------
-local function GetHovered(item)
-    if not MouseTracker_GetIsVisible() then
-        return false
-    end
-    local x, y = Client.GetCursorPosScreen()
-    return GUIItemContainsPoint(item, x, y)
-end
+local GetHovered = St.GetHovered
 
 -- Button / chip text for the current synthesis state.
 local function GetSynthesisStatus(state)

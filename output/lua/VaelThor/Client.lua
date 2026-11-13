@@ -19,6 +19,7 @@ function VT_Breadcrumb(key, text)
 end
 
 Script.Load("lua/VaelThor/GUI/GUIVTHud.lua")
+Script.Load("lua/VaelThor/GUI/VTGUIStyle.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTGateMenu.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTMatrixMenu.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTVision.lua")

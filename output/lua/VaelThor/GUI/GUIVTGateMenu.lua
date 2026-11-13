@@ -1,15 +1,28 @@
 -- ============================================================================
--- GUIVTGateMenu - destination picker for Nexus Gate jumps.
+-- GUIVTGateMenu - destination picker for Nexus Gate jumps, in the style of the
+-- Synthesis Matrix menu (GUI/VTGUIStyle.lua).
 -- Opened by pressing E on a pylon connected to a Nexus Gate
--- (VTSubventionPylon:OnUse -> VT_OpenGateMenu). Keys 1-9 pick a gate,
--- Escape closes. The server validates and performs the jump.
+-- (VTSubventionPylon:OnUse -> VT_OpenGateMenu). Shows a dimmed screen, a
+-- cursor and one row per active Nexus Gate (sector, distance, integrity).
+-- Pick with a click or keys 1-9; Esc, right click or a click outside the panel
+-- cancels. Walking away from the pylon or waiting kAutoCloseTime closes it.
+-- The server validates and performs the jump (Server.lua, VTNexusTeleport).
 -- ============================================================================
 
 class 'GUIVTGateMenu' (GUIScript)
 
+local St = VTGUIStyle
+
 local kMaxDestinations = 9
 local kAutoCloseTime = 15
 local kUseRangeSlack = 1      -- close once the player walks away from the pylon
+
+local kPanelW = 640
+local kMargin = 28
+local kHeaderH = 104
+local kRowW, kRowH, kRowGap = kPanelW - 2 * kMargin, 64, 8
+local kFooterH = 52
+local kPad = 16
 
 local kNumberKeys =
 {
@@ -20,44 +33,103 @@ local kNumberKeys =
 
 local gGateMenu
 
+-- Client-side estimate of the per-player jump cooldown (the server's
+-- vtNextGateJump isn't networked); only used to grey out the menu.
+VT_GateLastJumpTime = VT_GateLastJumpTime or 0
+
 function VT_OpenGateMenu(pylon)
     if gGateMenu then
         gGateMenu:Open(pylon)
     end
 end
 
+-- One MouseTracker listener for the session (no way to unregister), forwarding
+-- to the live menu. It runs before the GUI scripts, so nothing swallows clicks.
+if not VT_GateMouseListener then
+    VT_GateMouseListener =
+    {
+        OnMouseDown = function(_, key, doubleClick)
+            if gGateMenu and gGateMenu:GetIsOpen() and (key == InputKey.MouseButton0 or key == InputKey.MouseButton1) then
+                return gGateMenu:OnMouseDown(key == InputKey.MouseButton1)
+            end
+            return false
+        end,
+        OnMouseUp = function(_, key)
+            return gGateMenu ~= nil and gGateMenu:GetIsOpen()
+                and (key == InputKey.MouseButton0 or key == InputKey.MouseButton1)
+        end,
+    }
+    MouseTracker_ListenToButtons(VT_GateMouseListener)
+end
+
+local function GetLocation(entity)
+    local location = entity and entity.GetLocationName and entity:GetLocationName() or ""
+    return location ~= "" and location or "Unknown sector"
+end
+
+local function GetCooldownRemaining()
+    return VT_GateLastJumpTime + kVTGateTeleportCooldown - Shared.GetTime()
+end
+
 function GUIVTGateMenu:Initialize()
 
-    self.updateInterval = 0.1
+    self.updateInterval = 0   -- every frame: hover, distances, cooldown
 
-    self.background = GUIManager:CreateGraphicItem()
-    self.background:SetAnchor(GUIItem.Middle, GUIItem.Center)
-    self.background:SetColor(Color(0.05, 0.02, 0.10, 0.85))
-    self.background:SetLayer(kGUILayerPlayerHUDForeground1 or (kGUILayerPlayerHUD + 1))
-    self.background:SetIsVisible(false)
+    self.dim = St.Graphic(nil, nil, 0, 0, 0, 0, St.kColDim, kGUILayerPlayerHUD)
+    self.dim:SetSize(Vector(Client.GetScreenWidth(), Client.GetScreenHeight(), 0))
 
-    self.text = GUIManager:CreateTextItem()
-    self.text:SetFontName(Fonts.kAgencyFB_Small)
-    self.text:SetScale(GetScaledVector())
-    GUIMakeFontScale(self.text)
-    self.text:SetAnchor(GUIItem.Left, GUIItem.Top)
-    self.text:SetTextAlignmentX(GUIItem.Align_Min)
-    self.text:SetTextAlignmentY(GUIItem.Align_Min)
-    self.text:SetColor(Color(0.35, 0.95, 1.0, 1))
-    self.text:SetPosition(GUIScale(Vector(16, 12, 0)))
-    self.background:AddChild(self.text)
+    self.panel = St.Graphic(nil, nil, kPanelW, 200, 0, 0, St.kColBody, kGUILayerPlayerHUDForeground1)
+    self.panel:SetAnchor(GUIItem.Middle, GUIItem.Center)
+    self.frame = St.Graphic(self.panel, St.kPanelTex, kPanelW, 200, 0, 0, St.kColFrame, kGUILayerPlayerHUDForeground1)
+
+    self.title = St.Text(self.panel, Fonts.kAgencyFB_Large, kMargin, 40, nil, St.kColCyan)
+    self.title:SetText("NEXUS GATE NETWORK")
+    self.subtitle = St.Text(self.panel, Fonts.kAgencyFB_Small, kMargin, 76, nil, St.kColDimText)
+
+    self.rows = {}
+    for i = 1, kMaxDestinations do
+        local y = kHeaderH + (i - 1) * (kRowH + kRowGap)
+        local body, frame = St.Box(self.panel, St.kChipTex, kRowW, kRowH, kMargin, y)
+        local row =
+        {
+            body     = body,
+            frame    = frame,
+            key      = St.Text(body, Fonts.kAgencyFB_Medium, kPad, kRowH / 2, nil, St.kColKey),
+            name     = St.Text(body, Fonts.kAgencyFB_Medium, kPad + 46, 22, nil, St.kColText),
+            info     = St.Text(body, Fonts.kAgencyFB_Small, kPad + 46, 46, nil, St.kColDimText),
+            distance = St.Text(body, Fonts.kAgencyFB_Medium, kRowW - kPad, kRowH / 2, GUIItem.Align_Max, St.kColText),
+        }
+        row.key:SetText(string.format("[%d]", i))
+        self.rows[i] = row
+    end
+
+    self.hint = St.Text(self.panel, Fonts.kAgencyFB_Small, kPanelW / 2, 0, GUIItem.Align_Center, St.kColDimText)
+    St.SetFittedText(self.hint, "[1-9] / click: jump      [Esc] / right click: cancel", kPanelW - 2 * kMargin)
+
+    self.dim:SetIsVisible(false)
+    self.panel:SetIsVisible(false)
 
     self.pylonId = Entity.invalidId
     self.destinationIds = {}
+    self.cursorShown = false
     gGateMenu = self
 
 end
 
+function GUIVTGateMenu:SetCursorShown(shown)
+    if shown ~= self.cursorShown then
+        self.cursorShown = shown
+        MouseTracker_SetIsVisible(shown, St.kCursor, true)
+    end
+end
+
 function GUIVTGateMenu:Uninitialize()
-    if self.background then
-        GUI.DestroyItem(self.background)   -- destroys the child text too
-        self.background = nil
-        self.text = nil
+    self:SetCursorShown(false)
+    for _, key in ipairs({ "dim", "panel" }) do
+        if self[key] then
+            GUI.DestroyItem(self[key])   -- destroys all children
+            self[key] = nil
+        end
     end
     if gGateMenu == self then
         gGateMenu = nil
@@ -70,11 +142,13 @@ function GUIVTGateMenu:OnResolutionChanged(oldX, oldY, newX, newY)
 end
 
 function GUIVTGateMenu:GetIsOpen()
-    return self.background:GetIsVisible()
+    return self.panel ~= nil and self.panel:GetIsVisible()
 end
 
 function GUIVTGateMenu:Close()
-    self.background:SetIsVisible(false)
+    self.dim:SetIsVisible(false)
+    self.panel:SetIsVisible(false)
+    self:SetCursorShown(false)
     self.pylonId = Entity.invalidId
     self.destinationIds = {}
 end
@@ -94,28 +168,23 @@ function GUIVTGateMenu:Open(pylon)
     self.openTime = Shared.GetTime()
     self.destinationIds = {}
 
-    local lines = { "NEXUS GATE NETWORK - choose destination", "" }
-    local origin = pylon:GetOrigin()
-    for i = 1, math.min(#destinations, kMaxDestinations) do
-        local gate = destinations[i]
-        self.destinationIds[i] = gate:GetId()
-        local location = gate.GetLocationName and gate:GetLocationName() or ""
-        if location == "" then
-            location = "Unknown sector"
-        end
-        lines[#lines + 1] = string.format("[%d] %s  (%.0f m)", i, location, (gate:GetOrigin() - origin):GetLength())
+    local count = math.min(#destinations, kMaxDestinations)
+    for i = 1, kMaxDestinations do
+        self.destinationIds[i] = i <= count and destinations[i]:GetId() or nil
+        self.rows[i].body:SetIsVisible(i <= count)
     end
-    lines[#lines + 1] = ""
-    lines[#lines + 1] = "[Esc] cancel"
 
-    self.text:SetText(table.concat(lines, "\n"))
+    -- size the panel to the number of gates
+    local height = kHeaderH + count * (kRowH + kRowGap) - kRowGap + kFooterH
+    self.panel:SetSize(St.S(kPanelW, height))
+    self.frame:SetSize(St.S(kPanelW, height))
+    self.panel:SetPosition(St.S(-kPanelW / 2, -height / 2))
+    self.hint:SetPosition(St.S(kPanelW / 2, height - kFooterH / 2))
 
-    local padding = GUIScale(Vector(32, 24, 0))
-    local size = Vector(self.text:GetTextWidth(self.text:GetText()) * self.text:GetScale().x,
-            self.text:GetTextHeight(self.text:GetText()) * self.text:GetScale().y, 0) + padding
-    self.background:SetSize(size)
-    self.background:SetPosition(-size / 2)
-    self.background:SetIsVisible(true)
+    self.dim:SetIsVisible(true)
+    self.panel:SetIsVisible(true)
+    self:SetCursorShown(true)
+    self:Update(0)
 
 end
 
@@ -130,10 +199,79 @@ function GUIVTGateMenu:Update(deltaTime)
 
     if not player or not player:GetIsAlive() or not pylon
             or (pylon:GetOrigin() - player:GetOrigin()):GetLength() > kVTGateUseRange + kUseRangeSlack
-            or Shared.GetTime() - self.openTime > kAutoCloseTime then
+            or Shared.GetTime() - self.openTime > kAutoCloseTime
+            or (MainMenu_GetIsOpened and MainMenu_GetIsOpened()) then
         self:Close()
+        return
     end
 
+    -- spectator / menu code may hide the OS cursor; keep it up while open
+    if not Client.GetMouseVisible() then
+        Client.SetMouseVisible(true)
+    end
+
+    local cooldown = GetCooldownRemaining()
+    if cooldown > 0 then
+        self.subtitle:SetColor(St.kColWarn)
+        St.SetFittedText(self.subtitle, string.format("Gate recharging - %d s", math.ceil(cooldown)), kPanelW - 2 * kMargin)
+    else
+        self.subtitle:SetColor(St.kColDimText)
+        St.SetFittedText(self.subtitle, "From the pylon in " .. GetLocation(pylon) .. " - choose a destination", kPanelW - 2 * kMargin)
+    end
+
+    local origin = player:GetOrigin()
+    for i, row in ipairs(self.rows) do
+        local gate = self.destinationIds[i] and Shared.GetEntity(self.destinationIds[i])
+        if row.body:GetIsVisible() then
+            if gate and gate:GetIsAlive() then
+                St.SetFittedText(row.name, GetLocation(gate), kRowW - 2 * kPad - 46 - 90)
+                local integrity = gate.GetHealthScalar and math.floor(gate:GetHealthScalar() * 100 + 0.5) or 100
+                St.SetFittedText(row.info, string.format("Nexus Gate  -  integrity %d%%", integrity), kRowW - 2 * kPad - 46 - 90)
+                row.info:SetColor(integrity < 50 and St.kColWarn or St.kColDimText)
+                row.distance:SetText(string.format("%.0f m", (gate:GetOrigin() - origin):GetLength()))
+                row.name:SetColor(cooldown > 0 and St.kColDimText or St.kColText)
+            else
+                St.SetFittedText(row.name, "gate lost", kRowW - 2 * kPad - 46 - 90)
+                row.name:SetColor(St.kColWarn)
+                row.info:SetText("")
+                row.distance:SetText("")
+            end
+            St.ColorBox(row.body, row.frame, cooldown <= 0 and St.GetHovered(row.body), false)
+        end
+    end
+
+end
+
+-- Returns true when the jump was requested (the menu closes then).
+function GUIVTGateMenu:Jump(index)
+    local gateId = self.destinationIds[index]
+    local gate = gateId and Shared.GetEntity(gateId)
+    if not (gate and gate:GetIsAlive()) or GetCooldownRemaining() > 0 then
+        return false
+    end
+    Client.SendNetworkMessage("VTNexusTeleport", { pylonId = self.pylonId, gateId = gateId }, true)
+    VT_GateLastJumpTime = Shared.GetTime()
+    self:Close()
+    return true
+end
+
+-- From VT_GateMouseListener; the menu is open. Always swallows the click.
+function GUIVTGateMenu:OnMouseDown(rightButton)
+    if rightButton then
+        self:Close()
+        return true
+    end
+    local x, y = Client.GetCursorPosScreen()
+    for i, row in ipairs(self.rows) do
+        if row.body:GetIsVisible() and GUIItemContainsPoint(row.body, x, y) then
+            self:Jump(i)
+            return true
+        end
+    end
+    if not GUIItemContainsPoint(self.panel, x, y) then
+        self:Close()   -- click outside = cancel
+    end
+    return true
 end
 
 function GUIVTGateMenu:SendKeyEvent(key, down)
@@ -149,11 +287,7 @@ function GUIVTGateMenu:SendKeyEvent(key, down)
 
     local index = kNumberKeys[key]
     if index then
-        local gateId = self.destinationIds[index]
-        if gateId then
-            Client.SendNetworkMessage("VTNexusTeleport", { pylonId = self.pylonId, gateId = gateId }, true)
-            self:Close()
-        end
+        self:Jump(index)
         return true   -- swallow number keys while the menu is open (no weapon switch)
     end
 
