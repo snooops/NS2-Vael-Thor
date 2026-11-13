@@ -216,10 +216,10 @@ function GUIVTCrosshair:DrawSingularity(player, weapon, flash)
         self:Put("s_drop" .. i, kPip, x, y, U(9 - i * 1.5), WithAlpha(col, 1 - (i - 1) * 0.22))
     end
 
-    local clip = weapon.clip or 0
-    local size = math.max(1, weapon.GetClipSize and weapon:GetClipSize() or 4)
-    for i = 1, size do
-        self:Put("s_ammo" .. i, kPip, U(26), U(-12) + (i - 1) * U(8), U(6), i <= clip and col or kColDim)
+    -- one pip per shot the shared energy cell can pay for (kVTSingularityEnergyCost each)
+    local shots, maxShots = VT_GetSingularityShots(player)
+    for i = 1, math.max(1, maxShots) do
+        self:Put("s_ammo" .. i, kPip, U(26), U(-12) + (i - 1) * U(8), U(6), i <= shots and col or kColDim)
     end
 end
 

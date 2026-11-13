@@ -316,6 +316,13 @@ function GUIVTPlayerHUD:UpdateWeapon(player)
             local clip = weapon.clip or 0
             self.weaponValue:SetText(string.format("ENERGY %d / %d", clip, kVTCarbineEnergy))
             SetBar(self.weaponBar, clip / kVTCarbineEnergy, clip / kVTCarbineEnergy < 0.25 and kColWarn or kColEnergy)
+        elseif weapon:isa("VTSingularityLauncher") then
+            -- runs on the carbine's energy cell
+            local cell = VT_GetEnergyCell(player)
+            local energy = cell and cell.clip or 0
+            local frac = energy / kVTCarbineEnergy
+            self.weaponValue:SetText(string.format("ENERGY %d / %d  -  %d per shot", energy, kVTCarbineEnergy, kVTSingularityEnergyCost))
+            SetBar(self.weaponBar, frac, energy < kVTSingularityEnergyCost and kColWarn or kColEnergy)
         elseif weapon.clip and weapon.GetClipSize then
             local size = math.max(1, weapon:GetClipSize())
             self.weaponValue:SetText(string.format("%d  |  %d", weapon.clip, weapon.ammo or 0))

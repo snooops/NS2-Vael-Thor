@@ -470,9 +470,15 @@ kVTClawsDamage              = 60
 kVTClawsRange               = 1.6
 kVTSingularityDamage        = 25
 kVTSingularityRadius        = 4.5
-kVTSingularityPull          = 7      -- m/s impulse toward the anomaly
-kVTSingularityPullMaxMass   = 200    -- only light units get pulled
+kVTSingularityPull          = 8      -- m/s pull speed toward the anomaly's centre
+kVTSingularityPullMaxMass   = 200    -- only light units get pulled (skulk 45, lerk 54, gorge 80, fade 158; not onos 453)
+kVTSingularityPullDuration  = 1.5    -- s the vortex keeps pulling after detonation
+kVTSingularityPullTickInterval = 0.05
+kVTSingularityPullBlendRate = 8      -- 1/s: how hard the target's velocity is steered toward the pull (per tick dt * this)
+kVTSingularityHoldRadius    = 0.6    -- m: inside this the target is held (horizontal speed damped to 0)
+kVTSingularityLift          = 1.0    -- m/s upward while being dragged, so ground friction doesn't cancel the pull
 kVTSingularitySlowDuration  = 3
+kVTSingularityEnergyCost    = 17     -- per shot, from the Plasma Carbine's energy cell (no ammo, no reload)
 
 -- ----------------------------------------------------------------------------
 -- Helpers usable in every VM

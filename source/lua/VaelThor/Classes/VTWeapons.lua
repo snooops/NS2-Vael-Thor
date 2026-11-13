@@ -612,6 +612,9 @@ Shared.LinkClassToMap("VTSubjectClaws", VTSubjectClaws.kMapName, {})
 -- ----------------------------------------------------------------------------
 -- Singularity bolt: a mini gravity anomaly. Slows (electrifies) enemy players
 -- in range and pulls light units toward its centre.
+-- Impact fuse: detonates on its first contact with anything - world geometry,
+-- an enemy, a friendly structure or soldier - instead of bouncing like a
+-- vanilla grenade. (Only enemies take the effect, see Detonate.)
 -- ----------------------------------------------------------------------------
 class 'VTSingularityBolt' (Grenade)
 
@@ -621,9 +624,9 @@ VTSingularityBolt.kModelName         = Grenade.kModelName
 VTSingularityBolt.kRadius            = Grenade.kRadius
 VTSingularityBolt.kDetonateRadius    = Grenade.kDetonateRadius
 VTSingularityBolt.kMinLifeTime       = Grenade.kMinLifeTime
-VTSingularityBolt.kClearOnImpact     = Grenade.kClearOnImpact
+VTSingularityBolt.kClearOnImpact     = true    -- stop the (client-predicted) flight at the first impact
 VTSingularityBolt.kClearOnEnemyImpact= Grenade.kClearOnEnemyImpact
-VTSingularityBolt.kNeedsHitEntity    = Grenade.kNeedsHitEntity
+VTSingularityBolt.kNeedsHitEntity    = false   -- ProcessHit also for walls / floor (no hit entity)
 VTSingularityBolt.kMinVelocityToMove = Grenade.kMinVelocityToMove
 
 function VTSingularityBolt:GetWeaponTechId()
@@ -632,37 +635,105 @@ end
 
 if Server then
 
+    -- Any impact detonates (vanilla: only enemies, otherwise bounce).
+    function VTSingularityBolt:ProcessHit(targetHit, surface, normal, endPoint)
+        if not self.vtDetonated then
+            self.vtImpactNormal = normal and Vector(normal) or nil
+            self:Detonate(targetHit)
+        end
+    end
+
+    local function GetPullTargets(self)
+        local targets = {}
+        local enemyTeam = GetEnemyTeamNumber(self:GetTeamNumber())
+        for _, target in ipairs(GetEntitiesForTeamWithinRange("Player", enemyTeam, self.vtCentre, kVTSingularityRadius)) do
+            if target:GetIsAlive() and target.GetMass and target:GetMass() <= kVTSingularityPullMaxMass
+                    and target.GetVelocity and target.SetVelocity then
+                targets[#targets + 1] = target
+            end
+        end
+        return targets
+    end
+
+    -- Vortex tick: steer every light enemy in range toward the centre. Blending the velocity (instead of one
+    -- impulse) keeps pulling against the target's own movement and ground friction; close to the centre the
+    -- horizontal speed is damped so they are held there instead of overshooting.
+    function VTSingularityBolt:VT_PullTick()
+
+        local now = Shared.GetTime()
+        local dt = math.max(0.01, now - (self.vtLastPullTick or now))
+        self.vtLastPullTick = now
+
+        if now >= self.vtPullEnd then
+            local params = {}
+            params[kEffectHostCoords] = Coords.GetTranslation(self.vtCentre)
+            self:TriggerEffects("pulse_grenade_explode", params)   -- the anomaly collapses
+            DestroyEntity(self)
+            return false
+        end
+
+        local blend = Clamp(dt * kVTSingularityPullBlendRate, 0, 1)
+        for _, target in ipairs(GetPullTargets(self)) do
+            local toCentre = self.vtCentre - target:GetOrigin()
+            local horizontal = Vector(toCentre.x, 0, toCentre.z)
+            local dist = horizontal:GetLength()
+            local velocity = target:GetVelocity()
+            local desired
+            if dist > kVTSingularityHoldRadius then
+                -- full pull speed far out, easing off near the centre
+                local speed = kVTSingularityPull * Clamp(dist / 1.5, 0.35, 1)
+                desired = GetNormalizedVector(horizontal) * speed
+            else
+                desired = Vector(0, 0, 0)   -- held in the core
+            end
+            desired.y = Clamp(toCentre.y * 3, -kVTSingularityPull, kVTSingularityPull)
+            if desired.y < kVTSingularityLift and dist > kVTSingularityHoldRadius then
+                desired.y = kVTSingularityLift   -- off the ground, so ground friction doesn't eat the pull
+            end
+            target:SetVelocity(velocity + (desired - velocity) * blend)
+        end
+
+        return true
+
+    end
+
     function VTSingularityBolt:Detonate(targetHit)
 
+        if self.vtDetonated then
+            return   -- impact and lifetime callback in the same tick
+        end
+        self.vtDetonated = true
+
         local origin = self:GetOrigin()
+        -- centre of the anomaly: a little off the surface it hit, at roughly body height on floors
+        local normal = self.vtImpactNormal or Vector(0, 1, 0)
+        self.vtCentre = origin + normal * 0.4
         local enemyTeam = GetEnemyTeamNumber(self:GetTeamNumber())
 
-        for _, target in ipairs(GetEntitiesForTeamWithinRange("Player", enemyTeam, origin, kVTSingularityRadius)) do
-
+        -- one-time damage and slow, as before
+        for _, target in ipairs(GetEntitiesForTeamWithinRange("Player", enemyTeam, self.vtCentre, kVTSingularityRadius)) do
             if target:GetIsAlive() then
-
-                local toTarget = target:GetOrigin() - origin
+                local toTarget = target:GetOrigin() - self.vtCentre
                 self:DoDamage(kVTSingularityDamage, target, target:GetOrigin(), GetNormalizedVector(toTarget), "none")
-
                 if target.SetElectrified then
                     target:SetElectrified(kVTSingularitySlowDuration)
                 end
-
-                if target.GetMass and target:GetMass() <= kVTSingularityPullMaxMass
-                        and target.GetVelocity and target.SetVelocity and toTarget:GetLength() > 0.5 then
-                    local pull = GetNormalizedVector(-toTarget) * kVTSingularityPull + Vector(0, 1.5, 0)
-                    target:SetVelocity(target:GetVelocity() + pull)
-                end
-
             end
-
         end
 
         local params = { surface = GetSurfaceFromEntity(targetHit) }
         params[kEffectHostCoords] = Coords.GetLookIn(origin, self:GetCoords().zAxis)
         self:TriggerEffects("pulse_grenade_explode", params)
 
-        DestroyEntity(self)
+        -- stay as the vortex for kVTSingularityPullDuration (the grenade model is hidden)
+        self:SetOrigin(self.vtCentre)
+        if self.SetModel then
+            self:SetModel(nil)
+        end
+        self.vtPullEnd = Shared.GetTime() + kVTSingularityPullDuration
+        self.vtLastPullTick = Shared.GetTime()
+        self:VT_PullTick()
+        self:AddTimedCallback(VTSingularityBolt.VT_PullTick, kVTSingularityPullTickInterval)
 
     end
 
@@ -672,10 +743,83 @@ Shared.LinkClassToMap("VTSingularityBolt", VTSingularityBolt.kMapName, {})
 
 -- ----------------------------------------------------------------------------
 -- Singularity Launcher (Grenade Launcher) firing singularity bolts.
+-- No ammo and no reload: every shot takes kVTSingularityEnergyCost from the
+-- Plasma Carbine's energy cell (its clip), the pool the Subvention field
+-- recharges. The launcher's own clip is kept full only so the grenade launcher
+-- animations show loaded shells and never start a reload.
 -- ----------------------------------------------------------------------------
 class 'VTSingularityLauncher' (GrenadeLauncher)
 
 VTSingularityLauncher.kMapName = kVTMapNames.Singularity
+
+local kSingularityShells = 4   -- cosmetic: shells shown by the view model
+
+-- The shared energy cell: the owner's Plasma Carbine.
+function VT_GetEnergyCell(player)
+    return player and player.GetWeapon and player:GetWeapon(kVTMapNames.Carbine) or nil
+end
+
+-- Shots the energy allows right now / at full energy (HUD, crosshair).
+function VT_GetSingularityShots(player)
+    local cell = VT_GetEnergyCell(player)
+    local energy = cell and cell.clip or 0
+    return math.floor(energy / kVTSingularityEnergyCost), math.floor(kVTCarbineEnergy / kVTSingularityEnergyCost)
+end
+
+function VTSingularityLauncher:OnCreate()
+    GrenadeLauncher.OnCreate(self)
+    self.clip = kSingularityShells
+    self.ammo = 0
+end
+
+function VTSingularityLauncher:GetClipSize()
+    return kSingularityShells
+end
+
+function VTSingularityLauncher:GetMaxClips()
+    return 0
+end
+
+function VTSingularityLauncher:CanReload()
+    return false
+end
+
+function VTSingularityLauncher:GetNeedsAmmo(includeClip)
+    return false   -- no ammo packs: it runs on energy
+end
+
+local function HasEnergy(player)
+    local cell = VT_GetEnergyCell(player)
+    return cell ~= nil and (cell.clip or 0) >= kVTSingularityEnergyCost
+end
+
+-- Not enough energy: don't even start the fire animation.
+function VTSingularityLauncher:GetIsPrimaryAttackAllowed(player)
+    return GrenadeLauncher.GetIsPrimaryAttackAllowed(self, player) and HasEnergy(player)
+end
+
+-- Checked on the animation's "shoot" tag (ClipWeapon:OnTag), right before FirePrimary.
+function VTSingularityLauncher:GetIsAllowedToShoot(player)
+    return GrenadeLauncher.GetIsAllowedToShoot(self, player) and HasEnergy(player)
+end
+
+-- Pay the energy (predicted like a carbine shot: the cell's clip is networked) and
+-- restart the cell's recharge delay, then fire.
+function VTSingularityLauncher:FirePrimary(player)
+    local cell = VT_GetEnergyCell(player)
+    if not cell or (cell.clip or 0) < kVTSingularityEnergyCost then
+        return
+    end
+    cell.clip = cell.clip - kVTSingularityEnergyCost
+    cell.timeAttackFired = Shared.GetTime()
+    self:ShootGrenade(player)
+end
+
+-- ClipWeapon:OnTag takes one shell per shot: put it back so the clip stays full.
+function VTSingularityLauncher:OnTag(tagName)
+    GrenadeLauncher.OnTag(self, tagName)
+    self.clip = kSingularityShells
+end
 
 -- Fixed first-person model: the vanilla grenade launcher view with the Vanguard's own arms
 -- (art/weapons/build_vanguard_view_arms.sh). Also avoids the skin lookup kViewModels[sex][variant], which

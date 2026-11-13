@@ -105,7 +105,7 @@ Shield Matrix I–III adds +15 max psi shield per level (armor stays fixed).
 | Module: **Phase Dash**, a 7 m directional teleport (8 s cooldown) | 🟡 |
 | Module: **Shield Overdrive** (rank II): full shields and +20 % speed for 5 s, then 8 s without shields | 🟡 |
 | Primary mod: **Overcharge Core** (rank II): slower, ×1.9 armor-breaking bolts | 🟡 |
-| Secondary: **Singularity Launcher** (rank III): gravity anomaly that slows and pulls light units together (25 dmg, 4.5 m) | 🟡 🎨 (grenade model) |
+| Secondary: **Singularity Launcher** (rank III): gravity anomaly that slows and pulls light units together (25 dmg, 4.5 m); impact fuse, detonates on first contact with anything; no ammo, 17 energy per shot from the carbine's energy cell | 🟡 🎨 (grenade model) |
 | Player model: "Silver Sentinel" (chrome with purple strips) | 🔧 rigged model not yet tested |
 | **First-person arms**: the Silver Sentinel's own chrome arms on the carbine, knife and Singularity Launcher (marine animations) | 🔧 |
 

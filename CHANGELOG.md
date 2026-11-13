@@ -18,6 +18,22 @@ Balance numbers are always first pass.
   be its infrastructure.
 
 ### Changed
+- **Singularity pull fixed: a real vortex.** It used to give each enemy a single 7 m/s shove on detonation, which ground
+  friction and the target's own movement cancelled almost at once, so nobody was pulled in. The anomaly now stays
+  active for 1.5 s (`kVTSingularityPullDuration`, model hidden) at a point 0.4 m off the surface it hit. Every
+  0.05 s it steers each light enemy in 4.5 m (mass ≤ 200: skulk, lerk, gorge, fade; not onos) toward its centre at
+  up to 8 m/s, with a small lift so ground friction doesn't eat the pull, and holds them within 0.6 m of the core.
+  Damage and slow still apply once, at detonation. A second pulse effect marks the collapse. ✅
+- **Singularity Launcher runs on energy.** No ammo, no reserve and no reload animation anymore: each shot takes
+  17 energy (`kVTSingularityEnergyCost`) from the Plasma Carbine's energy cell, the same pool that recharges inside
+  the Subvention field. A shot also restarts the cell's 0.5 s recharge delay. Without 17 energy the launcher doesn't
+  fire at all. The launcher's own clip stays full, so its animations show loaded shells. The HUD shows the shared
+  energy ("ENERGY x / 80 – 17 per shot", red below one shot), and the crosshair pips count the affordable shots
+  (4 at full energy). ✅ *Why:* one energy economy for the Vanguard instead of separate grenade ammo.
+- **Singularity Launcher: impact fuse.** The singularity bolt now detonates on its first contact with anything (wall,
+  floor, enemy, friendly structure or soldier) instead of bouncing like a vanilla grenade until it touches an enemy
+  or its timer runs out. Client prediction stops at the impact too (`kClearOnImpact`). Only enemies are affected,
+  as before. ✅ *Why:* bouncing grenades didn't fit a gravity anomaly and were hard to place.
 - **Nexus Gate menu (pylon jump) redesigned** in the style of the Synthesis Matrix menu: dimmed screen, solid panel
   with the crystal frame, a mouse cursor and one clickable row per active Nexus Gate (sector, live distance,
   integrity in red below 50%). Keys 1–9 still work; Esc, right click or a click outside the panel cancels. While the
