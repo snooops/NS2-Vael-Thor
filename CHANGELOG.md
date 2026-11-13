@@ -9,6 +9,12 @@ Balance numbers are always first pass.
 ## 2026-11-13
 
 ### Changed
+- **Synthesis Matrix menu, second pass** (feedback on #1): more opaque (solid dark panel and card bodies under the
+  crystal frames, plus a dimmed screen behind the menu). Clicks now arrive through a MouseTracker listener, which
+  runs before the other GUI scripts, and the cursor is kept visible while the menu is open. Every text is shortened
+  with "..." to fit its box, and the panel is wider (1100 × 760). Each caste card shows a **portrait** of its in-game
+  model: `art/ui/make_caste_portraits.sh` renders the rigged player models with their purple in-game textures in
+  Blender (`render_caste_portrait.py`) into `output/ui/vaelthor/caste_portraits.dds`. ✅
 - **All Vael'Thor buildings 20% smaller**, done in Lua without rebuilding the models: `kVTStructureModelScale = 0.8`
   (`Hooks/Globals.lua`). `VT_InstallStructureScale` shrinks each building's model in `OnAdjustModelCoords`, so
   rendering, attachment points and the model origin all scale with it. The obelisk head height (targeting, beam

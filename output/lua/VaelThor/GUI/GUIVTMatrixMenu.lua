@@ -2,14 +2,18 @@
 -- GUIVTMatrixMenu - the Synthesis Matrix menu of a dead Vael'Thor soldier
 -- (issue #1, styled after the alien evolve menu).
 --
--- Opens on death with a mouse cursor:
---   * four caste cards (click, or keys 1-4) with quota, cost and lock state
+-- Opens on death with a mouse cursor over a dimmed screen:
+--   * four caste cards with a portrait (ui/vaelthor/caste_portraits.dds, from
+--     art/ui/make_caste_portraits.sh), quota, cost and lock state (click, or keys 1-4)
 --   * three loadout rows (left click / right click cycles; keys 5, R, E)
 --   * SYNTHESIZE button (click, or Space). There is no automatic respawn: the
 --     server synthesizes the player only after this request. Asking while the
 --     matrix timer still runs arms the request ("ARMED"); click again to cancel.
 --   * B hides / shows the menu (hidden: a small status chip stays at the bottom,
 --     camera control comes back). The number keys keep working while hidden.
+--
+-- Clicks come through a MouseTracker button listener (it runs before the GUI
+-- scripts, so spectator GUIs can't swallow them). Every text is fitted to its box.
 --
 -- Every choice goes to the server as a VTMatrixChoice message (VTSpectator:
 -- VT_ApplyChoice), which works in all spectator camera modes. The server mirrors
@@ -18,27 +22,37 @@
 
 class 'GUIVTMatrixMenu' (GUIScript)
 
-local kPanelTex = PrecacheAsset("ui/vaelthor/hud_panel.dds")
-local kChipTex  = PrecacheAsset("ui/vaelthor/hud_chip.dds")
+local kPanelTex     = PrecacheAsset("ui/vaelthor/hud_panel.dds")
+local kChipTex      = PrecacheAsset("ui/vaelthor/hud_chip.dds")
+local kPortraitTex  = PrecacheAsset("ui/vaelthor/caste_portraits.dds")
+local kPortraitCell = 256          -- atlas: 4 cells of 256x256, order as kCastes
 
-local kColPanel    = Color(1, 1, 1, 0.95)
-local kColCard     = Color(0.80, 0.70, 1.00, 0.85)
-local kColCardHover = Color(1.00, 0.92, 1.00, 1)
-local kColSelected = Color(0.45, 1.00, 1.00, 1)
-local kColLocked   = Color(0.50, 0.48, 0.56, 0.75)
-local kColText     = Color(0.88, 0.80, 1.00, 1)
-local kColDim      = Color(0.62, 0.52, 0.78, 1)
-local kColKey      = Color(0.78, 0.45, 1.00, 1)
-local kColCyan     = Color(0.35, 0.95, 1.00, 1)
-local kColReady    = Color(0.55, 1.00, 0.85, 1)
-local kColWarn     = Color(1.00, 0.42, 0.42, 1)
-local kColActive   = Color(1.00, 0.85, 1.00, 1)
+local kColDim       = Color(0, 0, 0, 0.55)                 -- full-screen dimming behind the menu
+local kColBody      = Color(0.035, 0.018, 0.07, 0.96)      -- solid panel body
+local kColCardBody  = Color(0.07, 0.035, 0.13, 0.97)
+local kColCardBodyHover = Color(0.13, 0.07, 0.22, 0.98)
+local kColCardBodySel   = Color(0.05, 0.16, 0.20, 0.98)
+local kColFrame     = Color(0.80, 0.70, 1.00, 1)
+local kColFrameHover = Color(1.00, 0.92, 1.00, 1)
+local kColSelected  = Color(0.45, 1.00, 1.00, 1)
+local kColLocked    = Color(0.45, 0.43, 0.52, 1)
+local kColText      = Color(0.92, 0.86, 1.00, 1)
+local kColDimText   = Color(0.68, 0.60, 0.82, 1)
+local kColKey       = Color(0.80, 0.50, 1.00, 1)
+local kColCyan      = Color(0.35, 0.95, 1.00, 1)
+local kColReady     = Color(0.55, 1.00, 0.85, 1)
+local kColWarn      = Color(1.00, 0.45, 0.45, 1)
+local kColActive    = Color(1.00, 0.85, 1.00, 1)
 
-local kPanelW, kPanelH = 900, 600
-local kCardW, kCardH, kCardGap, kCardY = 200, 170, 12, 104
-local kRowW, kRowH, kRowGap, kRowY = 836, 42, 8, 352
-local kButtonW, kButtonH, kButtonY = 380, 62, 508
-local kMargin = 32
+local kMargin = 28
+local kPanelW, kPanelH = 1100, 760
+local kCardW, kCardH, kCardGap, kCardY = 245, 330, 16, 100
+local kPortraitH = 196
+local kPad = 12                                             -- text inset inside cards / rows
+local kDescY = kCardY + kCardH + 12
+local kRowW, kRowH, kRowGap, kRowY = kPanelW - 2 * kMargin, 42, 8, 512
+local kRowLabelW, kRowValueX, kRowValueW = 210, 250, 420   -- label column, value column
+local kButtonW, kButtonH, kButtonY = 400, 62, 664
 
 local kCastes =
 {
@@ -82,6 +96,28 @@ local function LockReason(requirement, rank)
     return nil
 end
 
+-- Sets text, shortened with "..." so it stays within maxWidth (unscaled GUI units).
+local function SetFittedText(item, text, maxWidth)
+    text = text or ""
+    local limit = GUIScale(maxWidth)
+    local scale = item:GetScale().x
+    if item:GetTextWidth(text) * scale <= limit then
+        item:SetText(text)
+        return
+    end
+    local chars = string.UTF8Encode(text)
+    local lo, hi = 0, #chars
+    while lo < hi do                                    -- longest prefix that fits with "..."
+        local mid = math.ceil((lo + hi) / 2)
+        if item:GetTextWidth(table.concat(chars, "", 1, mid) .. "...") * scale <= limit then
+            lo = mid
+        else
+            hi = mid - 1
+        end
+    end
+    item:SetText(table.concat(chars, "", 1, lo) .. "...")
+end
+
 -- The local client is a dead Vael'Thor soldier: either our own VTSpectator, or
 -- we are following someone (kill cam / first person) and the local player isn't us.
 local function GetIsDeadVTSoldier()
@@ -116,6 +152,30 @@ local function GetMatrixState()
 end
 
 -- ----------------------------------------------------------------------------
+-- mouse: one MouseTracker listener for the whole session (MouseTracker has no
+-- way to unregister), forwarding to the live menu instance.
+-- ----------------------------------------------------------------------------
+local gMatrixMenu
+
+if not VT_MatrixMouseListener then
+    VT_MatrixMouseListener =
+    {
+        OnMouseDown = function(_, key, doubleClick)
+            if gMatrixMenu and (key == InputKey.MouseButton0 or key == InputKey.MouseButton1) then
+                return gMatrixMenu:OnMouseDown(key == InputKey.MouseButton1)
+            end
+            return false
+        end,
+        OnMouseUp = function(_, key)
+            return gMatrixMenu ~= nil and gMatrixMenu:GetIsMenuShown()
+                and (key == InputKey.MouseButton0 or key == InputKey.MouseButton1)
+                and gMatrixMenu:GetIsCursorOverPanel()
+        end,
+    }
+    MouseTracker_ListenToButtons(VT_MatrixMouseListener)
+end
+
+-- ----------------------------------------------------------------------------
 -- construction
 -- ----------------------------------------------------------------------------
 function GUIVTMatrixMenu:Graphic(parent, tex, w, h, x, y, color, layer)
@@ -140,47 +200,70 @@ function GUIVTMatrixMenu:Text(parent, font, x, y, alignX, color)
     t:SetTextAlignmentY(GUIItem.Align_Center)
     t:SetPosition(S(x, y))
     t:SetColor(color or kColText)
-    t:SetLayer(kGUILayerPlayerHUDForeground3)
+    t:SetLayer(kGUILayerPlayerHUDForeground4)
     parent:AddChild(t)
     return t
+end
+
+-- A solid body with the crystal frame texture on top (the frame texture alone is too translucent).
+function GUIVTMatrixMenu:Box(parent, tex, w, h, x, y, bodyColor, frameColor, layer)
+    local body = self:Graphic(parent, nil, w, h, x, y, bodyColor, layer)
+    local frame = self:Graphic(body, tex, w, h, 0, 0, frameColor, layer + 1)
+    return body, frame
 end
 
 function GUIVTMatrixMenu:Initialize()
 
     self.updateInterval = 0   -- every frame: hover highlight and countdown
 
+    -- ---- dim the world behind the menu
+    self.dim = self:Graphic(nil, nil, 0, 0, 0, 0, kColDim, kGUILayerPlayerHUD)
+    self.dim:SetSize(Vector(Client.GetScreenWidth(), Client.GetScreenHeight(), 0))
+
     -- ---- main panel
-    self.panel = self:Graphic(nil, kPanelTex, kPanelW, kPanelH, 0, 0, kColPanel, kGUILayerPlayerHUDForeground1)
+    self.panel = self:Graphic(nil, nil, kPanelW, kPanelH, 0, 0, kColBody, kGUILayerPlayerHUDForeground1)
     self.panel:SetAnchor(GUIItem.Middle, GUIItem.Center)
     self.panel:SetPosition(S(-kPanelW / 2, -kPanelH / 2))
+    self:Graphic(self.panel, kPanelTex, kPanelW, kPanelH, 0, 0, kColFrame, kGUILayerPlayerHUDForeground1)
 
-    self.title = self:Text(self.panel, Fonts.kAgencyFB_Large, kMargin, 40, nil, kColCyan)
+    self.title = self:Text(self.panel, Fonts.kAgencyFB_Large, kMargin, 42, nil, kColCyan)
     self.title:SetText("SYNTHESIS MATRIX")
-    self.rank = self:Text(self.panel, Fonts.kAgencyFB_Small, kMargin, 76, nil, kColDim)
-    self.directives = self:Text(self.panel, Fonts.kAgencyFB_Small, kPanelW - kMargin, 40, GUIItem.Align_Max, kColActive)
+    self.rank = self:Text(self.panel, Fonts.kAgencyFB_Small, kMargin, 76, nil, kColDimText)
+    self.directives = self:Text(self.panel, Fonts.kAgencyFB_Small, kPanelW - kMargin, 42, GUIItem.Align_Max, kColActive)
 
     -- ---- caste cards
     self.cards = {}
     for i, def in ipairs(kCastes) do
         local x = kMargin + (i - 1) * (kCardW + kCardGap)
-        local frame = self:Graphic(self.panel, kChipTex, kCardW, kCardH, x, kCardY, kColCard, kGUILayerPlayerHUDForeground2)
+        local body, frame = self:Box(self.panel, kChipTex, kCardW, kCardH, x, kCardY, kColCardBody, kColFrame, kGUILayerPlayerHUDForeground2)
+        -- above the frame texture, whose translucent body would darken it
+        local portrait = self:Graphic(body, kPortraitTex, kCardW - 2 * kPad, kPortraitH, kPad, kPad, Color(1, 1, 1, 1), kGUILayerPlayerHUDForeground4)
+        -- crop the square atlas cell to the portrait box's aspect (cuts the bottom = legs; heads stay)
+        local cellW = kPortraitCell * (kCardW - 2 * kPad) / kPortraitH
+        cellW = math.min(cellW, kPortraitCell)
+        local u0 = (i - 1) * kPortraitCell + (kPortraitCell - cellW) / 2
+        local visibleH = kPortraitCell * math.min(1, kPortraitH / (kCardW - 2 * kPad))
+        portrait:SetTexturePixelCoordinates(u0, 0, u0 + cellW, visibleH)
+        local textY = kPad + kPortraitH
         local card =
         {
-            def   = def,
-            frame = frame,
-            key   = self:Text(frame, Fonts.kAgencyFB_Small, 16, 24, nil, kColKey),
-            name  = self:Text(frame, Fonts.kAgencyFB_Medium, 16, 58, nil, kColText),
-            info1 = self:Text(frame, Fonts.kAgencyFB_Small, 16, 94, nil, kColDim),
-            info2 = self:Text(frame, Fonts.kAgencyFB_Small, 16, 118, nil, kColDim),
-            lock  = self:Text(frame, Fonts.kAgencyFB_Small, 16, 146, nil, kColWarn),
+            def      = def,
+            body     = body,
+            frame    = frame,
+            portrait = portrait,
+            key      = self:Text(body, Fonts.kAgencyFB_Small, kCardW - kPad, textY + 22, GUIItem.Align_Max, kColKey),
+            name     = self:Text(body, Fonts.kAgencyFB_Medium, kPad, textY + 22, nil, kColText),
+            info1    = self:Text(body, Fonts.kAgencyFB_Small, kPad, textY + 52, nil, kColDimText),
+            info2    = self:Text(body, Fonts.kAgencyFB_Small, kPad, textY + 74, nil, kColDimText),
+            lock     = self:Text(body, Fonts.kAgencyFB_Small, kPad, textY + 100, nil, kColWarn),
         }
         card.key:SetText("[" .. def.key .. "]")
-        card.name:SetText(def.name)
+        SetFittedText(card.name, def.name, kCardW - 2 * kPad - 34)   -- room for the "[n]" on the right
         self.cards[i] = card
     end
 
-    -- description of the selected caste (word wrapped below the cards)
-    self.description = self:Text(self.panel, Fonts.kAgencyFB_Small, kMargin, kCardY + kCardH + 14, nil, kColText)
+    -- description of the selected caste (word wrapped below the cards, at most 2 lines)
+    self.description = self:Text(self.panel, Fonts.kAgencyFB_Small, kMargin, kDescY, nil, kColText)
     self.description:SetTextAlignmentY(GUIItem.Align_Min)
     self.descriptionClass = nil
 
@@ -188,34 +271,37 @@ function GUIVTMatrixMenu:Initialize()
     self.rows = {}
     for i, def in ipairs(kRows) do
         local y = kRowY + (i - 1) * (kRowH + kRowGap)
-        local frame = self:Graphic(self.panel, kChipTex, kRowW, kRowH, kMargin, y, kColCard, kGUILayerPlayerHUDForeground2)
+        local body, frame = self:Box(self.panel, kChipTex, kRowW, kRowH, kMargin, y, kColCardBody, kColFrame, kGUILayerPlayerHUDForeground2)
         local row =
         {
             def   = def,
+            body  = body,
             frame = frame,
-            key   = self:Text(frame, Fonts.kAgencyFB_Small, 16, kRowH / 2, nil, kColKey),
-            label = self:Text(frame, Fonts.kAgencyFB_Small, 60, kRowH / 2, nil, kColDim),
-            value = self:Text(frame, Fonts.kAgencyFB_Small, kRowW / 2 + 40, kRowH / 2, GUIItem.Align_Center, kColText),
-            lock  = self:Text(frame, Fonts.kAgencyFB_Small, kRowW - 16, kRowH / 2, GUIItem.Align_Max, kColWarn),
+            key   = self:Text(body, Fonts.kAgencyFB_Small, kPad + 4, kRowH / 2, nil, kColKey),
+            label = self:Text(body, Fonts.kAgencyFB_Small, kPad + 44, kRowH / 2, nil, kColDimText),
+            value = self:Text(body, Fonts.kAgencyFB_Small, kRowValueX + kRowValueW / 2, kRowH / 2, GUIItem.Align_Center, kColText),
+            lock  = self:Text(body, Fonts.kAgencyFB_Small, kRowW - kPad - 4, kRowH / 2, GUIItem.Align_Max, kColWarn),
         }
         row.key:SetText("[" .. def.key .. "]")
-        row.label:SetText(def.label)
+        SetFittedText(row.label, def.label, kRowLabelW - 44)
         self.rows[i] = row
     end
 
     -- ---- synthesize button
-    self.button = self:Graphic(self.panel, kChipTex, kButtonW, kButtonH, (kPanelW - kButtonW) / 2, kButtonY, kColCard, kGUILayerPlayerHUDForeground2)
+    self.button, self.buttonFrame = self:Box(self.panel, kChipTex, kButtonW, kButtonH, (kPanelW - kButtonW) / 2, kButtonY,
+            kColCardBody, kColFrame, kGUILayerPlayerHUDForeground2)
     self.buttonText = self:Text(self.button, Fonts.kAgencyFB_Medium, kButtonW / 2, kButtonH / 2, GUIItem.Align_Center, kColText)
 
-    self.hint = self:Text(self.panel, Fonts.kAgencyFB_Small, kPanelW / 2, kPanelH - 16, GUIItem.Align_Center, kColDim)
-    self.hint:SetText("[Space] synthesize    [B] hide menu    left / right click: cycle loadout")
+    self.hint = self:Text(self.panel, Fonts.kAgencyFB_Small, kPanelW / 2, kPanelH - 18, GUIItem.Align_Center, kColDimText)
+    SetFittedText(self.hint, "[Space] synthesize    [B] hide menu    left / right click: cycle loadout", kPanelW - 2 * kMargin)
 
     -- ---- small chip while the menu is hidden
-    self.mini = self:Graphic(nil, kChipTex, 420, 46, 0, 0, kColCard, kGUILayerPlayerHUDForeground1)
+    self.mini = self:Box(nil, kChipTex, 460, 46, 0, 0, kColCardBody, kColFrame, kGUILayerPlayerHUDForeground1)
     self.mini:SetAnchor(GUIItem.Middle, GUIItem.Bottom)
-    self.mini:SetPosition(S(-210, -140))
-    self.miniText = self:Text(self.mini, Fonts.kAgencyFB_Small, 210, 23, GUIItem.Align_Center, kColText)
+    self.mini:SetPosition(S(-230, -140))
+    self.miniText = self:Text(self.mini, Fonts.kAgencyFB_Small, 230, 23, GUIItem.Align_Center, kColText)
 
+    self.dim:SetIsVisible(false)
     self.panel:SetIsVisible(false)
     self.mini:SetIsVisible(false)
 
@@ -223,6 +309,7 @@ function GUIVTMatrixMenu:Initialize()
     self.wasDead = false
     self.cursorShown = false
     self.keysDown = {}
+    gMatrixMenu = self
 
 end
 
@@ -231,17 +318,22 @@ function GUIVTMatrixMenu:SetCursorShown(shown)
         self.cursorShown = shown
         MouseTracker_SetIsVisible(shown, "ui/Cursor_MenuDefault.dds", true)
     end
+    -- Spectator camera modes may hide the OS cursor again; keep it up while the menu is open.
+    if shown and not Client.GetMouseVisible() then
+        Client.SetMouseVisible(true)
+    end
 end
 
 function GUIVTMatrixMenu:Uninitialize()
     self:SetCursorShown(false)
-    if self.panel then
-        GUI.DestroyItem(self.panel)   -- destroys all children
-        self.panel = nil
+    for _, key in ipairs({ "dim", "panel", "mini" }) do
+        if self[key] then
+            GUI.DestroyItem(self[key])   -- destroys all children
+            self[key] = nil
+        end
     end
-    if self.mini then
-        GUI.DestroyItem(self.mini)
-        self.mini = nil
+    if gMatrixMenu == self then
+        gMatrixMenu = nil
     end
 end
 
@@ -254,6 +346,11 @@ end
 
 function GUIVTMatrixMenu:GetIsMenuShown()
     return self.panel ~= nil and self.panel:GetIsVisible()
+end
+
+function GUIVTMatrixMenu:GetIsCursorOverPanel()
+    local x, y = Client.GetCursorPosScreen()
+    return GUIItemContainsPoint(self.panel, x, y)
 end
 
 -- ----------------------------------------------------------------------------
@@ -272,7 +369,7 @@ local function GetSynthesisStatus(state)
     local now = Shared.GetTime()
     local readyTime = state.readyTime or 0
     if readyTime <= 0 then
-        return "AWAITING MATRIX", "waiting for a matrix slot", kColDim
+        return "AWAITING MATRIX", "waiting for a matrix slot", kColDimText
     end
     local remaining = readyTime - now
     if remaining > 0 then
@@ -302,7 +399,7 @@ function GUIVTMatrixMenu:UpdateDirectives()
             parts[#parts + 1] = string.format("Iron Discipline %.0fs", info.ironEnd - now)
         end
     end
-    self.directives:SetText(#parts > 0 and ("Directive: " .. table.concat(parts, "  |  ")) or "")
+    SetFittedText(self.directives, #parts > 0 and ("Directive: " .. table.concat(parts, "  |  ")) or "", kPanelW / 2 - kMargin)
 end
 
 function GUIVTMatrixMenu:UpdateMenu(state)
@@ -312,6 +409,7 @@ function GUIVTMatrixMenu:UpdateMenu(state)
     self:UpdateDirectives()
 
     local info = VT_GetEmpireInfo()
+    local textW = kCardW - 2 * kPad
 
     for _, card in ipairs(self.cards) do
         local def = card.def
@@ -325,32 +423,36 @@ function GUIVTMatrixMenu:UpdateMenu(state)
             local count = info and info:GetCount(def.caste) or 0
             local quota = info and info:GetQuota(def.caste) or 0
             full = info ~= nil and count >= quota
-            card.info1:SetText(info and string.format("quota %d / %d", count, quota) or "")
+            SetFittedText(card.info1, info and string.format("quota %d / %d", count, quota) or "", textW)
             local cost = kVTCasteCost[def.caste] or 0
-            card.info2:SetText(cost > 0 and string.format("%d team res", cost) or "free")
+            SetFittedText(card.info2, cost > 0 and string.format("%d team res", cost) or "free", textW)
         else
-            card.info1:SetText("unlimited")
-            card.info2:SetText("free")
+            SetFittedText(card.info1, "unlimited", textW)
+            SetFittedText(card.info2, "free", textW)
         end
 
         if lock then
-            card.lock:SetText("locked: " .. lock)
+            SetFittedText(card.lock, "locked: " .. lock, textW)
         elseif full then
-            card.lock:SetText("quota full")
+            SetFittedText(card.lock, "quota full", textW)
         else
             card.lock:SetText("")
         end
 
-        local color = kColCard
+        local hovered = GetHovered(card.body)
+        local frameColor, bodyColor = kColFrame, kColCardBody
         if selected then
-            color = kColSelected
+            frameColor, bodyColor = kColSelected, kColCardBodySel
         elseif lock then
-            color = kColLocked
-        elseif GetHovered(card.frame) then
-            color = kColCardHover
+            frameColor = kColLocked
         end
-        card.frame:SetColor(color)
-        card.name:SetColor(selected and kColCyan or (lock and kColDim or kColText))
+        if hovered and not selected then
+            frameColor, bodyColor = kColFrameHover, kColCardBodyHover
+        end
+        card.frame:SetColor(frameColor)
+        card.body:SetColor(bodyColor)
+        card.portrait:SetColor((lock and not selected) and Color(0.45, 0.45, 0.5, 0.8) or Color(1, 1, 1, 1))
+        card.name:SetColor(selected and kColCyan or (lock and kColDimText or kColText))
     end
 
     -- description of the selected caste
@@ -362,33 +464,36 @@ function GUIVTMatrixMenu:UpdateMenu(state)
                 text = VT_GetString(def.tip)
             end
         end
-        local maxWidth = GUIScale(kPanelW - 2 * kMargin)
-        self.description:SetText(WordWrap(self.description, text, 0, maxWidth, 2))
+        self.description:SetText(WordWrap(self.description, text, 0, GUIScale(kPanelW - 2 * kMargin), 2))
     end
 
     for _, row in ipairs(self.rows) do
         local def = row.def
         local value = state[def.field] or 1
-        row.value:SetText("<   " .. VT_GetString(def.prefix .. tostring(value)) .. "   >")
+        SetFittedText(row.value, "<   " .. VT_GetString(def.prefix .. tostring(value)) .. "   >", kRowValueW)
         local lock = LockReason(_G[def.req][value], rank)
-        row.lock:SetText(lock and ("locked: " .. lock .. " - default used") or "")
-        row.frame:SetColor(GetHovered(row.frame) and kColCardHover or kColCard)
+        SetFittedText(row.lock, lock and ("locked: " .. lock .. " - default used") or "",
+                kRowW - (kRowValueX + kRowValueW) - kPad - 12)
+        local hovered = GetHovered(row.body)
+        row.frame:SetColor(hovered and kColFrameHover or kColFrame)
+        row.body:SetColor(hovered and kColCardBodyHover or kColCardBody)
     end
 
     local label, _, color = GetSynthesisStatus(state)
-    self.buttonText:SetText(label)
+    SetFittedText(self.buttonText, label, kButtonW - 2 * kPad)
     self.buttonText:SetColor(color)
     local ready = (state.readyTime or 0) > 0 and Shared.GetTime() >= state.readyTime and not state.armed
-    local buttonColor = kColCard
+    local frameColor, bodyColor = kColFrame, kColCardBody
     if GetHovered(self.button) then
-        buttonColor = kColCardHover
+        frameColor, bodyColor = kColFrameHover, kColCardBodyHover
     elseif ready then
         local pulse = 0.75 + 0.25 * math.sin(Shared.GetTime() * 6)
-        buttonColor = Color(kColReady.r * pulse, kColReady.g * pulse, kColReady.b * pulse, 1)
+        frameColor = Color(kColReady.r * pulse, kColReady.g * pulse, kColReady.b * pulse, 1)
     elseif state.armed then
-        buttonColor = kColActive
+        frameColor = kColActive
     end
-    self.button:SetColor(buttonColor)
+    self.buttonFrame:SetColor(frameColor)
+    self.button:SetColor(bodyColor)
 
 end
 
@@ -406,6 +511,7 @@ function GUIVTMatrixMenu:Update(deltaTime)
     self.wasDead = dead
 
     local showMenu = dead and not self.hidden
+    self.dim:SetIsVisible(showMenu)
     self.panel:SetIsVisible(showMenu)
     self.mini:SetIsVisible(dead and self.hidden)
     self:SetCursorShown(showMenu)
@@ -419,7 +525,7 @@ function GUIVTMatrixMenu:Update(deltaTime)
         self:UpdateMenu(state)
     else
         local _, status, color = GetSynthesisStatus(state)
-        self.miniText:SetText("SYNTHESIS MATRIX [B]  -  " .. status)
+        SetFittedText(self.miniText, "SYNTHESIS MATRIX [B]  -  " .. status, 460 - 2 * kPad)
         self.miniText:SetColor(color)
     end
 
@@ -432,19 +538,24 @@ local function SendChoice(choice)
     Client.SendNetworkMessage("VTMatrixChoice", { choice = choice }, true)
 end
 
-function GUIVTMatrixMenu:OnClick(rightButton)
+-- From VT_MatrixMouseListener. Returns true to swallow the click.
+function GUIVTMatrixMenu:OnMouseDown(rightButton)
+
+    if not self:GetIsMenuShown() then
+        return false
+    end
 
     local x, y = Client.GetCursorPosScreen()
 
     for i, card in ipairs(self.cards) do
-        if GUIItemContainsPoint(card.frame, x, y) then
+        if GUIItemContainsPoint(card.body, x, y) then
             SendChoice(i)
             return true
         end
     end
 
     for _, row in ipairs(self.rows) do
-        if GUIItemContainsPoint(row.frame, x, y) then
+        if GUIItemContainsPoint(row.body, x, y) then
             SendChoice(rightButton and row.def.back or row.def.fwd)
             return true
         end
@@ -503,13 +614,7 @@ function GUIVTMatrixMenu:SendKeyEvent(key, down)
         return true
     end
 
-    if key == InputKey.MouseButton0 or key == InputKey.MouseButton1 then
-        if down then
-            return self:OnClick(key == InputKey.MouseButton1)
-        end
-        return false
-    end
-
+    -- mouse buttons are handled by VT_MatrixMouseListener (they arrive there first)
     return false
 
 end
