@@ -158,6 +158,16 @@ if Client and Locale and Locale.ResolveString then
         if override and GetLocalIsVT() then
             return kVTStrings[override]
         end
+        -- Team names (scoreboard, team join, ...) for everyone: team 1 is the Vael'Thor
+        -- unless the match is vanilla; in Vael'Thor vs. Marines team 2 is the marines.
+        if (key == "NAME_TEAM_1" or key == "NAME_TEAM_2") and VT_GetMatchup then
+            local matchup = VT_GetMatchup()
+            if key == "NAME_TEAM_1" and matchup ~= kVTMatchup.MarinesVsAliens then
+                return kVTFactionName
+            elseif key == "NAME_TEAM_2" and matchup == kVTMatchup.VTvsMarines then
+                return oldResolveString("NAME_TEAM_1", ...)
+            end
+        end
         return oldResolveString(key, ...)
     end
 end

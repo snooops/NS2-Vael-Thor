@@ -16,6 +16,16 @@ Balance numbers are always first pass.
   - **Every matchup, for Vael'Thor players:** the use prompt (the "E", "Start Commanding", pickup hints, its progress
     bar) and the damage numbers / world texts are violet. A damage-number colour picked in the advanced options is
     kept. In Vael'Thor vs. Marines the rest stays marine blue, since real marines share the marine team type. ✅
+- **Team name "Vael'Thor"** instead of "Frontiersmen" in the scoreboard and everywhere else vanilla shows the team-1
+  name (locale key `NAME_TEAM_1`, overridden in `Strings.lua` for everyone; in Vael'Thor vs. Marines team 2 is called
+  "Frontiersmen"). `kVTFactionName` is now "Vael'Thor" (was "Vael'Thor Empire"). The ready room's "N players" marker
+  above the team-1 door is violet in Vael'Thor vs. Aliens, and the glowing 3D "MARINES" sign above it is replaced by a violet 3D "VAEL'THOR" whenever team 1 is the
+  Vael'Thor: the vanilla sign props (`marine_join`, `join_marine`, `join_text_01` models) are hidden and
+  `models/vaelthor/signs/vt_join_sign.model` is placed at their coords (incl. scale). The model is built by
+  `art/ui/signs/build_join_sign.sh` in the vanilla model's frame: extruded, bevelled text in the vanilla sign font
+  (Microgramma Bold Extended, ships with NS2), bevels and sides mapped to a bright violet bar, fronts to a dark
+  violet fill, 50% larger than the vanilla letters. Vanilla re-shows props on every local spawn
+  (`SetCommanderPropState`), so the vanilla sign is re-hidden every second and right after that call. ✅
 - **Isolation from other mods** (instead of a "team 3", which NS2 can't do: team 3 is the spectator team and
   everything assumes two playing teams). Balance and gameplay mods for marines no longer reach the Vael'Thor:
   - **Vanilla snapshot:** a second entry `lua/entry/VaelThorBaseline.entry` (Priority 1000, loads before every other

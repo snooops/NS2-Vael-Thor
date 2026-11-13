@@ -1,0 +1,4 @@
+shader = "shaders/Emissive.surface_shader"
+emissiveMap = "models/vaelthor/signs/vt_join_sign.dds"
+normalMap = "materials/dev/dev_normal.dds"
+surface = "thin_metal"

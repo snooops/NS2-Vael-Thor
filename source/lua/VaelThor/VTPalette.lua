@@ -18,6 +18,17 @@ kVTTeamColor       = 0xB873FF                      -- marine: 0x4DB1FF
 kVTDamageColor     = Color(0.80, 0.55, 1.00, 1)   -- damage numbers (marine default option: 0x4DDBFF)
 kVTVoiceColor      = Color(0.80, 0.66, 1.00, 1)   -- voice chat names (marine: 147/255, 206/255, 1)
 
+-- Ready room team-1 join signs: the vanilla sign props are 3D "MARINES" letters. While team 1 is
+-- the Vael'Thor they are hidden and a 3D "VAEL'THOR" model (art/ui/signs/build_join_sign.sh, built in
+-- the vanilla model's frame) is placed at their exact coords (incl. the prop's scale).
+local kJoinSignModel = PrecacheAsset("models/vaelthor/signs/vt_join_sign.model")
+local kJoinSignModels =
+{
+    ["models/props/generic/marine_join.model"]  = true,
+    ["models/props/generic/join_marine.model"]  = true,
+    ["models/props/generic/join_text_01.model"] = true,
+}
+
 local vanilla        -- first-seen vanilla values, to switch back for other matchups
 local applied = false
 
@@ -55,6 +66,7 @@ end
 
 local function Targets()
     local statusColors = FindUpvalue(rawget(_G, "GUIUnitStatus"), "kStatusFontColor")
+    local readyRoomColors = FindUpvalue(rawget(_G, "GUIReadyRoomOrders"), "kTeamColors")
     return
     {
         font        = kMarineFontColor,                                            -- chat, name tags, end screen, ...
@@ -63,6 +75,7 @@ local function Targets()
         voice       = rawget(_G, "GUIVoiceChat") and GUIVoiceChat.kMarineFontColor,
         unitStatus  = type(statusColors) == "table" and statusColors[kMarineTeamType] or nil,
         teamMessage = FindUpvalue(rawget(_G, "GUIMarineTeamMessage"), "kMessageFontColor"),
+        readyRoom   = type(readyRoomColors) == "table" and readyRoomColors[kTeam1Index] or nil,   -- "N players" marker
     }
 end
 
@@ -70,6 +83,7 @@ local kVTColors =
 {
     font = kVTFontColor, teamFloat = kVTTeamColorFloat, scoreboard = kVTTeamColorFloat,
     voice = kVTVoiceColor, unitStatus = kVTTeamColorFloat, teamMessage = kVTFontColor,
+    readyRoom = kVTTeamColorFloat,
 }
 
 -- Recolours every target that exists by now (GUI classes load lazily, so Client.lua calls
@@ -97,6 +111,64 @@ function VT_ApplyPalette()
     kMarineTeamColor = vt and kVTTeamColor or vanilla.teamInt
     applied = vt
 
+    VT_ApplyJoinSigns(VT_GetMatchup ~= nil and VT_GetMatchup() ~= kVTMatchup.MarinesVsAliens)
+
+end
+
+-- Swap the team-1 join sign props for the Vael'Thor sign. The prop list is only walked when the
+-- map's prop list or the wanted state changed (both are checked every second from VT_ApplyPalette),
+-- but the vanilla signs are re-hidden every call: SetCommanderPropState(false) (Player_Client.lua,
+-- on every local player spawn) makes every prop with commAlpha < 1 visible again.
+local signList, signCount, signState
+local signProps = {}
+function VT_ApplyJoinSigns(vt)
+    local props = Client.propList
+    if not props then
+        return
+    end
+    if props ~= signList or #props ~= signCount or vt ~= signState then
+        signList, signCount, signState = props, #props, vt
+        signProps = {}
+        for _, propTable in ipairs(props) do
+            local model = propTable[1]
+            if model and model.model and kJoinSignModels[string.lower(model.model)] then
+                table.insert(signProps, model)
+                if vt then
+                    if not model.vtSign then
+                        local sign = Client.CreateRenderModel(RenderScene.Zone_Default)
+                        sign:SetModel(kJoinSignModel)
+                        sign:SetCoords(model:GetCoords())
+                        sign:SetIsStatic(true)
+                        model.vtSign = sign
+                        Shared.Message(string.format("[Vael'Thor] join sign replaced: %s at %s (commAlpha %s)",
+                                model.model, ToString(model:GetCoords().origin), ToString(model.commAlpha)))
+                    end
+                else
+                    model:SetIsVisible(true)
+                    if model.vtSign then
+                        Client.DestroyRenderModel(model.vtSign)
+                        model.vtSign = nil
+                    end
+                end
+            end
+        end
+    end
+    if vt then
+        for _, model in ipairs(signProps) do
+            model:SetIsVisible(false)
+        end
+    end
+end
+
+-- Re-hide right after vanilla toggles prop visibility (no 1 s flash of "MARINES").
+if Client and SetCommanderPropState and not VT_OrigSetCommanderPropState then
+    VT_OrigSetCommanderPropState = SetCommanderPropState
+    function SetCommanderPropState(isComm)
+        VT_OrigSetCommanderPropState(isComm)
+        if signState then
+            VT_ApplyJoinSigns(signState)
+        end
+    end
 end
 
 -- Is the local client on the Vael'Thor team (also while dead / spectating a teammate)?

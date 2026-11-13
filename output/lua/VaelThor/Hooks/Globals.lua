@@ -83,7 +83,7 @@ end
 -- ----------------------------------------------------------------------------
 -- Faction identity
 -- ----------------------------------------------------------------------------
-kVTFactionName = "Vael'Thor Empire"
+kVTFactionName = "Vael'Thor"
 
 -- ----------------------------------------------------------------------------
 -- Faction matchup (voted in the vote menu, applied on the next map load; see
