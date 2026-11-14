@@ -248,3 +248,32 @@ function VT_GetLocalIsVT()
     return Client.GetLocalClientTeamNumber and kVTTeamIndex ~= nil and kVTTeamIndex ~= kVTNoTeam
             and Client.GetLocalClientTeamNumber() == kVTTeamIndex
 end
+
+-- Team colours by team NUMBER (vanilla GetColorForTeamNumber / GetColorForPlayer assume team 1 = marines, team 2 =
+-- aliens): the Vael'Thor team is violet in every matchup. Used by chat sender names, the kill feed and
+-- PlayerUI_GetTeamColor. Without this, Vael'Thor on team 2 (Marines vs. Vael'Thor) showed alien orange.
+-- Chat message TEXT stays vanilla on purpose (kChatTextColor by team type, the pale chat colour; user decision).
+if Client and not VT_HookedTeamColors then
+VT_HookedTeamColors = true
+
+local function IsVTTeam(teamNumber)
+    return teamNumber ~= nil and kVTTeamIndex ~= nil and kVTTeamIndex ~= kVTNoTeam and teamNumber == kVTTeamIndex
+end
+
+local oldGetColorForTeamNumber = GetColorForTeamNumber
+function GetColorForTeamNumber(teamNumber, ...)
+    if IsVTTeam(teamNumber) then
+        return kVTTeamColor
+    end
+    return oldGetColorForTeamNumber(teamNumber, ...)
+end
+
+local oldGetColorForPlayer = GetColorForPlayer
+function GetColorForPlayer(player, ...)
+    if player ~= nil and player.GetTeamNumber and IsVTTeam(player:GetTeamNumber()) then
+        return kVTTeamColor
+    end
+    return oldGetColorForPlayer(player, ...)
+end
+
+end -- VT_HookedTeamColors

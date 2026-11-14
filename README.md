@@ -240,7 +240,7 @@ The open work in one list.
 - Publishing to the Steam Workshop from Linux with `launchpad.sh`
 - Marines vs. Vael'Thor: the Vael'Thor commander on team 2 works (HUD, clicks, research strip), and marines build without the builder/weapon flicker (2026-11-14)
 - Ready room signs: "VAEL'THOR" above the Vael'Thor door in both matchups (replacing "ALIENS" in Marines vs. Vael'Thor), the other sign vanilla (2026-11-14)
-- Marines vs. Vael'Thor: violet damage numbers for the Vael'Thor on team 2 (2026-11-14)
+- Marines vs. Vael'Thor: violet damage numbers and chat names for the Vael'Thor on team 2, chat text in the vanilla colour (2026-11-14)
 - Building models and hitboxes at 80 % scale (2026-11-13); the Nexus as its own class with Hive-style commander entry
 - Synthesis Matrix menu with manual respawn (#1) and its second pass; Nexus Gate menu (pylon jump); Nexus Recall instead of the Rift Portal (2026-11-13)
 - Singularity Launcher rework: impact fuse, energy cost, real vortex pull (2026-11-13)

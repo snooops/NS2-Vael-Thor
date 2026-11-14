@@ -40,6 +40,10 @@ Balance numbers are always first pass.
   respawn on their own. ✅ *Why:* requested; the instant respawn skipped the death menu.
 
 ### Fixed
+- **Chat names, kill feed and team colours of the Vael'Thor on team 2** (`VTPalette.lua`): in Marines vs. Vael'Thor
+  the Vael'Thor's chat names were alien orange. Vanilla `GetColorForTeamNumber` / `GetColorForPlayer` assume
+  team 2 = aliens. The Vael'Thor team is now violet by team number (chat names, kill feed, `PlayerUI_GetTeamColor`).
+  The message text keeps the vanilla chat colour, like marine and alien messages. ✅
 - **Dead Vael'Thor came back as marines in Marines vs. Vael'Thor** (`Classes/VTSpectator.lua`): after `kill` in
   warmup a Vanguard respawned as a vanilla Marine on team 1, still with parts of the Vael'Thor UI. Vanilla
   `MarineSpectator` (base of the Synthesis Matrix spectator) forces team 1 in `OnCreate` and `OnInitialized`, so a
