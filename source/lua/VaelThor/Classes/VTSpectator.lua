@@ -37,15 +37,32 @@ local function CycleBack(value, enumTable)
     return ((value - 2) % count) + 1
 end
 
+-- Vanilla MarineSpectator forces team 1 in OnCreate AND OnInitialized. In Marines vs. Vael'Thor the empire is
+-- team 2: a dead soldier became a team-1 spectator, landed in the MARINES' respawn queue and came back as a
+-- vanilla Marine on team 1 (instantly in warmup via PlayingTeam:RespawnAllDeadPlayer, at an Infantry Portal in a
+-- round). Put the spectator back on the Vael'Thor team after each vanilla call (server decides; the team number
+-- is networked).
+local function SetVTTeam(self)
+    if Server and (kVTTeamIndex == kTeam1Index or kVTTeamIndex == kTeam2Index) then
+        self:SetTeamNumber(kVTTeamIndex)
+    end
+end
+
 function VTSpectator:OnCreate()
 
     VTBase.MarineSpectator.OnCreate(self)
+    SetVTTeam(self)
 
     self.vtDesiredClass = kVTClass.Vanguard
     self.vtModule       = kVTModule.ShieldBoost
     self.vtPrimaryMod   = kVTPrimaryMod.Standard
     self.vtSecondary    = kVTSecondary.Pistol
 
+end
+
+function VTSpectator:OnInitialized()
+    VTBase.MarineSpectator.OnInitialized(self)
+    SetVTTeam(self)
 end
 
 if Server then
@@ -129,7 +146,7 @@ if Server then
     -- Time from which the matrix may synthesize this player (0 = not queued).
     function VTSpectator:VT_GetSynthReadyTime()
         local entryTime = self.GetRespawnQueueEntryTime and self:GetRespawnQueueEntryTime()
-        return entryTime and (entryTime + kVTRespawnTime) or 0
+        return entryTime and (entryTime + VT_GetRespawnTime()) or 0
     end
 
     -- Checked by VTTeam:UpdateSynthesisMatrix once the timer has run out.

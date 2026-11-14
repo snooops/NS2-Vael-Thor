@@ -180,6 +180,13 @@ kVTSecondary  = enum({ "Pistol", "Singularity" })
 -- Spawning: "Synthesis Matrix"
 -- ----------------------------------------------------------------------------
 kVTRespawnTime          = 9      -- seconds a dead player waits in the matrix
+-- Matrix wait right now: none in warmup (vanilla warmup respawns instantly; the menu still asks).
+function VT_GetRespawnTime()
+    if GetWarmupActive and GetWarmupActive() then
+        return 0
+    end
+    return kVTRespawnTime
+end
 kVTSpawnMinRange        = 2
 kVTSpawnMaxRange        = 6
 

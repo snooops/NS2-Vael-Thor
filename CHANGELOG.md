@@ -8,7 +8,25 @@ Balance numbers are always first pass.
 
 ## 2026-11-14
 
+### Changed
+- **Synthesis Matrix menu in warmup too** (`VTTeam.lua`, `VT_GetRespawnTime` in `Hooks/Globals.lua`): vanilla
+  warmup respawns every dead player instantly. Dead Vael'Thor now get the Synthesis Matrix menu in warmup as well
+  and pick their caste and loadout; SYNTHESIZE works right away (no matrix timer during warmup), bots still
+  respawn on their own. ✅ *Why:* requested; the instant respawn skipped the death menu.
+
 ### Fixed
+- **Dead Vael'Thor came back as marines in Marines vs. Vael'Thor** (`Classes/VTSpectator.lua`): after `kill` in
+  warmup a Vanguard respawned as a vanilla Marine on team 1, still with parts of the Vael'Thor UI. Vanilla
+  `MarineSpectator` (base of the Synthesis Matrix spectator) forces team 1 in `OnCreate` and `OnInitialized`, so a
+  dead soldier of the team-2 empire landed in the marines' respawn queue: instant Marine respawn in warmup, Infantry
+  Portal queue in a round. The spectator now goes back to the Vael'Thor team after both vanilla calls. ✅
+  *Why:* matchup 3 moved the Vael'Thor to team 2 (2026-11-13).
+- **Vael'Thor looked like aliens in parts of the UI in Marines vs. Vael'Thor** (`Hooks/Player_Client.lua`): damage
+  numbers and world texts were alien orange instead of violet. Vanilla `PlayerUI_IsOnMarineTeam` /
+  `PlayerUI_IsOnAlienTeam` compare the team *number* with the team *type*, so the Vael'Thor on team 2 counted as
+  aliens. The Vael'Thor team now always counts as marine-type. This also gives them the marine chat style, the
+  marine countdown logo, no floating location text (the Vael'Thor HUD shows it) and the marine minimap arrow colour.
+  ✅ (damage number colour; the other effects not checked yet) *Why:* matchup 3 moved the Vael'Thor to team 2 (2026-11-13).
 - **Vael'Thor commander broken in Marines vs. Vael'Thor** (`Hooks/GUIProduction.lua`): vanilla
   `Commander:SetupHud` passes the commander's team *type* (marine = 1) to `GUIProduction:SetTeam` as a team *index*.
   With the Vael'Thor on team 2 the client has no TeamInfo for team 1, so the research strip errored

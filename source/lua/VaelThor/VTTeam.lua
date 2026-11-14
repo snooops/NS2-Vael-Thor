@@ -181,6 +181,11 @@ function VTTeam:GetHasAbilityToRespawn()
     return #self:GetSynthesisHosts() > 0
 end
 
+-- Warmup: vanilla PlayingTeam:Update respawns every dead player instantly (RespawnAllDeadPlayer). The empire
+-- uses the Synthesis Matrix menu in warmup too (UpdateSynthesisMatrix runs then, without the matrix timer).
+function VTTeam:RespawnAllDeadPlayer()
+end
+
 -- ----------------------------------------------------------------------------
 -- Tech tree
 -- ----------------------------------------------------------------------------
@@ -357,7 +362,7 @@ function VTTeam:Update(timePassed)
         self.vtNextMatrixUpdate = now + kMatrixUpdateInterval
         self:UpdateCasteCounts()
         self:UpdateEmpireStatus()
-        if GetGamerules():GetGameStarted() then
+        if GetGamerules():GetGameStarted() or GetWarmupActive() then
             self:UpdateSynthesisMatrix()
         end
     end
@@ -696,7 +701,7 @@ function VTTeam:UpdateSynthesisMatrix()
     local ready = {}
     for _, player in ipairs(queue) do
         if player and player.GetRespawnQueueEntryTime and player:GetRespawnQueueEntryTime()
-                and now - player:GetRespawnQueueEntryTime() >= kVTRespawnTime
+                and now - player:GetRespawnQueueEntryTime() >= VT_GetRespawnTime()
                 and (not player.VT_GetWantsSynthesis or player:VT_GetWantsSynthesis()) then
             ready[#ready + 1] = player
         end

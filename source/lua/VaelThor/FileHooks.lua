@@ -41,6 +41,8 @@ ModLoader.SetupFileHook("lua/Hud/Marine/GUIMarineHUD.lua", H .. "GUIMarineHUD.lu
 ModLoader.SetupFileHook("lua/GUIClassicAmmo.lua", H .. "GUIClassicAmmo.lua", "post")
 -- Damage numbers / world texts in Vael'Thor colours for Vael'Thor players.
 ModLoader.SetupFileHook("lua/GUIWorldText.lua",    H .. "GUIWorldText.lua",    "post")
+-- UI team checks: vanilla compares team number with team type (Vael'Thor on team 2 looked alien).
+ModLoader.SetupFileHook("lua/Player_Client.lua",  H .. "Player_Client.lua",   "post")
 -- Commander research strip: vanilla passes the team type as team index (breaks the team-2 commander).
 ModLoader.SetupFileHook("lua/GUIProduction.lua",  H .. "GUIProduction.lua",   "post")
 -- Commander ghost preview of the (scaled) Vael'Thor buildings.

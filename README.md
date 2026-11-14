@@ -237,6 +237,8 @@ The open work in one list.
 - Publishing to the Steam Workshop from Linux with `launchpad.sh`
 - Marines vs. Vael'Thor: the Vael'Thor commander on team 2 works (HUD, clicks, research strip), and marines build without the builder/weapon flicker (2026-11-14)
 - Ready room signs: "VAEL'THOR" above the Vael'Thor door in both matchups (replacing "ALIENS" in Marines vs. Vael'Thor), the other sign vanilla (2026-11-14)
+- Marines vs. Vael'Thor: violet damage numbers for the Vael'Thor on team 2 (2026-11-14)
+- Marines vs. Vael'Thor: dead Vael'Thor stay on team 2 and respawn through the Synthesis Matrix; the death menu also appears in warmup (2026-11-14)
 
 **Never verified in-game**
 - The `sv_vt_matchup` admin command, and the matchup being sent to clients (the vote itself works)
