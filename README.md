@@ -9,20 +9,21 @@ antimatter and psionics**.
 
 - **Type:** Custom game mode, pure Lua (the Launch Pad Builder isn't needed)
 - **Runs on:** the server (`tag_support = "Must be run on Server"`)
-- **Team:** replaces team 1 (marines). The aliens are unchanged.
+- **Team:** replaces the marines: team 1 in Vael'Thor vs. Aliens (default), team 2 in Marines vs. Vael'Thor
+  (see [Faction matchups](#faction-matchups)). The aliens are unchanged.
 - **Changes:** see [CHANGELOG.md](CHANGELOG.md) for what changed when, and why.
 
-> **Current state (2026-11-03): pre-alpha, published on the Steam Workshop** as item
+> **Current state (2026-11-14): pre-alpha, published on the Steam Workshop** as item
 > [3833055653](https://steamcommunity.com/sharedfiles/filedetails/?id=3833055653). The Workshop copy is the
-> upload from 16:48; later changes (Subject sprint / wall hold, Bile Bomb, building hitboxes, visible Obelisk
-> beams) aren't uploaded yet.
-> - **Confirmed in-game:** joining the Vael'Thor team no longer crashes; the Vael'Thor top bar; the Praetor
->   cockpit removal; bots playing the castes; `vt_class`; switching to Marines vs. Vael'Thor by vote (the map
->   reloads into the new matchup); Launch Pad publishing on Linux (`launchpad.sh`).
-> - **Next to test:** the building hitboxes (fixed today: they were lying on their side; check with
->   `sv_tests 1` + `collision server`), Sentinel Obelisk beams (fixed today: they were a red hairline, now an
->   own violet texture), Subject sprint / wall hold, Vanguard first-person arms, Bile Bomb vs. the psi shield,
->   Marines vs. Vael'Thor gameplay (team types, marine turrets), plasma bolt hit registration (`vt_hitdebug`).
+> upload from 2026-11-03 16:48; everything after it (see the changelog) isn't uploaded yet.
+> - **Confirmed in-game:** the core loop (Nexus, commander, Synthesis Matrix respawn incl. warmup), building
+>   models and hitboxes at 80 % scale, the Vael'Thor top bar, tech map (J), palette and ready room signs,
+>   **Marines vs. Vael'Thor** with the Vael'Thor on team 2 (commander, respawn, damage-number colour, marine building),
+>   matchup voting, isolation from other mods, bots, Psionic Knife damage. Full list:
+>   [Confirmed in-game so far](#not-polished-or-fine-tuned-yet).
+> - **Next to test:** psi shield + Bile Bomb, plasma bolt hit registration (`vt_hitdebug`), Sentinel Obelisk
+>   beams, Subject sprint / wall hold, the caste models, Marines vs. Vael'Thor scoreboard/map colours and
+>   starting resources, Marines vs. Aliens with the mod loaded.
 > - Most other features are implemented but still 🔧 (see the tables and
 >   [Not polished or fine-tuned yet](#not-polished-or-fine-tuned-yet)).
 
@@ -48,7 +49,7 @@ Every feature in this README has one of these markers:
 
 | Feature | Description | Status |
 |---|---|---|
-| **Imperial Nexus** | The command chair, spawn point and field source. It can be built **anywhere** (25 res). Snapping to a tech point is optional. The empire falls when every Nexus is destroyed. **Taking command works like the Alien Hive:** look at it from any side (or stand within ~1.5 m of its base) and press **E**; a chat message explains a refusal. | 🟡 🔧 (own model and Hive-style entry) |
+| **Imperial Nexus** | The command chair, spawn point and field source. It can be built **anywhere** (25 res). Snapping to a tech point is optional. The empire falls when every Nexus is destroyed. **Taking command works like the Alien Hive:** look at it from any side (or stand within ~1.5 m of its base) and press **E**; a chat message explains a refusal. | 🟡 ✅ (own model and Hive-style entry) |
 | **Subvention field** | Pylons (11 m) and the Nexus (16 m) project a field. Structures only work inside it. Siphons (extractors) ignore room power. Power nodes can't be built, and the start room's power node stays off. | 🟡 |
 | **Proximity auto-build** | Structures inside a field build themselves. There is no welder and no marine "use to build". | 🟡 |
 | **Psi shield (Protoss style)** | Third pool in front of armor and health. **Only the shield regenerates**; armor and health are permanent and nothing can be welded. Players regenerate 4/s inside a field after 3 s out of combat; structures 10/s anywhere after 6 s. Absorbed hits still give hit numbers. A purple shell flashes on every shield hit and stops once the shield is 0. | 🔧 |
@@ -78,11 +79,13 @@ The server can run three matchups. Players pick one through **Vote faction match
 |---|---|---|---|---|
 | 1 | **Vael'Thor vs. Aliens** (default) | Vael'Thor Empire | Kharaa | 🟡 |
 | 2 | **Marines vs. Aliens** | vanilla Marines | Kharaa | 🔧 the mod stays dormant |
-| 3 | **Marines vs. Vael'Thor** | vanilla Marines | Vael'Thor Empire (marine team type) | ✅ switching by vote · 🔧 team swap and gameplay experimental |
+| 3 | **Marines vs. Vael'Thor** | vanilla Marines | Vael'Thor Empire (marine team type) | ✅ switching by vote, Vael'Thor on team 2 (commander, respawn, damage numbers) · 🔧 rest of the gameplay |
 
 - The Imperial Nexus and Resource Siphon are their own classes and tech ids (`VTNexus` / `VTSiphon`), so vanilla marines keep the normal Command Station and Extractor.
-- Plasma Calibration / Shield Matrix reuse the vanilla Weapons/Armor upgrades. Only Vael'Thor players see the Vael'Thor names (a per-viewer locale override).
-- In matchup 3, map power nodes belong to the marines (team 2). The Vael'Thor can destroy them, like the aliens do.
+- Plasma Calibration / Shield Matrix have their own tech ids (isolated from the marine Weapons/Armor research and from mods changing it).
+- In matchup 3, map power nodes belong to the marines (team 1). The Vael'Thor can destroy them, like the aliens do.
+- Vanilla code that confuses team *number* and team *type* is patched for a team-2 Vael'Thor: commander research
+  strip, UI team checks (`PlayerUI_IsOnMarineTeam`), the matrix spectator's team.
 
 
 | Caste | Role | HP / Armor / Psi shield | Unlock | Synth cost |
@@ -146,7 +149,7 @@ Shield Matrix I–III adds +15 max psi shield per level (armor stays fixed).
 
 | Structure | Cost | Build | HP / Armor / Psi shield | Size (W × D × H) | Notes | Status |
 |---|---|---|---|---|---|---|
-| Imperial Nexus | 25 | — | vanilla CS / 800 | 5.0 × 5.0 × 4.2 m | Build anywhere, field 16 m, Hive-style commander entry | 🟡 🔧 |
+| Imperial Nexus | 25 | — | vanilla CS / 800 | 5.0 × 5.0 × 4.2 m | Build anywhere, field 16 m, Hive-style commander entry | 🟡 ✅ |
 | Resource Siphon | 10 | 11 s | vanilla / 500 | 2.3 × 2.6 × 3.2 m | Needs the field, not room power | 🟡 🔧 |
 | Subvention Pylon | 8 | 8 s | 700 / 100 / 250 | 1.4 × 1.7 × 3.2 m | Field 11 m, gate entry point | 🟡 🔧 |
 | Synthesis Chamber | 15 | 18 s | 1600 / 300 / 500 | 2.4 × 2.4 × 2.6 m | Spawn point and main research | 🟡 🔧 |
@@ -159,8 +162,8 @@ Tripo from our concept renders in `art/buildings/concepts/`) with violet glow te
 while built and powered. Marine team skins are ignored for the Vael'Thor team.
 
 **Hitboxes** follow the models: 12-120 convex pieces per building (gaps between prongs, struts and legs stay
-open). Until 2026-11-03 every building hitbox was lying on its side in-game (see the changelog). 🔧 not yet
-re-checked in-game.
+open). Until 2026-11-03 every building hitbox was lying on its side in-game (see the changelog). ✅ confirmed
+in-game on 2026-11-13, together with the 80 % building scale.
 
 ---
 
@@ -238,6 +241,11 @@ The open work in one list.
 - Marines vs. Vael'Thor: the Vael'Thor commander on team 2 works (HUD, clicks, research strip), and marines build without the builder/weapon flicker (2026-11-14)
 - Ready room signs: "VAEL'THOR" above the Vael'Thor door in both matchups (replacing "ALIENS" in Marines vs. Vael'Thor), the other sign vanilla (2026-11-14)
 - Marines vs. Vael'Thor: violet damage numbers for the Vael'Thor on team 2 (2026-11-14)
+- Building models and hitboxes at 80 % scale (2026-11-13); the Nexus as its own class with Hive-style commander entry
+- Synthesis Matrix menu with manual respawn (#1) and its second pass; Nexus Gate menu (pylon jump); Nexus Recall instead of the Rift Portal (2026-11-13)
+- Singularity Launcher rework: impact fuse, energy cost, real vortex pull (2026-11-13)
+- Vael'Thor violet instead of marine blue in vanilla GUIs; team name "Vael'Thor" on the scoreboard (2026-11-13)
+- Isolation from marine balance/gameplay mods (`vt_isolation`, `vt_isolation_selftest`) (2026-11-13)
 - Marines vs. Vael'Thor: dead Vael'Thor stay on team 2 and respawn through the Synthesis Matrix; the death menu also appears in warmup (2026-11-14)
 - Vael'Thor tech map on J (soldiers and commander) (2026-11-14)
 - Vanguard Plasma Carbine without the right-click melee (2026-11-14)
@@ -246,8 +254,8 @@ The open work in one list.
 **Never verified in-game**
 - The `sv_vt_matchup` admin command, and the matchup being sent to clients (the vote itself works)
 - Marines vs. Aliens with the mod loaded: commander menus, HUD/minimap, tech names, Command Station and Extractor all vanilla
-- Marines vs. Vael'Thor: Vael'Thor team on team 2 (marines vanilla on team 1, power nodes stay theirs), starting personal resources for a marine-type team 2, the ready room "N players" markers
-- The Nexus and Siphon as own classes (`Classes/VTNexus.lua`): starting spawn, commander building, Nexus Gate upgrade, minimap blips and skins
+- Marines vs. Vael'Thor: power nodes staying the marines', starting personal resources for the Vael'Thor on team 2, the ready room "N players" markers, scoreboard and map colours, team names, the side effects of the UI team fix (marine chat style, countdown logo, no floating location text)
+- Nexus/Siphon minimap blips
 - Psi shield layer: absorption, regen, the purple hit shell (custom shader), the HUD's third bar, the Bile Bomb rule and infestation shield drain
 - Rigged player models for all four castes (Silver, Cyber, Mecha and Titan Sentinel)
 - Third-person arm poses (`OverrideWeaponName`) for the carbine, blades, claws and Singularity Launcher
@@ -259,7 +267,6 @@ The open work in one list.
 - The new Vael'Thor HUD and the Synthesis Matrix while spectating
 - The fix for weapon textures under BMAC variants (variant forced to default)
 - Everything else from 2026-11-03 (see [CHANGELOG.md](CHANGELOG.md)):
-  - structure models and their new hitboxes (`sv_tests 1`, then `collision server`), Hive-style Nexus entry
   - Sentinel Obelisk beams (visibility fixed: they used a red hairline texture), lenses, Focus Beam, beam
     sound; 360° targeting; no idle ping
   - Subject sprint (3 s, steerable) and wall hold; Bile Bomb vs. the psi shield
@@ -269,8 +276,8 @@ The open work in one list.
     dash / jump changes
 
 **Known rough edges**
-- **Marines vs. Vael'Thor** still has vanilla screens that assume team 2 is the aliens: team-2 colours stay alien orange, some game-end, alert and commander-help texts, and the bot team brains. Expect an in-game fix pass. Team types (damage rules, hit effects) and the vanilla Sentry/ARC targeting are fixed for this matchup; the Predict VM still uses the default matchup.
-- The Predict VM never receives the matchup message (it keeps the default). This should be harmless because Vael'Thor prediction code is class-based, but it hasn't been verified.
+- **Marines vs. Vael'Thor** may still have vanilla screens that assume team 2 is the aliens: some game-end, alert and commander-help texts, the bot team brains, possibly more team-number/team-type mix-ups. The commander HUD, UI colours/checks and the respawn queue are fixed (2026-11-14).
+- The **Predict VM receives garbage matchup messages** (values 1/2/3/nil in bursts around kills; see the changelog's open issues), so its `kVTTeamIndex` is unreliable. The build check is class-based and unaffected; other predicted team checks might not be.
 - **Plasma bolt hit registration** feels unreliable; measure with `vt_hitdebug` before changing the weapon.
 - **Map:** other players' soldiers all show the same soldier icon (they share the vanilla Marine blip type,
   which alien bots rely on); only your own arrow shows your caste.

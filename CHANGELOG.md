@@ -8,6 +8,13 @@ Balance numbers are always first pass.
 
 ## 2026-11-14
 
+### Open issues
+- **Predict VM gets garbage matchup messages.** Its `VTMatchup` hook (`Classes/VTNetwork.lua`) logged 185 messages
+  in one session with the values 1, 2, 3 and nil, in bursts around kills, although the server sends only the real
+  matchup on connect and on team join. Probably other messages decoded as `VTMatchup`; it resets the Predict VM's
+  `kVTTeamIndex` at random. The marines' build check no longer depends on it (class-based), other predicted team
+  checks might.
+
 ### Added
 - **Vael'Thor tech map (J)** (`Hooks/GUITechMap.lua`): J showed the marine tech tree, because vanilla picks the
   layout by team type and the Vael'Thor are marine-type. Vael'Thor players (and their commander) now get their own
@@ -177,8 +184,8 @@ Balance numbers are always first pass.
 ### Open issues
 - **Hit registration** of plasma bolts feels unreliable ("most shots not recognized"). No bug was found in a
   code review, so `vt_hitdebug` was added to measure it (see Added). Waiting for test output.
-- **Building hitboxes not re-checked in-game** after today's two fixes (model-following hulls, solids no longer
-  lying on their side). Check with `sv_tests 1`, then `collision server` next to the structures.
+- ~~**Building hitboxes not re-checked in-game**~~ Resolved: confirmed in-game on 2026-11-13 (with the 20 %
+  building scale, collision included).
 - **Obelisk beam visibility not re-checked in-game** after the texture fix (see Fixed). Check as an alien being
   shot and as a Vael'Thor watching; `log.txt` logs "obelisk beam: drawing a beam on the local player" once.
 
@@ -265,7 +272,7 @@ Balance numbers are always first pass.
   team in Vael'Thor vs. Marines keeps its powered start. 🔧
   *Why:* user request.
 - **Nexus commander entry works like the Alien Hive**: look at the Nexus from any side and press **E**,
-  also by pressing E within ~1.5 m of its base. A chat message explains a refusal. 🔧
+  also by pressing E within ~1.5 m of its base. A chat message explains a refusal. ✅
   *Why:* nobody could take command. The vanilla Command Station only accepts a commander standing *inside*
   it (within 1 m of a point 1.5 m above its centre), which on the Nexus model is inside the core crystal. Its
   login also depended on hatch animation tags that a static model doesn't have.
@@ -275,7 +282,7 @@ Balance numbers are always first pass.
 - **Praetor HUD**: the weapon panel shows "PLASMA MINIGUNS" and the energy instead of "EXOWEAPONHOLDER". 🔧
 - **Psionic Spire is research-only**: E no longer opens the Prototype Lab buy menu (jetpacks / exosuits). 🔧
   *Why:* the Spire inherited the vanilla buy menu by accident.
-- **Rift Portal** counts as deployed once built. **Sentinel Obelisk** aims and fires from its crystal head. 🔧
+- **Rift Portal** counts as deployed once built. **Sentinel Obelisk** aims and fires from its crystal head. 🔧 (Rift Portal removed 2026-11-13)
   *Why:* both vanilla behaviours depended on animations / attach points the new static models don't have.
 - **Team skins are ignored for the Vael'Thor team** (structures, extractors, MACs, ARCs). 🔧
   *Why:* a commander's marine skins would paint marine textures over the Vael'Thor models.
@@ -316,7 +323,8 @@ Balance numbers are always first pass.
   CompileModel wrote our solids already in model space and the root bone carries a bind rotation, so every hitbox
   was turned 90 degrees: the height pointed along +x and half of it was under the floor. Shots went through the
   visible building and hit invisible geometry next to it. `art/buildings/fix_solid_space.py` rewrites the solids
-  bone-relative right after compiling (now part of `build_building.sh`); all eight models are fixed. 🔧
+  bone-relative right after compiling (now part of `build_building.sh`); all eight models are fixed. ✅
+  (confirmed in-game 2026-11-13)
   *Why:* user report ("structures still use the hitboxes of the original marine buildings"). This probably also
   caused the earlier Nexus use-trace failures.
 - **Building hitboxes follow the actual models.** Each structure had 2-3 convex hulls, one per height band,
@@ -326,7 +334,7 @@ Balance numbers are always first pass.
   and gives every piece its own convex hull; hulls that are mostly empty space are split further. 12-120 hulls
   per building (vanilla Hive: 174). Rift Portal: the ring and pillars are solid, the portal membrane and the
   walk-in column at the centre stay open so players can still reach the teleport spot. Collision preview:
-  `art/buildings/preview_collision.py`. 🔧
+  `art/buildings/preview_collision.py`. ✅ (confirmed in-game 2026-11-13)
   *Why:* user request; shots hit empty air next to buildings or passed through solid parts.
 - **Client crash when joining the Vael'Thor team.** The game closed right after connecting, without a script
   error in `log.txt`. Gone after removing the Pylon field pulse (see Removed), which was the cause. ✅
@@ -352,14 +360,15 @@ Balance numbers are always first pass.
   headroom above 1.0. 🔧
 - **Praetor energy display jumping** while firing: energy is now spent only on the server. 🔧
   *Why:* client prediction lowered the value and each server update reset it.
-- **Marine top bar still visible**: the scoreboard kept re-enabling it every frame. 🔧
+- **Marine top bar still visible**: the scoreboard kept re-enabling it every frame. ✅
 - **Exo HUD parts still visible on the Praetor** (fuel bar, rotating rings): the hide now targets the live
   HUD instances instead of a file hook that never took effect. 🔧
 - **Structure collision**: collision solids are bound to a root bone; unbound solids were never placed in the
-  world (players and bullets passed through, the Nexus couldn't be used). 🔧 Only half the fix: the bound
+  world (players and bullets passed through, the Nexus couldn't be used). ✅ Only half the fix: the bound
   solids were then placed rotated onto their side, fixed later the same day (see the first entry above).
 - **Map icons on the full map**: the C map is a subclass of the minimap and needed its own hook. 🔧
-- **Field pulse materials** lacked the normal/specular maps their shader requires (the game warned at load). 🔧
+- **Field pulse materials** lacked the normal/specular maps their shader requires (the game warned at load).
+  (Field pulse removed the same day, see Removed.)
 
 ### Removed
 - **Pylon field pulse** (code `Classes/VTFieldPulse.lua` and the ring model/materials in
