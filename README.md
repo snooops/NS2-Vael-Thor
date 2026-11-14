@@ -236,11 +236,12 @@ The open work in one list.
 - No more Resource Siphon skin error spam
 - Publishing to the Steam Workshop from Linux with `launchpad.sh`
 - Marines vs. Vael'Thor: the Vael'Thor commander on team 2 works (HUD, clicks, research strip), and marines build without the builder/weapon flicker (2026-11-14)
+- Ready room signs: "VAEL'THOR" above the Vael'Thor door in both matchups (replacing "ALIENS" in Marines vs. Vael'Thor), the other sign vanilla (2026-11-14)
 
 **Never verified in-game**
 - The `sv_vt_matchup` admin command, and the matchup being sent to clients (the vote itself works)
 - Marines vs. Aliens with the mod loaded: commander menus, HUD/minimap, tech names, Command Station and Extractor all vanilla
-- Marines vs. Vael'Thor: Vael'Thor team on team 2 (marines vanilla on team 1, power nodes stay theirs), starting personal resources for a marine-type team 2, ready room signs and markers for both sides
+- Marines vs. Vael'Thor: Vael'Thor team on team 2 (marines vanilla on team 1, power nodes stay theirs), starting personal resources for a marine-type team 2, the ready room "N players" markers
 - The Nexus and Siphon as own classes (`Classes/VTNexus.lua`): starting spawn, commander building, Nexus Gate upgrade, minimap blips and skins
 - Psi shield layer: absorption, regen, the purple hit shell (custom shader), the HUD's third bar, the Bile Bomb rule and infestation shield drain
 - Rigged player models for all four castes (Silver, Cyber, Mecha and Titan Sentinel)

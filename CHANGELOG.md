@@ -76,7 +76,7 @@ Balance numbers are always first pass.
 - **Ready room shows both factions correctly:** the 3D "VAEL'THOR" sign replaces the sign above the Vael'Thor
   team's door: the "MARINES" sign in Vael'Thor vs. Aliens, the "ALIENS" sign (`alien_join`, `join_alien`,
   `join_text_05`) in Marines vs. Vael'Thor, where "MARINES" stays. The sign is fitted into each vanilla model's
-  own frame (centre, letter height, front plane), so it also fits the 2x `join_marine` and the alien signs.
+  own frame (centre, letter height, front plane), so it also fits the 2x `join_marine` and the alien signs. ✅
   The "N players" marker is violet over the Vael'Thor door and vanilla over the other in every matchup. 🔧
 - **Map (C) and scoreboard follow the Vael'Thor team, not team 1:** the Vael'Thor's scoreboard column and map
   blips/icons are violet, the other team's vanilla. Vanilla picks map blip teams by team number (team 2 = Alien*),
