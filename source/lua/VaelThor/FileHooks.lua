@@ -9,6 +9,10 @@
 
 local H = "lua/VaelThor/Hooks/"
 
+-- Predict VM: register vanilla's server/client-only "hitreg" message too, so network message ids match the
+-- other VMs (otherwise every Vael'Thor message has the wrong id in the Predict VM).
+ModLoader.SetupFileHook("lua/Hitreg.lua",            H .. "Hitreg.lua",          "post")
+
 -- Skin lookups keyed by class name: alias Vael'Thor classes to marine ones.
 ModLoader.SetupFileHook("lua/Globals.lua",           H .. "Cosmetics.lua",       "post")
 ModLoader.SetupFileHook("lua/MarineVariantMixin.lua", H .. "MarineVariantMixin.lua", "post")

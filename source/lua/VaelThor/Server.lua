@@ -91,9 +91,7 @@ function NS2Gamerules:JoinTeam(player, newTeamNumber, force, ...)
     local savedPres = userId and self.clientpres and self.clientpres[userId] and self.clientpres[userId][newTeamNumber]
     local success, newPlayer = oldJoinTeam(self, player, newTeamNumber, force, ...)
     -- again on every team join: the client's Predict VM may have loaded after the connect message
-    if client then
-        Server.SendNetworkMessage(client, "VTMatchup", { matchup = VT_GetMatchup() }, true)
-    end
+    VT_SendMatchup(client)
     if success and newPlayer and newTeamNumber == kTeam2Index and not savedPres and TeamTwoIsMarineType()
             and newPlayer.SetResources then
         newPlayer:SetResources(kMarineInitialIndivRes)
@@ -102,8 +100,17 @@ function NS2Gamerules:JoinTeam(player, newTeamNumber, force, ...)
 end
 
 -- Clients learn the matchup on connect (team colours/types, Vael'Thor HUDs, locale).
+-- Bots (virtual clients) never get it: they have no client VMs.
+function VT_SendMatchup(client)
+    if not client or client:GetIsVirtual() then
+        return
+    end
+    local message = VT_MakeMatchupMessage(VT_GetMatchup())
+    Server.SendNetworkMessage(client, "VTMatchup", message, true)
+end
+
 Event.Hook("ClientConnect", function(client)
-    Server.SendNetworkMessage(client, "VTMatchup", { matchup = VT_GetMatchup() }, true)
+    VT_SendMatchup(client)
 end)
 
 -- ----------------------------------------------------------------------------

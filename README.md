@@ -250,6 +250,7 @@ The open work in one list.
 - Vael'Thor tech map on J (soldiers and commander) (2026-11-14)
 - Vanguard Plasma Carbine without the right-click melee (2026-11-14)
 - Psionic Knife kills a biomass-1 skulk in two swings (2026-11-14)
+- The client's Predict VM gets the real matchup (network message ids fixed, see the changelog) (2026-11-14)
 
 **Never verified in-game**
 - The `sv_vt_matchup` admin command, and the matchup being sent to clients (the vote itself works)
@@ -277,7 +278,6 @@ The open work in one list.
 
 **Known rough edges**
 - **Marines vs. Vael'Thor** may still have vanilla screens that assume team 2 is the aliens: some game-end, alert and commander-help texts, the bot team brains, possibly more team-number/team-type mix-ups. The commander HUD, UI colours/checks and the respawn queue are fixed (2026-11-14).
-- The **Predict VM receives garbage matchup messages** (values 1/2/3/nil in bursts around kills; see the changelog's open issues), so its `kVTTeamIndex` is unreliable. The build check is class-based and unaffected; other predicted team checks might not be.
 - **Plasma bolt hit registration** feels unreliable; measure with `vt_hitdebug` before changing the weapon.
 - **Map:** other players' soldiers all show the same soldier icon (they share the vanilla Marine blip type,
   which alien bots rely on); only your own arrow shows your caste.

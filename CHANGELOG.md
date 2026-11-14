@@ -8,13 +8,6 @@ Balance numbers are always first pass.
 
 ## 2026-11-14
 
-### Open issues
-- **Predict VM gets garbage matchup messages.** Its `VTMatchup` hook (`Classes/VTNetwork.lua`) logged 185 messages
-  in one session with the values 1, 2, 3 and nil, in bursts around kills, although the server sends only the real
-  matchup on connect and on team join. Probably other messages decoded as `VTMatchup`; it resets the Predict VM's
-  `kVTTeamIndex` at random. The marines' build check no longer depends on it (class-based), other predicted team
-  checks might.
-
 ### Added
 - **Vael'Thor tech map (J)** (`Hooks/GUITechMap.lua`): J showed the marine tech tree, because vanilla picks the
   layout by team type and the Vael'Thor are marine-type. Vael'Thor players (and their commander) now get their own
@@ -40,6 +33,18 @@ Balance numbers are always first pass.
   respawn on their own. ✅ *Why:* requested; the instant respawn skipped the death menu.
 
 ### Fixed
+- **Wrong network message ids in the Predict VM** (`Hooks/Hitreg.lua`): the client's Predict VM never got the
+  real matchup and instead read other messages as `VTMatchup` (272 in one game, in bursts during combat). Each
+  corrupt value reset it to the default matchup, flipping its `kVTTeamIndex` and team types at random. Cause:
+  network message ids follow the registration order, and vanilla `Hitreg.lua` registers its `hitreg` debug
+  message only on the server and the client. In the Predict VM every message registered after it had an id one
+  lower (server = client = 108 messages, Predict 107, `hitreg` missing at position 99), so it decoded
+  `VTBoltImpact` (sent on every plasma bolt hit) as `VTMatchup`, and all five Vael'Thor messages were shifted.
+  The Predict VM now registers the same `hitreg` message in the same place. Confirmed by logging the registration
+  order in every VM: 108 / hitreg at 99 everywhere afterwards, the Predict VM gets the real matchup, no corrupt
+  messages in combat. As a safety net `VTMatchup` carries two 16-bit check values and both client VMs ignore a
+  message that fails them; the server no longer sends it to bots. ✅
+  *Lesson:* every mod network message must be registered in the same order in all three VMs, including Predict.
 - **Chat names, kill feed and team colours of the Vael'Thor on team 2** (`VTPalette.lua`): in Marines vs. Vael'Thor
   the Vael'Thor's chat names were alien orange. Vanilla `GetColorForTeamNumber` / `GetColorForPlayer` assume
   team 2 = aliens. The Vael'Thor team is now violet by team number (chat names, kill feed, `PlayerUI_GetTeamColor`).

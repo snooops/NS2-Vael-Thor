@@ -6,6 +6,9 @@
 Script.Load("lua/VaelThor/VTMatchupVote.lua")
 Script.Load("lua/VaelThor/VTPalette.lua")
 Client.HookNetworkMessage("VTMatchup", function(message)
+    if not VT_GetIsValidMatchupMessage(message) then
+        return   -- see Classes/VTNetwork.lua: never act on a corrupt matchup message
+    end
     VT_ApplyMatchup(message.matchup)
     VT_ApplyPalette()
 end)
