@@ -235,6 +235,7 @@ The open work in one list.
 - Faction matchup switching by vote: the map reloads into Marines vs. Vael'Thor (seen in `log.txt`)
 - No more Resource Siphon skin error spam
 - Publishing to the Steam Workshop from Linux with `launchpad.sh`
+- Marines vs. Vael'Thor: the Vael'Thor commander on team 2 works (HUD, clicks, research strip), and marines build without the builder/weapon flicker (2026-11-14)
 
 **Never verified in-game**
 - The `sv_vt_matchup` admin command, and the matchup being sent to clients (the vote itself works)

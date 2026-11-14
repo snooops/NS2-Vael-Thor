@@ -89,7 +89,7 @@ Balance numbers are always first pass.
   marines as Vael'Thor soldiers, who can't build. The build check (`Hooks/ConstructMixin.lua`) now goes by class
   (`VT_GetIsVTClass`: the mod's own `VT…` classes) instead of team, so it no longer depends on the matchup at
   all. `VTMatchup` is also hooked in the Predict VM (`Classes/VTNetwork.lua`, logs a `predict: matchup` line)
-  and re-sent on every team join. 🔧
+  and re-sent on every team join. ✅
 - **Singularity pull fixed: a real vortex.** It used to give each enemy a single 7 m/s shove on detonation, which ground
   friction and the target's own movement cancelled almost at once, so nobody was pulled in. The anomaly now stays
   active for 1.5 s (`kVTSingularityPullDuration`, model hidden) at a point 0.4 m off the surface it hit. Every
