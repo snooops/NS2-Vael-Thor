@@ -20,6 +20,9 @@ Balance numbers are always first pass.
   (`preview.png`). ✅
 
 ### Changed
+- **Vanguard: no right-click melee.** The Plasma Carbine no longer has the vanilla rifle butt attack
+  (`VTPlasmaCarbine:GetHasSecondary` returns false, `Classes/VTWeapons.lua`). ✅ *Why:* requested; it was just
+  the marine melee.
 - **Synthesis Matrix menu in warmup too** (`VTTeam.lua`, `VT_GetRespawnTime` in `Hooks/Globals.lua`): vanilla
   warmup respawns every dead player instantly. Dead Vael'Thor now get the Synthesis Matrix menu in warmup as well
   and pick their caste and loadout; SYNTHESIZE works right away (no matrix timer during warmup), bots still

@@ -284,6 +284,12 @@ function VTPlasmaCarbine:OnCreate()
     self.vtRechargeProgress = 0
 end
 
+-- No right-click: the vanilla rifle butt melee (ClipWeapon secondary) is not part of the carbine.
+-- Player:SecondaryAttack only calls OnSecondaryAttack when the weapon has a secondary.
+function VTPlasmaCarbine:GetHasSecondary(player)
+    return false
+end
+
 -- ---- Energy cell: the clip *is* the energy, there is no reserve ------------
 function VTPlasmaCarbine:GetClipSize()
     return kVTCarbineEnergy

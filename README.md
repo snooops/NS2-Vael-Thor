@@ -240,6 +240,7 @@ The open work in one list.
 - Marines vs. Vael'Thor: violet damage numbers for the Vael'Thor on team 2 (2026-11-14)
 - Marines vs. Vael'Thor: dead Vael'Thor stay on team 2 and respawn through the Synthesis Matrix; the death menu also appears in warmup (2026-11-14)
 - Vael'Thor tech map on J (soldiers and commander) (2026-11-14)
+- Vanguard Plasma Carbine without the right-click melee (2026-11-14)
 
 **Never verified in-game**
 - The `sv_vt_matchup` admin command, and the matchup being sent to clients (the vote itself works)
