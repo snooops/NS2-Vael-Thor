@@ -45,6 +45,8 @@ ModLoader.SetupFileHook("lua/GUIWorldText.lua",    H .. "GUIWorldText.lua",    "
 ModLoader.SetupFileHook("lua/Player_Client.lua",  H .. "Player_Client.lua",   "post")
 -- Commander research strip: vanilla passes the team type as team index (breaks the team-2 commander).
 ModLoader.SetupFileHook("lua/GUIProduction.lua",  H .. "GUIProduction.lua",   "post")
+-- Tech map (J): Vael'Thor layout instead of the marine tree (vanilla picks it by team type).
+ModLoader.SetupFileHook("lua/GUITechMap.lua",    H .. "GUITechMap.lua",      "post")
 -- Commander ghost preview of the (scaled) Vael'Thor buildings.
 ModLoader.SetupFileHook("lua/GhostModelUI.lua",   H .. "GhostModelUI.lua",    "post")
 

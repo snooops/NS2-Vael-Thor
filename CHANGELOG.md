@@ -8,6 +8,17 @@ Balance numbers are always first pass.
 
 ## 2026-11-14
 
+### Added
+- **Vael'Thor tech map (J)** (`Hooks/GUITechMap.lua`): J showed the marine tech tree, because vanilla picks the
+  layout by team type and the Vael'Thor are marine-type. Vael'Thor players (and their commander) now get their own
+  map in violet: Nexus with Siphon, Pylon (Resonant Pylon) and Nexus Gate (Nexus Recall) on top, then the
+  Synthesis Chamber (Phase Dash, Overcharge, Plasma Calibration 1–3, Shield Matrix 1–3, Shield Generator with
+  Targeting Visor / Aegis Array, Sentinel Obelisk with Prism / Trinity Lens), Authorization Tier 2 (Archon's
+  Throne → Iron Discipline, Shield Overdrive, Psionic Spire with its three researches) and Tier 3 (Singularity
+  Tech → Launcher). Researched, available and running research are shown like vanilla. Marines keep the vanilla
+  map. The Lua layout is generated: edit `art/ui/techmap/layout.py`, run `gen.py`, check with `render.py`
+  (`preview.png`). ✅
+
 ### Changed
 - **Synthesis Matrix menu in warmup too** (`VTTeam.lua`, `VT_GetRespawnTime` in `Hooks/Globals.lua`): vanilla
   warmup respawns every dead player instantly. Dead Vael'Thor now get the Synthesis Matrix menu in warmup as well
