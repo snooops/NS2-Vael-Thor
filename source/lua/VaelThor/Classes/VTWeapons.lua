@@ -530,12 +530,13 @@ function VTPsionicKnife:GetIsDroppable()
     return false
 end
 
--- Structure breaker: extra damage against structures only (see kVTKnifeStructureDamageScalar).
+-- Structure breaker and two-hit skulk killer: kVTKnifeStructureDamageScalar against structures,
+-- kVTKnifePlayerDamageScalar against everything else (Hooks/Globals.lua).
 function VTPsionicKnife:GetVTDamageScalar(target)
     if target and target.GetReceivesStructuralDamage and target:GetReceivesStructuralDamage(VT_Vanilla("kAxeDamageType")) then
         return kVTKnifeStructureDamageScalar
     end
-    return 1
+    return kVTKnifePlayerDamageScalar
 end
 
 -- Axe skins would override the knife's material slots: keep the default.

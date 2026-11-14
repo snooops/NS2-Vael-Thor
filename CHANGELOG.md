@@ -20,6 +20,10 @@ Balance numbers are always first pass.
   (`preview.png`). ✅
 
 ### Changed
+- **Psionic Knife damage ×2 against players** (25 → 50 per swing; `kVTKnifePlayerDamageScalar` in
+  `Hooks/Globals.lua`). A biomass-1 skulk (95 effective HP) now dies to two swings without Plasma Calibration
+  (biomass 2 still two, from biomass 3 three; marine: 7 → 4 swings). Structures unchanged at 100 per swing. ✅
+  *Why:* requested: the knife should two-hit a fresh skulk.
 - **Vanguard: no right-click melee.** The Plasma Carbine no longer has the vanilla rifle butt attack
   (`VTPlasmaCarbine:GetHasSecondary` returns false, `Classes/VTWeapons.lua`). ✅ *Why:* requested; it was just
   the marine melee.

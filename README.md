@@ -99,7 +99,7 @@ Shield Matrix I–III adds +15 max psi shield per level (armor stays fixed).
 |---|---|
 | **Plasma Carbine**: no clip, 80 energy that recharges only inside a field (0.5 s delay, then 16/s). Fires predicted plasma bolts at 80 m/s. Fire rate is ×0.85 of the rifle, damage ×1.15, spread 2.1° (rifle 2.8°). | 🔧 bolts, impacts and sound unverified · hit registration under investigation (`vt_hitdebug`) · 🟡 recharge feel (fixed jitter) |
 | Carbine model: "Falcon Rilfe" by pocolov (CC-BY-4.0) | 🔧 hand position re-fixed after an in-game report and not re-checked |
-| **Psionic Knife** melee: procedural model, ×2 damage vs. structures | 🔧 |
+| **Psionic Knife** melee: procedural model, 50 per swing vs. players (two-hits a biomass-1 skulk ✅), 100 vs. structures | 🔧 |
 | **Fast weapon switch** (×1.5 draw speed) | 🔧 |
 | Module: **Shield Boost** (20 s cooldown) | 🟡 |
 | Module: **Phase Dash**, a 7 m directional teleport (8 s cooldown) | 🟡 |
@@ -241,6 +241,7 @@ The open work in one list.
 - Marines vs. Vael'Thor: dead Vael'Thor stay on team 2 and respawn through the Synthesis Matrix; the death menu also appears in warmup (2026-11-14)
 - Vael'Thor tech map on J (soldiers and commander) (2026-11-14)
 - Vanguard Plasma Carbine without the right-click melee (2026-11-14)
+- Psionic Knife kills a biomass-1 skulk in two swings (2026-11-14)
 
 **Never verified in-game**
 - The `sv_vt_matchup` admin command, and the matchup being sent to clients (the vote itself works)

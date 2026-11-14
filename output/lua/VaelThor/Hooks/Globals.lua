@@ -446,8 +446,12 @@ kVTCarbineDamageScalar      = 1.15   -- per bolt vs the marine rifle (kRifleDama
 kVTCarbineSpreadScalar      = 0.75   -- bolt spread cone vs the marine rifle (2.8 deg -> 2.1 deg)
 -- Psionic Knife: the Vanguard's structure breaker. Axe damage (25 structural, x2 vs structures in vanilla)
 -- times this vs structures only -> 100 per swing vs a Harvester (2400 effective HP): ~24 swings, ~10-13 s
--- (marine axe or rifle: ~20-34 s, skulk vs extractor: ~27 s). Player damage stays at axe level.
+-- (marine axe or rifle: ~20-34 s, skulk vs extractor: ~27 s).
 kVTKnifeStructureDamageScalar = 2.0
+-- Against everything else (players, eggs, ...): 25 x 2 = 50 per swing. A biomass-1 skulk (75 health + 10 armor; armor
+-- takes 70 % of a hit at 2 damage per point -> 95 effective HP) dies to two swings without Plasma Calibration
+-- (2 x 50 = 100 >= 95; 47.5 would be the exact minimum). Marine (100 + 30 armor = 160): 4 swings.
+kVTKnifePlayerDamageScalar = 2.0
 -- Weapon switch: draw animations play this much faster for the Vanguard's weapons (catalyst_speed while drawing).
 kVTDrawSpeedScalar          = 1.5
 kVTKnifeDrawTime            = 0.8    -- axe_view.model 'draw' length (s); the knife has no deploy flag
