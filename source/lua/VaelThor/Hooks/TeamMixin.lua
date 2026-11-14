@@ -4,7 +4,7 @@
 --
 -- Every entity's team type (TeamMixin:GetTeamType, GetTeamTypeFromTeamIndex) comes from a table that is
 -- LOCAL to TeamMixin.lua and filled from kTeam2Type while Shared.lua loads - before the server reads the
--- matchup (Server.lua) or the client receives it (VTMatchup message). So in Vael'Thor vs. Marines the vanilla
+-- matchup (Server.lua) or the client receives it (VTMatchup message). So in Marines vs. Vael'Thor the vanilla
 -- marines on team 2 reported kAlienTeamType: alien-only damage, alien heal clamping, "organic" hit effects,
 -- alien-side target lists.
 --

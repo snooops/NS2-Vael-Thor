@@ -33,9 +33,9 @@ LoadMatchup()
 Event.Hook("MapPreLoad", LoadMatchup)
 Script.Load("lua/VaelThor/VTMatchupVote.lua")
 
--- Team 1 becomes the Vael'Thor Empire unless the match is vanilla; in Vael'Thor
--- vs. Marines team 2 is a vanilla MarineTeam (both teams are marine type then,
--- so team 1 is recognised as the first team built).
+-- The Vael'Thor team (VTTeam) is team 1 in Vael'Thor vs. Aliens and team 2 in
+-- Marines vs. Vael'Thor (both teams are marine type then, so team 1 is recognised
+-- as the first team built; team 1 stays a vanilla MarineTeam).
 local oldBuildTeam = NS2Gamerules.BuildTeam
 function NS2Gamerules:BuildTeam(teamType)
 
@@ -44,10 +44,11 @@ function NS2Gamerules:BuildTeam(teamType)
         return oldBuildTeam(self, teamType)
     end
 
-    if teamType == kMarineTeamType and not self.team1 then
-        return VTTeam()
-    end
-    if matchup == kVTMatchup.VTvsMarines then
+    if teamType == kMarineTeamType then
+        local building = self.team1 and 2 or 1
+        if building == kVTTeamIndex then
+            return VTTeam()
+        end
         return MarineTeam()
     end
     return oldBuildTeam(self, teamType)
@@ -65,16 +66,39 @@ function MarineTeam:SpawnWarmUpStructures()
     end
 end
 
--- Vanilla gives team 2 the alien starting personal resources.
-local oldResetTeam = MarineTeam.ResetTeam
-function MarineTeam:ResetTeam(...)
-    local result = { oldResetTeam(self, ...) }
-    if self:GetTeamNumber() == kTeam2Index then
-        for _, player in ipairs(GetEntitiesForTeam("Player", kTeam2Index)) do
-            player:SetResources(kMarineInitialIndivRes)
+-- Vanilla gives team 2 the alien starting personal resources (round start: PlayingTeam:ResetTeam;
+-- joining: NS2Gamerules:JoinTeam). A marine-type team 2 (the Vael'Thor in Marines vs. Vael'Thor)
+-- gets the marine amount. VTTeam is frozen to the vanilla MarineTeam methods, so both are wrapped.
+local function TeamTwoIsMarineType()
+    return GetTeamTypeFromTeamIndex and GetTeamTypeFromTeamIndex(kTeam2Index) == kMarineTeamType
+end
+for _, cls in ipairs({ MarineTeam, VTTeam }) do
+    local oldResetTeam = cls.ResetTeam
+    cls.ResetTeam = function(self, ...)
+        local result = { oldResetTeam(self, ...) }
+        if self:GetTeamNumber() == kTeam2Index and TeamTwoIsMarineType() then
+            for _, player in ipairs(GetEntitiesForTeam("Player", kTeam2Index)) do
+                player:SetResources(kMarineInitialIndivRes)
+            end
         end
+        return unpack(result)
     end
-    return unpack(result)
+end
+local oldJoinTeam = NS2Gamerules.JoinTeam
+function NS2Gamerules:JoinTeam(player, newTeamNumber, force, ...)
+    local client = player and Server.GetOwner(player)
+    local userId = client and client:GetUserId()
+    local savedPres = userId and self.clientpres and self.clientpres[userId] and self.clientpres[userId][newTeamNumber]
+    local success, newPlayer = oldJoinTeam(self, player, newTeamNumber, force, ...)
+    -- again on every team join: the client's Predict VM may have loaded after the connect message
+    if client then
+        Server.SendNetworkMessage(client, "VTMatchup", { matchup = VT_GetMatchup() }, true)
+    end
+    if success and newPlayer and newTeamNumber == kTeam2Index and not savedPres and TeamTwoIsMarineType()
+            and newPlayer.SetResources then
+        newPlayer:SetResources(kMarineInitialIndivRes)
+    end
+    return success, newPlayer
 end
 
 -- Clients learn the matchup on connect (team colours/types, Vael'Thor HUDs, locale).

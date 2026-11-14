@@ -2,10 +2,14 @@
 -- Vael'Thor icons and colours on the map (C) and the commander minimap (vanilla GUIMinimap / MapBlip).
 --
 -- The networked blip types stay vanilla (CommandStation, Extractor, Marine, ...): alien bots choose and rank
--- their targets by blip type, so new types would blind them. Instead, while the Vael'Thor are active, team 1
--- *is* the Vael'Thor, and team-1 blips of the types the castes/structures reuse are drawn with the Vael'Thor
--- icons from ui/vaelthor/minimap_blip.dds (art/ui/minimap/build_minimap_atlas.sh: the vanilla atlas plus two
--- rows of Vael'Thor icons, so every other icon keeps its vanilla cell). Team-1 blip colours are violet.
+-- their targets by blip type, so new types would blind them. Instead, blips of the Vael'Thor team
+-- (kVTTeamIndex) of the types the castes/structures reuse are drawn with the Vael'Thor icons from
+-- ui/vaelthor/minimap_blip.dds (art/ui/minimap/build_minimap_atlas.sh: the vanilla atlas plus two rows of
+-- Vael'Thor icons, so every other icon keeps its vanilla cell), and that team's blip colours are violet.
+-- Vanilla picks a blip's minimap team from its team NUMBER (MapBlip:UpdateMapBlipTeam: 1 -> Marine*, 2 ->
+-- Alien*), so the Vael'Thor's blip teams are the Marine* ones in Vael'Thor vs. Aliens and the Alien* ones in
+-- Marines vs. Vael'Thor (there are no real aliens then). Everything follows kVTTeamIndex and is undone when it
+-- changes: clients start with the default matchup and get the real one (VTMatchup message) a moment later.
 -- Applied lazily (GUIMinimap / MapBlip client code load late): VT_InstallMinimapLook from Client.lua.
 -- ============================================================================
 
@@ -41,41 +45,67 @@ local kVTOwnIconCells =
     VTPraetor     = { GUIGetSprite(4, 10, kIconSize, kIconSize) },
 }
 
--- team-1 blip colours while the Vael'Thor are active (vanilla: cyan shades)
+-- the Vael'Thor team's blip colours (vanilla: cyan / orange shades)
 local kVTTeamColors =
 {
-    Marine         = Color(0.76, 0.46, 1.00, 1),
-    FriendMarine   = Color(0.90, 0.76, 1.00, 1),   -- Steam friends
-    InactiveMarine = Color(0.26, 0.14, 0.36, 1),   -- unbuilt / unpowered
+    Active   = Color(0.76, 0.46, 1.00, 1),
+    Friend   = Color(0.90, 0.76, 1.00, 1),   -- Steam friends
+    Inactive = Color(0.26, 0.14, 0.36, 1),   -- unbuilt / unpowered
+}
+local kBlipTeamNames =
+{
+    [1] = { Active = "Marine", Friend = "FriendMarine", Inactive = "InactiveMarine" },
+    [2] = { Active = "Alien",  Friend = "FriendAlien",  Inactive = "InactiveAlien" },
 }
 local kVTPlayerColor = Color(0.84, 0.58, 1.00, 1)
 local kTeamColorIndex = 1           -- kBlipColorType.Team (file-local enum in GUIMinimap.lua, 'Team' is first)
 
 local function VTActive()
-    return kVTTeamIndex ~= nil and kVTTeamIndex ~= kVTNoTeam and kVTTeamIndex == kTeam1Index
+    return kVTTeamIndex ~= nil and kBlipTeamNames[kVTTeamIndex] ~= nil
 end
 
-local kVTBlipTeams = {}
-local function IsVTBlipTeam(blipTeam)
-    if not next(kVTBlipTeams) then
-        kVTBlipTeams[kMinimapBlipTeam.Marine] = true
-        kVTBlipTeams[kMinimapBlipTeam.FriendMarine] = true
-        kVTBlipTeams[kMinimapBlipTeam.InactiveMarine] = true
-    end
-    return kVTBlipTeams[blipTeam]
-end
-
-local function ApplyColors(self)
-    if self.vtColorsApplied or not self.blipColorTable then
-        return
-    end
-    self.vtColorsApplied = true
-    for teamName, color in pairs(kVTTeamColors) do
-        local colors = self.blipColorTable[kMinimapBlipTeam[teamName]]
-        if colors then
-            colors[kTeamColorIndex] = color
+-- the Vael'Thor's minimap blip teams for the current kVTTeamIndex: { [blipTeam] = "Active"|"Friend"|"Inactive" }
+local vtBlipTeams, vtBlipTeamsFor
+local function VTBlipTeams()
+    if vtBlipTeamsFor ~= kVTTeamIndex or not vtBlipTeams then
+        vtBlipTeamsFor, vtBlipTeams = kVTTeamIndex, {}
+        for role, name in pairs(kBlipTeamNames[kVTTeamIndex] or {}) do
+            vtBlipTeams[kMinimapBlipTeam[name]] = role
         end
     end
+    return vtBlipTeams
+end
+
+local function IsVTBlipTeam(blipTeam)
+    return VTBlipTeams()[blipTeam] ~= nil
+end
+
+-- Team colours of this minimap for the current kVTTeamIndex: vanilla colours are restored first, so a matchup
+-- change (or the default matchup a client starts with) leaves nothing behind. Returns true if anything changed.
+local function ApplyColors(self)
+    if not self.blipColorTable or self.vtColorState == kVTTeamIndex then
+        return false
+    end
+    self.vtColorState = kVTTeamIndex
+    self.vtOriginalColors = self.vtOriginalColors or {}
+    for _, names in pairs(kBlipTeamNames) do
+        for _, name in pairs(names) do
+            local colors = self.blipColorTable[kMinimapBlipTeam[name]]
+            if colors then
+                if self.vtOriginalColors[name] == nil then
+                    self.vtOriginalColors[name] = colors[kTeamColorIndex]
+                end
+                colors[kTeamColorIndex] = self.vtOriginalColors[name]
+            end
+        end
+    end
+    for blipTeam, role in pairs(VTBlipTeams()) do
+        local colors = self.blipColorTable[blipTeam]
+        if colors then
+            colors[kTeamColorIndex] = kVTTeamColors[role]
+        end
+    end
+    return true
 end
 
 local function ApplyVTIcon(self, item)
@@ -115,12 +145,13 @@ local function WrapMinimapClass(cls)
 
     WrapMethod(cls, "InitMinimapIcon", function(base)
         return function(self, item, blipType, blipTeam)
-            if VTActive() then
-                ApplyColors(self)
-            end
+            ApplyColors(self)
             local result = base(self, item, blipType, blipTeam)
             if VTActive() then
                 ApplyVTIcon(self, item)
+            elseif item.vtIcon then
+                item.vtIcon = nil
+                item:SetTexture(self.iconFileName)     -- vanilla set the cell; give the vanilla atlas back
             end
             return result
         end
@@ -161,13 +192,13 @@ local function WrapMinimapClass(cls)
         end
     end)
 
-    -- instances (and their icons) created before the wrapping: re-initialise every icon once
+    -- instances (and their icons) created before the wrapping or before the matchup arrived: re-initialise
+    -- every icon whenever the Vael'Thor team changes
     WrapMethod(cls, "Update", function(base)
         return function(self, deltaTime)
-            if VTActive() and not self.vtLookReset and self.ResetAll then
+            if self.ResetAll and ApplyColors(self) and (VTActive() or self.vtLookReset) then
                 VT_Breadcrumb("minimap_reset", "map look: resetting map icons")
                 self.vtLookReset = true
-                ApplyColors(self)
                 self:ResetAll()
             end
             return base(self, deltaTime)
@@ -201,9 +232,8 @@ local function WrapMapBlip()
     function MapBlip:GetMapBlipColor(minimap, item)
         local color = base(self, minimap, item)
         if VTActive() and self:GetTeamNumber() == kVTTeamIndex and IsPlayerBlipType(self.mapBlipType) then
-            local blipTeam = self:GetMapBlipTeam(minimap)
-            if blipTeam == kMinimapBlipTeam.InactiveMarine then
-                return kVTTeamColors.InactiveMarine
+            if VTBlipTeams()[self:GetMapBlipTeam(minimap)] == "Inactive" then
+                return kVTTeamColors.Inactive
             end
             return self.highlighted and color or kVTPlayerColor
         end

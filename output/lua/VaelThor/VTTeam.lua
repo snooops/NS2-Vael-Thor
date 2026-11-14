@@ -87,7 +87,7 @@ end
 -- The start location's power node stays OFF for the Vael'Thor (user design: they run on the Subvention field,
 -- not on power nodes). MarineTeam:OnResetComplete builds it via GetPowerPointForLocation and then applies the
 -- commander's skins; the lookup is hidden for that one call so everything else still runs. Only VTTeam is
--- affected: a vanilla marine team (Vael'Thor vs. Marines) keeps its powered start.
+-- affected: a vanilla marine team (Marines vs. Vael'Thor) keeps its powered start.
 function VTTeam:OnResetComplete()
     local oldGetPowerPointForLocation = GetPowerPointForLocation
     GetPowerPointForLocation = function() return nil end

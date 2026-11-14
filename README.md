@@ -17,12 +17,12 @@ antimatter and psionics**.
 > upload from 16:48; later changes (Subject sprint / wall hold, Bile Bomb, building hitboxes, visible Obelisk
 > beams) aren't uploaded yet.
 > - **Confirmed in-game:** joining the Vael'Thor team no longer crashes; the Vael'Thor top bar; the Praetor
->   cockpit removal; bots playing the castes; `vt_class`; switching to Vael'Thor vs. Marines by vote (the map
+>   cockpit removal; bots playing the castes; `vt_class`; switching to Marines vs. Vael'Thor by vote (the map
 >   reloads into the new matchup); Launch Pad publishing on Linux (`launchpad.sh`).
 > - **Next to test:** the building hitboxes (fixed today: they were lying on their side; check with
 >   `sv_tests 1` + `collision server`), Sentinel Obelisk beams (fixed today: they were a red hairline, now an
 >   own violet texture), Subject sprint / wall hold, Vanguard first-person arms, Bile Bomb vs. the psi shield,
->   Vael'Thor vs. Marines gameplay (team types, marine turrets), plasma bolt hit registration (`vt_hitdebug`).
+>   Marines vs. Vael'Thor gameplay (team types, marine turrets), plasma bolt hit registration (`vt_hitdebug`).
 > - Most other features are implemented but still 🔧 (see the tables and
 >   [Not polished or fine-tuned yet](#not-polished-or-fine-tuned-yet)).
 
@@ -78,7 +78,7 @@ The server can run three matchups. Players pick one through **Vote faction match
 |---|---|---|---|---|
 | 1 | **Vael'Thor vs. Aliens** (default) | Vael'Thor Empire | Kharaa | 🟡 |
 | 2 | **Marines vs. Aliens** | vanilla Marines | Kharaa | 🔧 the mod stays dormant |
-| 3 | **Vael'Thor vs. Marines** | Vael'Thor Empire | vanilla Marines (marine team type) | ✅ switching by vote · 🔧 gameplay experimental |
+| 3 | **Marines vs. Vael'Thor** | vanilla Marines | Vael'Thor Empire (marine team type) | ✅ switching by vote · 🔧 team swap and gameplay experimental |
 
 - The Imperial Nexus and Resource Siphon are their own classes and tech ids (`VTNexus` / `VTSiphon`), so vanilla marines keep the normal Command Station and Extractor.
 - Plasma Calibration / Shield Matrix reuse the vanilla Weapons/Armor upgrades. Only Vael'Thor players see the Vael'Thor names (a per-viewer locale override).
@@ -232,14 +232,14 @@ The open work in one list.
 **Confirmed in-game so far**
 - No crash when joining the Vael'Thor team (the Pylon field pulse was the cause and is removed)
 - Vael'Thor top bar, Praetor cockpit removal, bots playing the castes (BotAim fix), `vt_class`
-- Faction matchup switching by vote: the map reloads into Vael'Thor vs. Marines (seen in `log.txt`)
+- Faction matchup switching by vote: the map reloads into Marines vs. Vael'Thor (seen in `log.txt`)
 - No more Resource Siphon skin error spam
 - Publishing to the Steam Workshop from Linux with `launchpad.sh`
 
 **Never verified in-game**
 - The `sv_vt_matchup` admin command, and the matchup being sent to clients (the vote itself works)
 - Marines vs. Aliens with the mod loaded: commander menus, HUD/minimap, tech names, Command Station and Extractor all vanilla
-- Vael'Thor vs. Marines: marine team on team 2, power nodes given to team 2, warmup structures, starting personal resources
+- Marines vs. Vael'Thor: Vael'Thor team on team 2 (marines vanilla on team 1, power nodes stay theirs), starting personal resources for a marine-type team 2, ready room signs and markers for both sides
 - The Nexus and Siphon as own classes (`Classes/VTNexus.lua`): starting spawn, commander building, Nexus Gate upgrade, minimap blips and skins
 - Psi shield layer: absorption, regen, the purple hit shell (custom shader), the HUD's third bar, the Bile Bomb rule and infestation shield drain
 - Rigged player models for all four castes (Silver, Cyber, Mecha and Titan Sentinel)
@@ -257,12 +257,12 @@ The open work in one list.
     sound; 360° targeting; no idle ping
   - Subject sprint (3 s, steerable) and wall hold; Bile Bomb vs. the psi shield
   - Vanguard first-person arms; the Vael'Thor start room staying unpowered
-  - Vael'Thor vs. Marines: team types, vanilla Sentry/ARC targeting, Obelisk targeting marines
+  - Marines vs. Vael'Thor: team types, vanilla Sentry/ARC targeting, Obelisk targeting marines
   - research panel, crosshairs, unit status shield, map icons, commander icons and theme, Praetor energy /
     dash / jump changes
 
 **Known rough edges**
-- **Vael'Thor vs. Marines** still has vanilla screens that assume team 2 is the aliens: team-2 colours stay alien orange, some game-end, alert and commander-help texts, and the bot team brains. Expect an in-game fix pass. Team types (damage rules, hit effects) and the vanilla Sentry/ARC targeting are fixed for this matchup; the Predict VM still uses the default matchup.
+- **Marines vs. Vael'Thor** still has vanilla screens that assume team 2 is the aliens: team-2 colours stay alien orange, some game-end, alert and commander-help texts, and the bot team brains. Expect an in-game fix pass. Team types (damage rules, hit effects) and the vanilla Sentry/ARC targeting are fixed for this matchup; the Predict VM still uses the default matchup.
 - The Predict VM never receives the matchup message (it keeps the default). This should be harmless because Vael'Thor prediction code is class-based, but it hasn't been verified.
 - **Plasma bolt hit registration** feels unreliable; measure with `vt_hitdebug` before changing the weapon.
 - **Map:** other players' soldiers all show the same soldier icon (they share the vanilla Marine blip type,

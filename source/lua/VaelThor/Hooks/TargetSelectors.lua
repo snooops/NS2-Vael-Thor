@@ -1,9 +1,9 @@
 -- ============================================================================
--- Vael'Thor Empire - vanilla marine turrets in Vael'Thor vs. Marines (server)
+-- Vael'Thor Empire - vanilla marine turrets in Marines vs. Vael'Thor (server)
 -- (loaded from Server.lua, after the game's TargetCache.lua)
 --
 -- The vanilla Sentry and ARC pick targets from kMarineStaticTargets / kMarineMobileTargets, i.e. entities of
--- the ALIEN team type. In Vael'Thor vs. Marines their enemy is the Vael'Thor team, which is marine-typed, so
+-- the ALIEN team type. In Marines vs. Vael'Thor their enemy is the Vael'Thor team, which is marine-typed, so
 -- they would never find a target. When the owner's enemy team is marine-typed, the selector is pointed at the
 -- marine-type lists (kAlienStaticTargets / kAlienMobileTargets) and gets an explicit enemy check, since those
 -- lists then also contain the turret's own team. Other matchups are left untouched.

@@ -87,23 +87,24 @@ kVTFactionName = "Vael'Thor"
 
 -- ----------------------------------------------------------------------------
 -- Faction matchup (voted in the vote menu, applied on the next map load; see
--- Server.lua). The Vael'Thor always play as team 1 when they are in the match.
+-- Server.lua). kVTTeamIndex is the Vael'Thor's team (kVTNoTeam if absent).
 --   VTvsAliens      : Vael'Thor (team 1) vs. Aliens (team 2)
 --   MarinesVsAliens : vanilla NS2, the mod stays dormant
---   VTvsMarines     : Vael'Thor (team 1) vs. vanilla Marines (team 2, marine team type)
+--   MarinesVsVT     : vanilla Marines (team 1) vs. Vael'Thor (team 2, marine team type)
+-- (MarinesVsVT keeps the value 3 of the former VTvsMarines, so stored configs stay valid.)
 -- ----------------------------------------------------------------------------
-kVTMatchup = enum({ "VTvsAliens", "MarinesVsAliens", "VTvsMarines" })
+kVTMatchup = enum({ "VTvsAliens", "MarinesVsAliens", "MarinesVsVT" })
 kVTMatchupNames =
 {
     [kVTMatchup.VTvsAliens]      = "Vael'Thor vs. Aliens",
     [kVTMatchup.MarinesVsAliens] = "Marines vs. Aliens",
-    [kVTMatchup.VTvsMarines]     = "Vael'Thor vs. Marines",
+    [kVTMatchup.MarinesVsVT]     = "Marines vs. Vael'Thor",
 }
 kVTDefaultMatchup = kVTMatchup.VTvsAliens
 kVTNoTeam = -1            -- kVTTeamIndex when the Vael'Thor are not in the match
 
 gVTMatchup   = kVTDefaultMatchup
-kVTTeamIndex = 1          -- the Vael'Thor take the marine slot (team 1); kVTNoTeam if absent
+kVTTeamIndex = 1          -- the Vael'Thor's team: 1 (vs. Aliens), 2 (vs. Marines), kVTNoTeam if absent
 
 function VT_GetIsValidMatchup(matchup)
     return type(matchup) == "number" and kVTMatchupNames[matchup] ~= nil
@@ -118,7 +119,7 @@ function VT_GetIsVTActive()
 end
 
 -- Sets the matchup in this VM (server: at map load; client: VTMatchup message).
--- Team 2 is the marine team type in Vael'Thor vs. Marines; vanilla derives every
+-- Team 2 is the marine team type (the Vael'Thor) in Marines vs. Vael'Thor; vanilla derives every
 -- entity's team type from TeamMixin's local kTeamIndexToType table, which
 -- Hooks/TeamMixin.lua publishes as a global so it can be patched here.
 function VT_ApplyMatchup(matchup)
@@ -127,17 +128,17 @@ function VT_ApplyMatchup(matchup)
         matchup = kVTDefaultMatchup
     end
     gVTMatchup = matchup
-    kVTTeamIndex = (matchup == kVTMatchup.MarinesVsAliens) and kVTNoTeam or 1
+    kVTTeamIndex = (matchup == kVTMatchup.VTvsAliens and 1) or (matchup == kVTMatchup.MarinesVsVT and 2) or kVTNoTeam
 
-    local team2Type = (matchup == kVTMatchup.VTvsMarines) and kMarineTeamType or kAlienTeamType
+    local team2Type = (matchup == kVTMatchup.MarinesVsVT) and kMarineTeamType or kAlienTeamType
     kTeam2Type = team2Type
     if kTeamIndexToType and kTeam2Index then
         kTeamIndexToType[kTeam2Index] = team2Type
     end
 
     -- Scoreboard / playing team names (vanilla: "Frontiersmen" / "Kharaa").
-    kTeam1Name = (matchup == kVTMatchup.MarinesVsAliens) and "Frontiersmen" or kVTFactionName
-    kTeam2Name = (matchup == kVTMatchup.VTvsMarines) and "Frontiersmen" or "Kharaa"
+    kTeam1Name = (kVTTeamIndex == 1) and kVTFactionName or "Frontiersmen"
+    kTeam2Name = (kVTTeamIndex == 2) and kVTFactionName or "Kharaa"
 
 end
 
@@ -528,6 +529,13 @@ function VT_GetSubventionFieldGuides(commander)
 
     return entities, ranges
 
+end
+
+-- Is this one of the mod's own classes (VTVanguard, VTNexus, VTSubventionPylon, ...)? Unlike the team checks
+-- above it doesn't depend on the matchup, so it is safe in code the client's Predict VM runs (use/build
+-- prediction), where kVTTeamIndex may still be the default.
+function VT_GetIsVTClass(entity)
+    return entity ~= nil and entity.GetClassName ~= nil and string.sub(entity:GetClassName(), 1, 2) == "VT"
 end
 
 -- Map power nodes are hard-wired to team 1 by the engine, but they are not part

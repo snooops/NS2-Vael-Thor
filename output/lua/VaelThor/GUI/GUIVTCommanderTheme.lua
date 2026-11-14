@@ -3,7 +3,7 @@
 -- (output/ui/vaelthor/commander/*.dds, art/ui/commander/build_commander_theme.sh - hue-shifted copies with
 -- identical layout, so all of vanilla's pixel coordinates still fit).
 --
--- Only for viewers on the Vael'Thor team: vanilla marines (Vael'Thor vs. Marines) share the marine team type
+-- Only for viewers on the Vael'Thor team: vanilla marines (Marines vs. Vael'Thor) share the marine team type
 -- and keep their look. The commander GUI scripts read their texture constants when they initialise (on
 -- login), so the constants are switched per viewer every frame (VT_UpdateCommanderTheme from Client.lua);
 -- the two scripts that pick their texture inside Initialize (selection panel, minimap frame) are re-textured

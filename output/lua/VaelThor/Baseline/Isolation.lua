@@ -15,12 +15,12 @@
 local kMaxListed = 25
 
 -- The Vael'Thor's own patches of vanilla marine classes (for vanilla marines in
--- Vael'Thor vs. Marines): expected, listed separately.
+-- Marines vs. Vael'Thor): expected, listed separately.
 local kOwnPatches =
 {
     ["MarineTeam.ResetTeam"]              = "Server.lua: starting res for marines on team 2",
     ["MarineTeam.SpawnWarmUpStructures"]  = "Server.lua: warmup structures for marines on team 2",
-    ["Sentry.OnInitialized"]              = "Hooks/TargetSelectors.lua: sentry targeting in Vael'Thor vs. Marines",
+    ["Sentry.OnInitialized"]              = "Hooks/TargetSelectors.lua: sentry targeting in Marines vs. Vael'Thor",
 }
 
 local function Out(fmt, ...)

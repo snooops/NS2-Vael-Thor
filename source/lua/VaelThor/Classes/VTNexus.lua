@@ -3,7 +3,7 @@
 --
 -- Own classes (subclasses of the vanilla CommandStation / Extractor) with own
 -- tech ids (kTechId.VTNexus / VTSiphon, Hooks/TechData.lua), so vanilla marines
--- in a Vael'Thor vs. Marines match keep their normal Command Station and
+-- in a Marines vs. Vael'Thor match keep their normal Command Station and
 -- Extractor. Commander login, win conditions and resource collection come from
 -- the vanilla base classes (isa("CommandStation") / isa("Extractor") still hold).
 --

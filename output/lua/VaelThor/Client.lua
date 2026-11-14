@@ -394,7 +394,7 @@ local function StripExoHUD(script)
 end
 
 -- The marine top bar (team res, RTs, supply, dead, IPs) is replaced by GUIVTTopBar for the Vael'Thor team;
--- vanilla marines (Vael'Thor vs. Marines) keep theirs. The bar's own hide switch is also driven by the
+-- vanilla marines (Marines vs. Vael'Thor) keep theirs. The bar's own hide switch is also driven by the
 -- scoreboard, which sets it to "scoreboard open?" on every update (GUIScoreboard) and so un-hid the bar again:
 -- the live instance's SetIsHiddenOverride is wrapped so the Vael'Thor hide always wins, and it is re-checked
 -- every frame.

@@ -2,7 +2,7 @@
 -- Vael'Thor Empire - faction matchup vote (loaded by Server.lua and Client.lua)
 --
 -- Vote menu entry "Vote faction matchup" with three choices (kVTMatchup):
---   Vael'Thor vs. Aliens / Marines vs. Aliens / Vael'Thor vs. Marines
+--   Vael'Thor vs. Aliens / Marines vs. Aliens / Marines vs. Vael'Thor
 -- Teams are built once per map load (NS2Gamerules:BuildTeam), so a passed vote
 -- stores the matchup in config://VaelThorConfig.json and
 --   * before the round has started: reloads the current map right away,
@@ -94,7 +94,7 @@ if Server then
 
     if CreateServerAdminCommand then
         CreateServerAdminCommand("Console_sv_vt_matchup", OnAdminMatchup,
-                "<1|2|3>, sets the faction matchup (1 Vael'Thor vs. Aliens, 2 Marines vs. Aliens, 3 Vael'Thor vs. Marines)")
+                "<1|2|3>, sets the faction matchup (1 Vael'Thor vs. Aliens, 2 Marines vs. Aliens, 3 Marines vs. Vael'Thor)")
     end
 
 end

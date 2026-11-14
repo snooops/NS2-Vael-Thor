@@ -43,8 +43,22 @@ Shared.RegisterNetworkMessage("VTBoltImpact",
     splash = "boolean",     -- Praetor bolt: full-size impact + bigger scorch
 })
 
--- Server -> client on connect: the faction matchup of this map (kVTMatchup).
+-- Server -> client on connect and on every team join: the faction matchup of this map (kVTMatchup).
 Shared.RegisterNetworkMessage("VTMatchup",
 {
     matchup = "integer (1 to 3)",
 })
+
+-- The Predict VM (client-side prediction of the local player: use/build, weapons, movement) runs the shared
+-- code with its own globals and starts with the default matchup like every VM. It must know the real one too:
+-- with a stale kVTTeamIndex = 1, vanilla marines on team 1 (Marines vs. Vael'Thor) were predicted as Vael'Thor
+-- soldiers, who can't build (Hooks/ConstructMixin.lua), so holding E on a structure flickered between the
+-- builder and the weapon while the server let them build.
+if Predict and not VT_HookedPredictMatchup then
+    VT_HookedPredictMatchup = true
+    Predict.HookNetworkMessage("VTMatchup", function(message)
+        VT_ApplyMatchup(message.matchup)
+        Shared.Message(string.format("[Vael'Thor] predict: matchup %s (Vael'Thor team %s)",
+                tostring(kVTMatchupNames[message.matchup]), tostring(kVTTeamIndex)))
+    end)
+end

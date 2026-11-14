@@ -25,7 +25,7 @@ for menuId, _ in pairs(gVTMenuButtons) do
 end
 
 -- Only the Vael'Thor commander (Supreme Archon) gets these menus; a vanilla
--- marine commander (Marines vs. Aliens / Vael'Thor vs. Marines) keeps the
+-- marine commander (Marines vs. Aliens / Marines vs. Vael'Thor) keeps the
 -- vanilla ones.
 if not VT_HookedMarineCommanderMenus then
 VT_HookedMarineCommanderMenus = true

@@ -321,7 +321,7 @@ if Server then
 
     -- Own target selector instead of Sentry's:
     --  * target lists by the ENEMY team's type. Sentry hard-codes kMarineStaticTargets/kMarineMobileTargets
-    --    (= alien-type entities), so in Vael'Thor vs. Marines the Obelisk never targeted the marines.
+    --    (= alien-type entities), so in Marines vs. Vael'Thor the Obelisk never targeted the marines.
     --  * an explicit enemy check: the Vael'Thor team is marine-typed as well, so the marine-type lists also
     --    contain our own soldiers and structures.
     --  * no PitchTargetFilter (all-round fire): it measures the angle against the sentry's facing with atan2,

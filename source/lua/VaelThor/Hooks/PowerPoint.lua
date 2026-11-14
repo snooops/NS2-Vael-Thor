@@ -17,22 +17,13 @@ function PowerPoint:GetCanPower(consumer)
     return oldGetCanPower(self, consumer)
 end
 
--- Power nodes always belong to team 1 in vanilla. In Vael'Thor vs. Marines the
--- marines are team 2 and need them (the empire runs on pylons and treats them
--- as enemy structures, like the aliens do).
-if Server then
-    local oldOnInitialized = PowerPoint.OnInitialized
-    function PowerPoint:OnInitialized(...)
-        oldOnInitialized(self, ...)
-        if VT_GetMatchup() == kVTMatchup.VTvsMarines then
-            self:SetTeamNumber(kTeam2Index)
-        end
-    end
-end
+-- Power nodes belong to team 1 in vanilla: the marines in Marines vs. Vael'Thor (the empire runs on
+-- pylons and treats them as enemy structures, like the aliens do). In Vael'Thor vs. Aliens they are the
+-- Vael'Thor's, who can't use them (GetCanPower above).
 
 -- The power nodes' impulse (a blue wave every 25 s plus an effect at the structures they power) means nothing
 -- to the Vael'Thor: hidden for Vael'Thor viewers, and for everyone in Vael'Thor vs. Aliens, where no team uses
--- power nodes. Vanilla marines (Vael'Thor vs. Marines) keep it. Pylons have no pulse of their own (removed: crash on joining).
+-- power nodes. Vanilla marines (Marines vs. Vael'Thor) keep it. Pylons have no pulse of their own (removed: crash on joining).
 if Client then
     local function HideImpulse()
         if VT_GetLocalIsVTTeam and VT_GetLocalIsVTTeam() then

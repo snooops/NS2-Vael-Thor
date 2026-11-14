@@ -54,6 +54,30 @@ Balance numbers are always first pass.
   be its infrastructure.
 
 ### Changed
+- **Matchup 3 is now "Marines vs. Vael'Thor"** (was "Vael'Thor vs. Marines"): vanilla marines are team 1 and the
+  Vael'Thor team 2, so the marines get the vanilla marine side of every map (start, power nodes, ready room door).
+  `kVTMatchup.MarinesVsVT` keeps the value 3, so a stored `VaelThorConfig.json` stays valid. `kVTTeamIndex` is
+  1 in Vael'Thor vs. Aliens and 2 here; `NS2Gamerules:BuildTeam` builds `VTTeam` for whichever slot that is. The
+  former team-2-marine fixes are gone (power nodes are team 1's again) or now apply to the Vael'Thor: a
+  marine-type team 2 gets the marine starting personal resources at round start and when joining. Team names
+  follow the team (`NAME_TEAM_2` = "Vael'Thor" here). 🔧
+- **Ready room shows both factions correctly:** the 3D "VAEL'THOR" sign replaces the sign above the Vael'Thor
+  team's door: the "MARINES" sign in Vael'Thor vs. Aliens, the "ALIENS" sign (`alien_join`, `join_alien`,
+  `join_text_05`) in Marines vs. Vael'Thor, where "MARINES" stays. The sign is fitted into each vanilla model's
+  own frame (centre, letter height, front plane), so it also fits the 2x `join_marine` and the alien signs.
+  The "N players" marker is violet over the Vael'Thor door and vanilla over the other in every matchup. 🔧
+- **Map (C) and scoreboard follow the Vael'Thor team, not team 1:** the Vael'Thor's scoreboard column and map
+  blips/icons are violet, the other team's vanilla. Vanilla picks map blip teams by team number (team 2 = Alien*),
+  so in Marines vs. Vael'Thor the Alien* blip colours are the violet ones. Fixes mixed-up colours in that mode
+  (Vael'Thor map and scoreboard alien orange, marines' violet): clients start in the default matchup and get the
+  real one a moment after connecting, and the map colours were applied once in that moment and never undone.
+  Now everything is re-done whenever the Vael'Thor team changes (the scoreboard is rebuilt then). 🔧
+- **Fix: marines' building flickered in Marines vs. Vael'Thor** (holding E switched between builder and weapon):
+  the client's Predict VM never got the matchup, kept the default (Vael'Thor = team 1) and predicted the team-1
+  marines as Vael'Thor soldiers, who can't build. The build check (`Hooks/ConstructMixin.lua`) now goes by class
+  (`VT_GetIsVTClass`: the mod's own `VT…` classes) instead of team, so it no longer depends on the matchup at
+  all. `VTMatchup` is also hooked in the Predict VM (`Classes/VTNetwork.lua`, logs a `predict: matchup` line)
+  and re-sent on every team join. 🔧
 - **Singularity pull fixed: a real vortex.** It used to give each enemy a single 7 m/s shove on detonation, which ground
   friction and the target's own movement cancelled almost at once, so nobody was pulled in. The anomaly now stays
   active for 1.5 s (`kVTSingularityPullDuration`, model hidden) at a point 0.4 m off the surface it hit. Every
