@@ -15,7 +15,7 @@ antimatter and psionics**.
 
 > **Current state (2026-11-14): pre-alpha, published on the Steam Workshop** as item
 > [3833055653](https://steamcommunity.com/sharedfiles/filedetails/?id=3833055653). The Workshop copy is the
-> upload from 2026-11-03 16:48; everything after it (see the changelog) isn't uploaded yet.
+> upload from 2026-11-14 15:50 (git tag `workshop-2026-11-14`); later changes in the changelog aren't uploaded yet.
 > - **Confirmed in-game:** the core loop (Nexus, commander, Synthesis Matrix respawn incl. warmup), building
 >   models and hitboxes at 80 % scale, the Vael'Thor top bar, tech map (J), palette and ready room signs,
 >   **Marines vs. Vael'Thor** with the Vael'Thor on team 2 (commander, respawn, damage-number colour, marine building),
@@ -60,7 +60,7 @@ Every feature in this README has one of these markers:
 | **Caste quotas** | The commander sets how many Infiltrators, Subjects and Praetors are allowed (defaults 2/2/1, max 3/4/2). If a caste is full, locked or unaffordable, the player spawns as a Vanguard. | 🟡 |
 | **Authorization rank** | Personal score unlocks loadout tiers: rank II at 15 points, rank III at 40. | 🟡 |
 | **No sprint, no flashlight** | Sprinting is removed for every caste (the Subject uses Shift for its sprint burst / wall hold instead). The flashlight key toggles the Targeting Visor instead. Praetors can't eject. | 🟡 |
-| **Vael'Thor HUD** | Replaces the marine HUD with a "psionic crystal" design: vitals, shield, burnout, ability chips, weapon energy and directives. The corner minimap is removed, but the full map (C) still works. | 🔧 |
+| **Vael'Thor HUD** | Replaces the marine HUD with a "psionic crystal" design: vitals, shield, burnout, ability chips, weapon energy and directives. The corner minimap is removed, but the full map (C) still works. The hidden marine HUD no longer leaves its blue boot-up squares on screen. | 🔧 |
 | **Vael'Thor top bar** | Replaces the marine top bar for the whole team: resources + income/min, Nexus / Siphon / Pylon counts, soldiers in the Synthesis Matrix, caste counts vs. quota. | ✅ |
 | **Research panel** | Under the top bar: up to three running researches with progress bar, % and time left, visible to every soldier. | 🔧 |
 | **Crosshairs** | Own crosshair per weapon (spread shards, reach indicators, drop marks, scan cone, Praetor spread ring with energy arcs) and a hit marker. | 🔧 |

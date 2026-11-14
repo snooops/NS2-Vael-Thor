@@ -9,6 +9,9 @@ Balance numbers are always first pass.
 ## 2026-11-14
 
 ### Added
+- **Steam Workshop update** of item 3833055653 (uploaded 15:50, git tag `workshop-2026-11-14`): everything since the
+  2026-11-03 16:48 upload. The Workshop description now names the GPL-3.0 license and links the GitHub
+  source (`mod.settings`).
 - **Vael'Thor tech map (J)** (`Hooks/GUITechMap.lua`): J showed the marine tech tree, because vanilla picks the
   layout by team type and the Vael'Thor are marine-type. Vael'Thor players (and their commander) now get their own
   map in violet: Nexus with Siphon, Pylon (Resonant Pylon) and Nexus Gate (Nexus Recall) on top, then the
@@ -33,6 +36,13 @@ Balance numbers are always first pass.
   respawn on their own. ✅ *Why:* requested; the instant respawn skipped the death menu.
 
 ### Fixed
+- **Blue squares stuck on screen** (`Hooks/GUIMarineHUD.lua`): after returning from the main menu (or a new
+  spawn) more and more translucent blue rectangles covered the view. They are the vanilla marine HUD boot-up
+  animation (10 random squares that fade out over a second), but the fade only runs while the HUD script
+  updates, and the marine HUD is hidden for the Vael'Thor, so it never updates. The animation now only plays on a
+  visible HUD. Marines had it too: the mod hid the HUD directly (past ClientUI) and never showed it again, so a
+  HUD hidden once by a stale team check stayed hidden for a Marine. The HUD's visibility is now decided again for
+  every new local player by that player's team. ✅
 - **Wrong network message ids in the Predict VM** (`Hooks/Hitreg.lua`): the client's Predict VM never got the
   real matchup and instead read other messages as `VTMatchup` (272 in one game, in bursts during combat). Each
   corrupt value reset it to the default matchup, flipping its `kVTTeamIndex` and team types at random. Cause:
