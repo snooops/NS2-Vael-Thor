@@ -6,6 +6,18 @@ Balance numbers are always first pass.
 
 ---
 
+## 2026-11-14
+
+### Fixed
+- **Vael'Thor commander broken in Marines vs. Vael'Thor** (`Hooks/GUIProduction.lua`): vanilla
+  `Commander:SetupHud` passes the commander's team *type* (marine = 1) to `GUIProduction:SetTeam` as a team *index*.
+  With the Vael'Thor on team 2 the client has no TeamInfo for team 1, so the research strip errored
+  (`GUIProduction.lua:277`, every frame) and `SetupHud` stopped halfway: the commander click manager, tooltip and
+  the rest of the HUD setup never ran. The strip now reads TeamInfo from the commander's own team and keeps the
+  marine-style look. ✅ *Why:* matchup 3 moved the Vael'Thor to team 2 (2026-11-13).
+
+---
+
 ## 2026-11-13
 
 ### Added
