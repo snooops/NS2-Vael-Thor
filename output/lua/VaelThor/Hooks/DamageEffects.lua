@@ -6,9 +6,8 @@
 -- is destroyed in the same tick it hits, so its effects never played. Instead
 -- the server sends VTBoltImpact (Classes/VTNetwork.lua) to nearby players and
 -- each client triggers these two effects locally (Client.lua):
---   * vt_plasmabolt_impact: the Exosuit railgun's per-surface impact at half size
---                           (cinematics/vaelthor/bolt_impact/, art/weapons/make_bolt_impact.py)
---                           + the railgun's per-surface ricochet sound
+--   * vt_plasmabolt_impact: (Vanguard carbine) only the ricochet sound - its half-size railgun impact cinematic
+--                           (cinematics/vaelthor/bolt_impact/) was removed for FPS (2026-11-15)
 --   * vt_plasmabolt_decal:  the railgun scorch mark, small
 -- ============================================================================
 
@@ -46,7 +45,10 @@ GetEffectManager():AddEffectData("VaelThorBoltEffects", {
     vt_plasmabolt_splash_decal = { vtBoltSplashDecal = {
         { decal = "cinematics/vfx_materials/decals/railgun_hole_02.material", scale = 0.5, done = true },
     } },
-    vt_plasmabolt_impact = { vtBoltImpactEffects = impacts, vtBoltSoundEffects = sounds },
+    -- Vanguard carbine bolts: no impact cinematic any more (user report 2026-11-15: FPS drops under sustained
+    -- fire, one cinematic per bolt); the ricochet sound and the small scorch decal stay. `impacts` is kept for a
+    -- possible cheaper effect later.
+    vt_plasmabolt_impact = { vtBoltSoundEffects = sounds },
     vt_plasmabolt_decal  = { vtBoltDecalEffects = {
         { decal = "cinematics/vfx_materials/decals/railgun_hole_02.material", scale = 0.25, done = true },
     } },

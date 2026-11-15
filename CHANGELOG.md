@@ -9,6 +9,8 @@ Balance numbers are always first pass.
 ## 2026-11-15
 
 ### Added
+- **Steam Workshop update** of item 3833055653 (uploaded 14:47, git tag `workshop-2026-11-15-2`): auto-synthesis,
+  spawn selection, Vanguard ability on right-click.
 - 🔧 **Auto-synthesis on the death screen**: every death starts a countdown (matrix timer, at least
   `kVTAutoSpawnMinDelay` = 5 s, so warmup isn't instant) and the player respawns automatically. Any mouse click
   while dead stops it; then SYNTHESIZE / Space works as before (`VTSpectator:VT_GetAutoSynthTime`).
@@ -19,6 +21,9 @@ Balance numbers are always first pass.
   limit, the Obelisk placement without facing and the map arrow fix.
 
 ### Changed
+- 🔧 **No impact cinematic for Vanguard carbine bolts** (FPS drops under sustained fire, one cinematic per
+  bolt): only the ricochet sound and the small scorch decal remain (`Hooks/DamageEffects.lua`). Praetor splash
+  bolts keep their impact.
 - 🔧 **Vanguard ability on right-click** instead of B (Shield Boost / Phase Dash / Shield Overdrive): none of
   the Vanguard's weapons has a secondary attack. HUD chip shows `[RMB]`. Infiltrator and Praetor keep B.
 - ✅ **Sentinel Obelisk limit**: 1 Obelisk per built Nexus at Authorization Tier I, 2 with Tier II, 3 with Tier III
