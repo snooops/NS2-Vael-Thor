@@ -444,7 +444,7 @@ kVTPraetorDashEnergyCost    = 20     -- taken from the minigun energy pool (vtEn
 kVTPraetorDashCooldown      = 10
 
 -- Weapons
-kVTCarbineDamageScalar      = 1.15   -- per bolt vs the marine rifle (kRifleDamage)
+kVTCarbineDamageScalar      = 1.5    -- per bolt vs the marine rifle (kRifleDamage 10 -> 15; was 1.15 until 2026-11-15)
 kVTCarbineSpreadScalar      = 0.75   -- bolt spread cone vs the marine rifle (2.8 deg -> 2.1 deg)
 -- Psionic Knife: the Vanguard's structure breaker. Axe damage (25 structural, x2 vs structures in vanilla)
 -- times this vs structures only -> 100 per swing vs a Harvester (2400 effective HP): ~24 swings, ~10-13 s

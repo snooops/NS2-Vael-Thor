@@ -100,7 +100,7 @@ Shield Matrix I–III adds +15 max psi shield per level (armor stays fixed).
 ### Vanguard Legionnaire
 | Feature | Status |
 |---|---|
-| **Plasma Carbine**: no clip, 80 energy that recharges only inside a field (0.5 s delay, then 16/s). Fires predicted plasma bolts at 80 m/s. Fire rate is ×0.85 of the rifle, damage ×1.15, spread 2.1° (rifle 2.8°). | 🔧 bolts, impacts and sound unverified · hit registration under investigation (`vt_hitdebug`) · 🟡 recharge feel (fixed jitter) |
+| **Plasma Carbine**: no clip, 80 energy that recharges only inside a field (0.5 s delay, then 16/s). Fires predicted plasma bolts at 80 m/s. Fire rate is ×0.85 of the rifle, damage ×1.5 (15 per bolt), spread 2.1° (rifle 2.8°). | 🔧 bolts, impacts and sound unverified · hit registration under investigation (`vt_hitdebug`) · 🟡 recharge feel (fixed jitter) |
 | Carbine model: "Falcon Rilfe" by pocolov (CC-BY-4.0) | 🔧 hand position re-fixed after an in-game report and not re-checked |
 | **Psionic Knife** melee: procedural model, 50 per swing vs. players (two-hits a biomass-1 skulk ✅), 100 vs. structures | 🔧 |
 | **Fast weapon switch** (×1.5 draw speed) | 🔧 |

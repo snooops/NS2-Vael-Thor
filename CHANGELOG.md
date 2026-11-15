@@ -23,6 +23,9 @@ Balance numbers are always first pass.
   limit, the Obelisk placement without facing and the map arrow fix.
 
 ### Changed
+- 🔧 **Plasma Carbine 15 damage per bolt** (Vanguard, no upgrades): `kVTCarbineDamageScalar` 1.15 → 1.5 × the
+  rifle's 10 (was 11.5). With the ×0.85 fire rate that is ~128% of the marine rifle's DPS (was ~98%). Plasma
+  Calibration I-III: 16.5 / 18 / 19.5. Overcharge bolts unchanged (×1.9 = 19), Praetor unchanged.
 - 🔧 **Targeting Visor free and a violet heat scanner**: no Shield Generator research any more (every soldier,
   flashlight key). New look: own screen effect `shaders/VTHeatVision.*` (violet rework of the alien vision shader)
   darkens the world to violet and makes every unit glow as a heat signature with a slow scanline; the exosuit
