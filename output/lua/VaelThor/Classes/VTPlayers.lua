@@ -94,6 +94,25 @@ end
 function Shared_:TertiaryAttackEnd()
 end
 
+-- Vael'Thor soldiers never pick up weapons (marine weapons on the ground, auto pickup or E). These merge with
+-- MarineActionFinderMixin's finders; NS2 runs the class method first and keeps ITS return value, so nil wins
+-- (also hides the client's pickup prompt).
+function Shared_:GetNearbyPickupableWeapon()
+    return nil
+end
+
+function Shared_:FindNearbyAutoPickupWeapon()
+    return nil
+end
+
+function Shared_:ShouldAutopickupWeapons()
+    return false
+end
+
+function Shared_:ShouldAutopickupBetterWeapons()
+    return false
+end
+
 function Shared_:VT_GetIsShieldBurntOut()
     return Shared.GetTime() < (self.vtShieldBurnoutEnd or 0)
 end

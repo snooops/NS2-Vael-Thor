@@ -15,7 +15,7 @@ antimatter and psionics**.
 
 > **Current state (2026-11-15): pre-alpha, published on the Steam Workshop** as item
 > [3833055653](https://steamcommunity.com/sharedfiles/filedetails/?id=3833055653). The Workshop copy is the
-> upload from 2026-11-15 12:53 (git tag `workshop-2026-11-15`); later changes in the changelog aren't uploaded yet.
+> upload from 2026-11-15 15:09 (git tag `workshop-2026-11-15-3`); later changes in the changelog aren't uploaded yet.
 > - **Confirmed in-game:** the core loop (Nexus, commander, Synthesis Matrix respawn incl. warmup), building
 >   models and hitboxes at 80 % scale, the Vael'Thor top bar, tech map (J), palette and ready room signs,
 >   **Marines vs. Vael'Thor** with the Vael'Thor on team 2 (commander, respawn, damage-number colour, marine building),
@@ -57,11 +57,11 @@ Every feature in this README has one of these markers:
 | **Infestation** | Drains the psi shield of empire structures (30/s) instead of their armor and blocks its regeneration while they stand on creep. | 🔧 |
 | **Nexus Gate** | A Nexus upgrade (20 res / 45 s). Any soldier can press **E** on any Pylon and teleport to the gate (8 s cooldown). | 🟡 |
 | **Synthesis Matrix** | Dead players pick caste and loadout in a clickable menu (or keys 1–5 / R / E; B hides it) and respawn with SYNTHESIZE / Space once the 9 s timer is over. No automatic respawn (bots excepted). | ✅ (menu + manual respawn, #1) |
-| **Caste quotas** | The commander sets how many Infiltrators, Subjects and Praetors are allowed (defaults 2/2/1, max 3/4/2). If a caste is full, locked or unaffordable, the player spawns as a Vanguard. | 🟡 |
+| **Caste requisition** | The commander buys single lifeforms from the Nexus > Castes menu (Infiltrator 4, Subject 8 with Tier II, Praetor 25 with Tier III). Each purchase lets one soldier be synthesized in that caste and is used up when that soldier dies. No quotas, no cost at synthesis. If none is in stock (or the caste is locked), the player spawns as a Vanguard. | 🔧 |
 | **Authorization rank** | Personal score unlocks loadout tiers: rank II at 15 points, rank III at 40. | 🟡 |
 | **No sprint, no flashlight** | Sprinting is removed for every caste (the Subject uses Shift for its sprint burst / wall hold instead). The flashlight key toggles the Targeting Visor instead. Praetors can't eject. | 🟡 |
 | **Vael'Thor HUD** | Replaces the marine HUD with a "psionic crystal" design: vitals, shield, burnout, ability chips, weapon energy and directives. The corner minimap is removed, but the full map (C) still works. The hidden marine HUD no longer leaves its blue boot-up squares on screen. | 🔧 |
-| **Vael'Thor top bar** | Replaces the marine top bar for the whole team: resources + income/min, Nexus / Siphon / Pylon counts, soldiers in the Synthesis Matrix, caste counts vs. quota. | ✅ |
+| **Vael'Thor top bar** | Replaces the marine top bar for the whole team: resources + income/min, Nexus / Siphon / Pylon counts, soldiers in the Synthesis Matrix, castes available (bought, not yet synthesized). | ✅ |
 | **Research panel** | Under the top bar: up to three running researches with progress bar, % and time left, visible to every soldier. | 🔧 |
 | **Crosshairs** | Own crosshair per weapon (spread shards, reach indicators, drop marks, scan cone, Praetor spread ring with energy arcs) and a hit marker. | 🔧 |
 | **Unit status** | Aimed-at friendly units show a violet psi-shield bar and the shield value; bars and names in Vael'Thor colours. | 🔧 |
@@ -88,10 +88,10 @@ The server can run three matchups. Players pick one through **Vote faction match
   strip, UI team checks (`PlayerUI_IsOnMarineTeam`), the matrix spectator's team.
 
 
-| Caste | Role | HP / Armor / Psi shield | Unlock | Synth cost |
+| Caste | Role | HP / Armor / Psi shield | Unlock | Cost (commander buys one lifeform) |
 |---|---|---|---|---|
-| **Vanguard Legionnaire** | Core infantry, no quota | 80 / 40 / 50 | — | free |
-| **Infiltrator** | Scout, assassin, saboteur | 85 / 20 / 35, +12 % speed | — | 4 team res |
+| **Vanguard Legionnaire** | Core infantry, always available | 80 / 40 / 50 | — | free |
+| **Infiltrator** | Scout, assassin, saboteur | 85 / 20 / 35, +34 % speed | — | 4 team res |
 | **Subject** (Bio-Construct) | Melee war-beast | 320 / 80 / 100, +15 % speed | Authorization Tier II | 8 team res |
 | **Praetor** | Heavy elite (exo chassis) | 150 / exo armor / 200 | Authorization Tier III | 25 team res |
 
@@ -116,7 +116,7 @@ Shield Matrix I–III adds +15 max psi shield per level (armor stays fixed).
 | Feature | Status |
 |---|---|
 | **Cloak field (B)**: 100 % invisible for 10 s (15 s with Phase Cloak), 15 s cooldown. Attacking, hacking, scanning, taking damage or touching an enemy breaks it. A parasited Infiltrator can't cloak. | 🔧 |
-| **Psionic Blades**: wrist blades in the style of Zealot blades, 45 dmg | 🔧 · 🎨 swings with axe animations, the left blade just rides the left hand (no dual-wield anims) |
+| **Psionic Blades**: wrist blades in the style of Zealot blades, knife damage (50 vs players), wide hit cone | 🔧 · 🎨 swings with axe animations, the left blade just rides the left hand (no dual-wield anims) |
 | **Hack (RMB with blades)**: pulse that disables enemy structures within 7 m for 10 s (9 m / 15 s with Neural Override), 35 s cooldown | 🟡 |
 | Hacked **Shades** lose their cloak field and can't fire Ink | 🔧 |
 | **Echo Scanner** (slot 2): hold to scan a 30 m / ±35° cone through walls. It outlines enemies for the whole team and reveals cloaked targets. | 🔧 |
@@ -177,7 +177,7 @@ Imperial Nexus  [25]  (build anywhere)                                   🟡
 │   └── Assist: Nexus Recall  [4]  pull soldier to nearest Nexus Gate    🟡
 ├── Directive: Requisition Mandate  [10]  +75% build speed 30s, CD 90s    🟡
 ├── Directive: Relentless Advance   [15]  +20% damage 20s, CD 120s        🟡
-├── Caste Quotas menu (Infiltrator / Subject / Praetor ±1)                🟡
+├── Castes menu: buy one Infiltrator / Subject / Praetor lifeform        🔧
 ├── Assist: Shield Pulse  [3]  refill shields in 6 m, CD 8s               🟡
 ├── Resource Siphon                                                       🟡
 ├── Subvention Pylon  [8]                                                 🟡

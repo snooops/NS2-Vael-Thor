@@ -1,6 +1,6 @@
 -- ============================================================================
 -- VTEmpireInfo - networked, always-relevant empire state:
--- caste quotas, live caste counts and Directive timers.
+-- caste stock (lifeforms bought by the commander), live caste counts and Directive timers.
 -- ============================================================================
 
 class 'VTEmpireInfo' (Entity)
@@ -9,9 +9,10 @@ VTEmpireInfo.kMapName = kVTMapNames.EmpireInfo
 
 local networkVars =
 {
-    quotaInfiltrator  = "integer (0 to 8)",
-    quotaSubject      = "integer (0 to 8)",
-    quotaPraetor      = "integer (0 to 8)",
+    -- lifeforms requisitioned by the commander and not yet synthesized (kVTCasteStockMax)
+    stockInfiltrator  = "integer (0 to 15)",
+    stockSubject      = "integer (0 to 15)",
+    stockPraetor      = "integer (0 to 15)",
 
     countInfiltrator  = "integer (0 to 16)",
     countSubject      = "integer (0 to 16)",
@@ -45,9 +46,9 @@ function VTEmpireInfo:OnCreate()
 
     Entity.OnCreate(self)
 
-    self.quotaInfiltrator = kVTQuotaDefaults.Infiltrator
-    self.quotaSubject     = kVTQuotaDefaults.Subject
-    self.quotaPraetor     = kVTQuotaDefaults.Praetor
+    self.stockInfiltrator = 0
+    self.stockSubject     = 0
+    self.stockPraetor     = 0
 
     self.countInfiltrator = 0
     self.countSubject     = 0
@@ -76,8 +77,8 @@ function VTEmpireInfo:OnCreate()
 
 end
 
-function VTEmpireInfo:GetQuota(casteName)
-    return self["quota" .. casteName] or 0
+function VTEmpireInfo:GetStock(casteName)
+    return self["stock" .. casteName] or 0
 end
 
 function VTEmpireInfo:GetCount(casteName)
@@ -124,9 +125,8 @@ end
 
 if Server then
 
-    function VTEmpireInfo:SetQuota(casteName, value)
-        local field = "quota" .. casteName
-        self[field] = Clamp(value, 0, kVTQuotaMax[casteName] or 8)
+    function VTEmpireInfo:SetStock(casteName, value)
+        self["stock" .. casteName] = Clamp(value, 0, kVTCasteStockMax)
     end
 
     function VTEmpireInfo:SetCount(casteName, value)

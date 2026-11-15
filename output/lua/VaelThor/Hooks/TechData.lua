@@ -370,22 +370,19 @@ function BuildTechData()
         [kTechDataHotkey] = Move.E,
     })
 
-    -- ------------------------------------------------------------------ quotas
-    local quotaButtons =
+    -- ------------------------------------------------- caste requisition (lifeforms)
+    local buyButtons =
     {
-        { kTechId.VTQuotaInfiltratorUp,   "VT_QUOTA_INFILTRATOR_UP" },
-        { kTechId.VTQuotaInfiltratorDown, "VT_QUOTA_INFILTRATOR_DOWN" },
-        { kTechId.VTQuotaSubjectUp,       "VT_QUOTA_SUBJECT_UP" },
-        { kTechId.VTQuotaSubjectDown,     "VT_QUOTA_SUBJECT_DOWN" },
-        { kTechId.VTQuotaPraetorUp,       "VT_QUOTA_PRAETOR_UP" },
-        { kTechId.VTQuotaPraetorDown,     "VT_QUOTA_PRAETOR_DOWN" },
+        { kTechId.VTBuyInfiltrator, "VT_BUY_INFILTRATOR", "VT_BUY_INFILTRATOR_TOOLTIP", kVTCasteCost.Infiltrator },
+        { kTechId.VTBuySubject,     "VT_BUY_SUBJECT",     "VT_BUY_SUBJECT_TOOLTIP",     kVTCasteCost.Subject },
+        { kTechId.VTBuyPraetor,     "VT_BUY_PRAETOR",     "VT_BUY_PRAETOR_TOOLTIP",     kVTCasteCost.Praetor },
     }
-    for _, q in ipairs(quotaButtons) do
+    for _, b in ipairs(buyButtons) do
         Add(techData, {
-            [kTechDataId] = q[1],
-            [kTechDataDisplayName] = q[2],
-            [kTechDataTooltipInfo] = "VT_QUOTA_TOOLTIP",
-            [kTechDataCostKey] = 0,
+            [kTechDataId] = b[1],
+            [kTechDataDisplayName] = b[2],
+            [kTechDataTooltipInfo] = b[3],
+            [kTechDataCostKey] = b[4],
         })
     end
 

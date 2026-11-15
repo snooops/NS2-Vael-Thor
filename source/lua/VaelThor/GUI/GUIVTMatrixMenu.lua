@@ -2,18 +2,21 @@
 -- GUIVTMatrixMenu - the Synthesis Matrix menu of a dead Vael'Thor soldier
 -- (issue #1, styled after the alien evolve menu).
 --
--- Opens on death with a mouse cursor over a dimmed screen:
+-- Closed on death: a hint box on the left of the screen says "[B] open Synthesis
+-- Matrix" and shows the synthesis status. B opens it with a mouse cursor over a
+-- dimmed screen:
 --   * four caste cards with a portrait (ui/vaelthor/caste_portraits.dds, from
---     art/ui/make_caste_portraits.sh), quota, cost and lock state (click, or keys 1-4)
+--     art/ui/make_caste_portraits.sh), lifeforms available (bought by the commander) and lock state (click, or keys 1-4)
 --   * three loadout rows (left click / right click cycles; keys 5, R, E)
 --   * SPAWN AT row: which built Nexus to be synthesized at, or any host (left /
 --     right click cycles; the server sends the names, see VTMatrixLoadout)
 --   * auto-synthesis: every death starts a countdown (button "AUTO-SYNTHESIS");
---     ANY mouse click stops it (choice 12), then the player synthesizes manually:
+--     any mouse click while the menu is open stops it (choice 12), then the player
+--     synthesizes manually:
 --   * SYNTHESIZE button (click, or Space). Asking while the matrix timer still
 --     runs arms the request ("ARMED"); click again to cancel.
---   * B hides / shows the menu (hidden: a small status chip stays at the bottom,
---     camera control comes back). The number keys keep working while hidden.
+--   * B shows / hides the menu (hidden: the hint box on the left stays, camera
+--     control comes back). The number keys keep working while hidden.
 --
 -- Clicks come through a MouseTracker button listener (it runs before the GUI
 -- scripts, so spectator GUIs can't swallow them). Every text is fitted to its box.
@@ -58,6 +61,7 @@ local kDescY = kCardY + kCardH + 12
 local kRowW, kRowH, kRowGap, kRowY = kPanelW - 2 * kMargin, 42, 8, 512
 local kRowLabelW, kRowValueX, kRowValueW = 210, 250, 420   -- label column, value column
 local kButtonW, kButtonH, kButtonY = 400, 62, 714
+local kMiniW, kMiniH = 440, 104                            -- hint box on the left while the menu is closed
 
 local kCastes =
 {
@@ -260,17 +264,21 @@ function GUIVTMatrixMenu:Initialize()
     self.hint = self:Text(self.panel, Fonts.kAgencyFB_Small, kPanelW / 2, kPanelH - 18, GUIItem.Align_Center, kColDimText)
     SetFittedText(self.hint, "click: stop auto-synthesis    [Space] synthesize    [B] hide menu    left / right click: cycle", kPanelW - 2 * kMargin)
 
-    -- ---- small chip while the menu is hidden
-    self.mini = self:Box(nil, kChipTex, 460, 46, 0, 0, kColCardBody, kColFrame, kGUILayerPlayerHUDForeground1)
-    self.mini:SetAnchor(GUIItem.Middle, GUIItem.Bottom)
-    self.mini:SetPosition(S(-230, -140))
-    self.miniText = self:Text(self.mini, Fonts.kAgencyFB_Small, 230, 23, GUIItem.Align_Center, kColText)
+    -- ---- hint box on the left while the menu is closed (the default after death)
+    self.mini = self:Box(nil, kChipTex, kMiniW, kMiniH, 0, 0, kColCardBody, kColFrame, kGUILayerPlayerHUDForeground1)
+    self.mini:SetAnchor(GUIItem.Left, GUIItem.Center)
+    self.mini:SetPosition(S(40, -kMiniH / 2))
+    self.miniTitle = self:Text(self.mini, Fonts.kAgencyFB_Medium, kPad + 4, 26, nil, kColCyan)
+    SetFittedText(self.miniTitle, "[B]  SYNTHESIS MATRIX", kMiniW - 2 * kPad - 8)
+    self.miniHint = self:Text(self.mini, Fonts.kAgencyFB_Small, kPad + 4, 56, nil, kColDimText)
+    SetFittedText(self.miniHint, "press B to choose caste, loadout and spawn Nexus", kMiniW - 2 * kPad - 8)
+    self.miniText = self:Text(self.mini, Fonts.kAgencyFB_Small, kPad + 4, 84, nil, kColText)
 
     self.dim:SetIsVisible(false)
     self.panel:SetIsVisible(false)
     self.mini:SetIsVisible(false)
 
-    self.hidden = false
+    self.hidden = true
     self.wasDead = false
     self.cursorShown = false
     self.keysDown = {}
@@ -349,7 +357,7 @@ local function GetSynthesisStatus(state)
     if state.armed then
         return "SYNTHESIZING...", "synthesizing...", kColActive
     end
-    return "SYNTHESIZE", "READY - [B] open menu", kColReady
+    return "SYNTHESIZE", "READY - open the matrix and synthesize", kColReady
 end
 
 function GUIVTMatrixMenu:UpdateDirectives()
@@ -388,12 +396,11 @@ function GUIVTMatrixMenu:UpdateMenu(state)
         local full = false
 
         if def.caste then
-            local count = info and info:GetCount(def.caste) or 0
-            local quota = info and info:GetQuota(def.caste) or 0
-            full = info ~= nil and count >= quota
-            SetFittedText(card.info1, info and string.format("quota %d / %d", count, quota) or "", textW)
-            local cost = kVTCasteCost[def.caste] or 0
-            SetFittedText(card.info2, cost > 0 and string.format("%d team res", cost) or "free", textW)
+            -- lifeforms the commander bought and nobody used yet (Nexus > Castes)
+            local stock = info and info:GetStock(def.caste) or 0
+            full = info ~= nil and stock < 1
+            SetFittedText(card.info1, info and string.format("available: %d", stock) or "", textW)
+            SetFittedText(card.info2, string.format("bought by commander (%d res)", kVTCasteCost[def.caste] or 0), textW)
         else
             SetFittedText(card.info1, "unlimited", textW)
             SetFittedText(card.info2, "free", textW)
@@ -402,7 +409,7 @@ function GUIVTMatrixMenu:UpdateMenu(state)
         if lock then
             SetFittedText(card.lock, "locked: " .. lock, textW)
         elseif full then
-            SetFittedText(card.lock, "quota full", textW)
+            SetFittedText(card.lock, "none available - Vanguard", textW)
         else
             card.lock:SetText("")
         end
@@ -485,7 +492,7 @@ function GUIVTMatrixMenu:Update(deltaTime)
     local dead = GetIsDeadVTSoldier() and not (MainMenu_GetIsOpened and MainMenu_GetIsOpened())
 
     if dead and not self.wasDead then
-        self.hidden = false             -- every death opens the menu again
+        self.hidden = true              -- every death starts with the menu closed (hint box on the left, B opens)
     elseif not dead and self.wasDead and Client.GetIsControllingPlayer() then
         VT_MatrixLoadout = nil          -- alive again: drop the last life's state (armed, timer)
     end
@@ -506,7 +513,7 @@ function GUIVTMatrixMenu:Update(deltaTime)
         self:UpdateMenu(state)
     else
         local _, status, color = GetSynthesisStatus(state)
-        SetFittedText(self.miniText, "SYNTHESIS MATRIX [B]  -  " .. status, 460 - 2 * kPad)
+        SetFittedText(self.miniText, status, kMiniW - 2 * kPad - 8)
         self.miniText:SetColor(color)
     end
 
@@ -537,11 +544,13 @@ end
 -- From VT_MatrixMouseListener. Returns true to swallow the click.
 function GUIVTMatrixMenu:OnMouseDown(rightButton)
 
-    self:StopAutoSynthesis()
-
+    -- closed menu: the clicks belong to the spectator camera (switch followed player) and leave auto-synthesis
+    -- running; any click into the open menu stops it
     if not self:GetIsMenuShown() then
         return false
     end
+
+    self:StopAutoSynthesis()
 
     local x, y = Client.GetCursorPosScreen()
 

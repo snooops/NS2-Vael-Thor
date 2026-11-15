@@ -31,10 +31,8 @@ local kNewTechIds =
     -- Directives (global edicts issued from the Nexus)
     "VTEdictRequisition", "VTEdictRelentless",
 
-    -- Caste quota controls
-    "VTQuotaInfiltratorUp", "VTQuotaInfiltratorDown",
-    "VTQuotaSubjectUp",     "VTQuotaSubjectDown",
-    "VTQuotaPraetorUp",     "VTQuotaPraetorDown",
+    -- Caste requisition: the commander buys single lifeforms (Nexus > Castes menu)
+    "VTBuyInfiltrator", "VTBuySubject", "VTBuyPraetor",
 
     -- Weapons
     "VTPlasmaCarbine", "VTPsionicBlade", "VTSubjectClaws", "VTSingularityLauncher",
@@ -194,12 +192,12 @@ kVTAutoSpawnMinDelay    = 5
 kVTSpawnMinRange        = 2
 kVTSpawnMaxRange        = 6
 
--- Caste quotas: { default, maximum }. Vanguard is always unlimited.
-kVTQuotaDefaults = { Infiltrator = 2, Subject = 2, Praetor = 1 }
-kVTQuotaMax      = { Infiltrator = 3, Subject = 4, Praetor = 2 }
-
--- No personal resources: castes cost team resources when synthesized.
-kVTCasteCost = { Infiltrator = 4, Subject = 8, Praetor = 25 }
+-- Castes (lifeforms) are requisitioned by the commander: each purchase from the Nexus > Castes menu adds ONE
+-- lifeform of that caste to the empire's stock (VTEmpireInfo); synthesizing a player as that caste uses it up
+-- (it does not come back when the soldier dies). No quotas any more, no cost at synthesis: the commander controls
+-- the resource flow by buying ahead. Vanguard is always free and unlimited.
+kVTCasteCost     = { Infiltrator = 4, Subject = 8, Praetor = 25 }   -- team res per purchase
+kVTCasteStockMax = 15                                               -- per caste (network field range)
 
 -- Imperial Authorization: round score needed for each rank
 kVTRank2Score           = 15
@@ -313,7 +311,7 @@ kVTPsionicEdictsCost = 25   kVTPsionicEdictsTime = 60
 -- Castes
 -- ----------------------------------------------------------------------------
 kVTVanguardHealth = 80          kVTVanguardArmor = 40     -- 160 effective HP, same as a marine (100/30)
-kVTInfiltratorHealth = 85       kVTInfiltratorArmor = 20     kVTInfiltratorSpeedScalar = 1.12
+kVTInfiltratorHealth = 85       kVTInfiltratorArmor = 20     kVTInfiltratorSpeedScalar = 1.344   -- 1.12 x 1.2 (+20%, 2026-11-15)
 kVTSubjectHealth = 320          kVTSubjectArmor = 80         kVTSubjectSpeedScalar = 1.15
 kVTSubjectModelScale = 1.3
 
@@ -492,7 +490,10 @@ kVTPraetorSlowRechargeDelay = 3
 kVTPraetorSlowRechargeRate  = kVTPraetorEnergy / 60
 kVTOverchargeDamageScalar   = 1.9    -- per bolt
 kVTOverchargeFireDelay      = 0.2    -- min seconds between heavy bolts
-kVTBladeDamage              = 45
+-- Psionic Blade (Infiltrator): damage = the Psionic Knife's (kVTKnife*DamageScalar, 50 vs players); hit box
+-- (width x height of the melee box swept along the swing) wider than the axe's 0.5 x 0.8.
+kVTBladeMeleeWidth          = 1.0
+kVTBladeMeleeHeight         = 1.2
 kVTClawsDamage              = 60
 kVTClawsRange               = 1.6
 kVTSingularityDamage        = 25

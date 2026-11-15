@@ -2,7 +2,7 @@
 -- GUIVTTopBar - Vael'Thor replacement for the marine top bar (hidden for the Vael'Thor team in Client.lua).
 -- Shown to every member of the Vael'Thor team (soldiers, dead soldiers in the Synthesis Matrix, commander).
 --
---   top row:   RESOURCES (+income/min) | NEXUS | SIPHONS | PYLONS | IN MATRIX | CASTES Inf/Sub/Pra vs quota
+--   top row:   RESOURCES (+income/min) | NEXUS | SIPHONS | PYLONS | IN MATRIX | CASTES AVAILABLE (lifeforms bought by the commander)
 --   below:     RESEARCH - up to three running researches/upgrades: name, progress bar, %, time left
 --
 -- Data comes from VTEmpireInfo (always relevant, filled by VTTeam:UpdateEmpireStatus on the server), so it
@@ -93,7 +93,7 @@ function GUIVTTopBar:Initialize()
     self.cells.siphons.label:SetText("SIPHONS")
     self.cells.pylons.label:SetText("PYLONS")
     self.cells.matrix.label:SetText("IN MATRIX")
-    self.cells.castes.label:SetText("CASTES / QUOTA")
+    self.cells.castes.label:SetText("CASTES AVAILABLE")
 
     -- ---- research panel (height follows the number of rows)
     self.research = self:Graphic(nil, kPanelTex, kResW, kResHeadH + kResRowH, 0, 0, kColPanel)
@@ -166,15 +166,16 @@ function GUIVTTopBar:UpdateTopRow(info)
     self.cells.matrix.value:SetText(tostring(info.statusMatrix))
     self.cells.matrix.value:SetColor(info.statusMatrix > 0 and kColIncome or kColValue)
 
+    -- lifeforms bought by the commander and not yet synthesized
     local parts = {}
-    local anyFull = false
+    local anyAvailable = false
     for _, c in ipairs(kCastes) do
-        local count, quota = info:GetCount(c[1]), info:GetQuota(c[1])
-        parts[#parts + 1] = string.format("%s %d/%d", c[2], count, quota)
-        anyFull = anyFull or (quota > 0 and count >= quota)
+        local stock = info:GetStock(c[1])
+        parts[#parts + 1] = string.format("%s %d", c[2], stock)
+        anyAvailable = anyAvailable or stock > 0
     end
     self.cells.castes.value:SetText(table.concat(parts, "   "))
-    self.cells.castes.value:SetColor(anyFull and kColFull or kColValue)
+    self.cells.castes.value:SetColor(anyAvailable and kColValue or kColFull)
 end
 
 function GUIVTTopBar:UpdateResearch(info)

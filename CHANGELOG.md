@@ -9,6 +9,8 @@ Balance numbers are always first pass.
 ## 2026-11-15
 
 ### Added
+- **Steam Workshop update** of item 3833055653 (uploaded 15:09, git tag `workshop-2026-11-15-3`): no impact
+  cinematic for carbine bolts.
 - **Steam Workshop update** of item 3833055653 (uploaded 14:47, git tag `workshop-2026-11-15-2`): auto-synthesis,
   spawn selection, Vanguard ability on right-click.
 - 🔧 **Auto-synthesis on the death screen**: every death starts a countdown (matrix timer, at least
@@ -21,6 +23,22 @@ Balance numbers are always first pass.
   limit, the Obelisk placement without facing and the map arrow fix.
 
 ### Changed
+- 🔧 **Castes are bought by the commander instead of quotas**: Nexus > Castes has Requisition Infiltrator (4 res),
+  Subject (8, needs Tier II) and Praetor (25, needs Tier III). Each purchase adds one lifeform to the empire's stock
+  (`VTEmpireInfo` stock fields, max 15 per caste); synthesizing a player as that caste uses it up, it doesn't come
+  back on death. No quotas and no team-res cost at synthesis any more, so the commander controls the res flow.
+  Without stock the player spawns as a Vanguard. Matrix menu cards show "available: N", the top bar
+  "CASTES AVAILABLE".
+- 🔧 **Synthesis Matrix menu closed on death**: B opens it; a hint box on the left of the death screen says
+  "[B] SYNTHESIS MATRIX" and shows the synthesis status / auto-synthesis countdown. Clicks only stop the
+  auto-synthesis while the menu is open (with it closed they belong to the spectator camera).
+- 🔧 **Psionic Blade = Psionic Knife damage** (Infiltrator): 45 flat → the knife's scalars (50 per swing vs
+  players, 100 vs structures), and a wider hit cone: melee box 1.0 × 1.2 m instead of the axe's 0.5 × 0.8
+  (`kVTBladeMeleeWidth/Height`).
+- 🔧 **Infiltrator +20% movement speed**: `kVTInfiltratorSpeedScalar` 1.12 → 1.344 (× marine speed).
+- 🔧 **No weapon swapping between the factions**: Vael'Thor weapons (Plasma Carbine, Singularity Launcher)
+  are no longer droppable, so they vanish with a dead soldier instead of lying on the ground for marines. Vael'Thor
+  soldiers can't pick up any weapon (no E pickup, no auto pickup, no prompt).
 - 🔧 **No impact cinematic for Vanguard carbine bolts** (FPS drops under sustained fire, one cinematic per
   bolt): only the ricochet sound and the small scorch decal remain (`Hooks/DamageEffects.lua`). Praetor splash
   bolts keep their impact.
@@ -34,6 +52,9 @@ Balance numbers are always first pass.
   target selector, so the direction step inherited from the vanilla Sentry did nothing.
 
 ### Fixed
+- 🔧 **Shots over cover hit the cover**: plasma bolts start at a muzzle point below the eye, so peeking over a
+  structure the eye saw the target but the bolt hit the structure. If the muzzle's line to the aim point is blocked
+  short of it, the bolt now starts at the eye (`GetClearBoltStart`, Vanguard carbine and Praetor).
 - ✅ **Own arrow on the map (C) stayed Vael'Thor** after switching from the Vael'Thor to the aliens via the ready
   room. The map re-sets its icon atlas every time it opens, and the mod forgot there that it had put a caste icon
   on the arrow, so it never restored the vanilla arrow on a team switch (`GUI/GUIVTMinimap.lua`).

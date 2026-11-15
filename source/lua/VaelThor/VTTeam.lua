@@ -3,7 +3,7 @@
 --
 -- Derived from MarineTeam so the engine-level marine team type keeps working,
 -- but with its own:
---   * Synthesis Matrix spawning   (no Infantry Portals, caste quotas, loadouts)
+--   * Synthesis Matrix spawning   (no Infantry Portals, castes bought by the commander, loadouts)
 --   * Subvention Network          (structure power + psi shield/ammo regen fields)
 --   * tech tree
 -- ============================================================================
@@ -17,7 +17,7 @@ local N = kTechId.None
 local kMatrixUpdateInterval = 0.25
 local kNoSpawnMessageInterval = 20
 
--- Caste -> entity class name used for quota counting.
+-- Caste -> entity class name used for counting the live castes.
 local kCasteClassNames =
 {
     Infiltrator = "VTInfiltrator",
@@ -246,15 +246,12 @@ function VTTeam:InitTechTree()
     t:AddTargetedActivation(kTechId.VTShieldPulse,   N, N)
     t:AddTargetedActivation(kTechId.VTNexusRecall,   kTechId.VTNexusGate, N)
 
-    -- Directives and caste quotas (Nexus)
+    -- Directives and caste requisition (Nexus). Buying a lifeform needs the caste's tech (kVTClassRequirements).
     t:AddActivation(kTechId.VTEdictRequisition,   N, N)
     t:AddActivation(kTechId.VTEdictRelentless,    N, N)
-    t:AddActivation(kTechId.VTQuotaInfiltratorUp, N, N)
-    t:AddActivation(kTechId.VTQuotaInfiltratorDown, N, N)
-    t:AddActivation(kTechId.VTQuotaSubjectUp,     N, N)
-    t:AddActivation(kTechId.VTQuotaSubjectDown,   N, N)
-    t:AddActivation(kTechId.VTQuotaPraetorUp,     N, N)
-    t:AddActivation(kTechId.VTQuotaPraetorDown,   N, N)
+    t:AddActivation(kTechId.VTBuyInfiltrator,     N, N)
+    t:AddActivation(kTechId.VTBuySubject,         kTechId.VTAuthorizationTier2, N)
+    t:AddActivation(kTechId.VTBuyPraetor,         kTechId.VTAuthorizationTier3, N)
 
     -- Synthesis Chamber research
     t:AddResearchNode(kTechId.VTAuthorizationTier2,  kTechId.VTSynthesisChamber,   N)
@@ -587,13 +584,10 @@ function VTTeam:ResolveCaste(desiredClass)
         return kVTClass.Vanguard, "VT_MSG_CASTE_LOCKED"
     end
 
+    -- one requisitioned lifeform of the caste must be in stock (the commander bought it, Nexus > Castes)
     local info = VT_GetEmpireInfo()
-    if info and info:GetCount(caste) >= info:GetQuota(caste) then
-        return kVTClass.Vanguard, "VT_MSG_QUOTA_FULL"
-    end
-
-    if self:GetTeamResources() < (kVTCasteCost[caste] or 0) then
-        return kVTClass.Vanguard, "VT_MSG_NO_RES"
+    if not info or info:GetStock(caste) < 1 then
+        return kVTClass.Vanguard, "VT_MSG_NO_STOCK"
     end
 
     return desiredClass
@@ -660,9 +654,11 @@ function VTTeam:SynthesizePlayer(player, host)
         newPlayer:SetCameraDistance(0)
     end
 
-    local casteCost = kClassToCaste[class] and kVTCasteCost[kClassToCaste[class]] or 0
-    if casteCost > 0 then
-        self:AddTeamResources(-casteCost)
+    -- synthesized as a requisitioned caste: that lifeform is used up (already paid for when the commander bought it)
+    local caste = kClassToCaste[class]
+    local info = caste and VT_GetEmpireInfo()
+    if info then
+        info:SetStock(caste, info:GetStock(caste) - 1)
     end
 
     if downgradeMessage then
@@ -711,7 +707,7 @@ function VTTeam:UpdateSynthesisMatrix()
         -- the player's chosen Nexus (matrix menu SPAWN AT), else any host as before
         local host = player.VT_GetSpawnNexus and player:VT_GetSpawnNexus() or hosts[math.random(#hosts)]
         self:SynthesizePlayer(player, host)
-        -- Re-count so quotas hold within a single wave.
+        -- Re-count the live castes (top bar / matrix menu); the stock is updated per synthesis.
         self:UpdateCasteCounts()
     end
 

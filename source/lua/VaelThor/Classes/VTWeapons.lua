@@ -284,6 +284,12 @@ function VTPlasmaCarbine:OnCreate()
     self.vtRechargeProgress = 0
 end
 
+-- Vael'Thor weapons never lie on the ground: not droppable, so Marine:DropAllWeapons skips them on death and
+-- Marine:DestroyWeapons removes them with the body (marines could pick them up before).
+function VTPlasmaCarbine:GetIsDroppable()
+    return false
+end
+
 -- No right-click: the vanilla rifle butt melee (ClipWeapon secondary) is not part of the carbine.
 -- Player:SecondaryAttack only calls OnSecondaryAttack when the weapon has a secondary.
 function VTPlasmaCarbine:GetHasSecondary(player)
@@ -371,6 +377,26 @@ function VTPlasmaCarbine:GetSpread()
     return VTBase.Rifle.GetSpread(self) * kVTCarbineSpreadScalar
 end
 
+-- Where a bolt starts. The muzzle sits below/beside the eye for the look, but the crosshair aims from the eye:
+-- peeking over cover, the eye line is clear while the lower muzzle line runs into the cover (shots hit the
+-- structure in front instead of the target above it). If the muzzle is inside geometry, or its line to the aim
+-- point is blocked short of it, the bolt starts at the eye instead - that line is clear by definition.
+local kBoltStartAimTolerance = 0.3   -- m before the aim point that still counts as "reached"
+local function GetClearBoltStart(eyePos, muzzle, aimPoint, filter)
+    if Shared.TraceRay(eyePos, muzzle, CollisionRep.Damage, PhysicsMask.Bullets, filter).fraction < 1 then
+        return eyePos
+    end
+    local toAim = aimPoint - muzzle
+    local distance = toAim:GetLength()
+    if distance > kBoltStartAimTolerance then
+        local trace = Shared.TraceRay(muzzle, aimPoint, CollisionRep.Damage, PhysicsMask.Bullets, filter)
+        if trace.fraction < 1 and trace.fraction * distance < distance - kBoltStartAimTolerance then
+            return eyePos
+        end
+    end
+    return muzzle
+end
+
 -- Plasma bolt instead of hitscan bullets: aim from the eye (spread as the rifle), launch from the gun.
 function VTPlasmaCarbine:FirePrimary(player)
 
@@ -385,10 +411,10 @@ function VTPlasmaCarbine:FirePrimary(player)
     local aimTrace = Shared.TraceRay(eyePos, eyePos + direction * 150, CollisionRep.Damage, PhysicsMask.Bullets, filter)
     local aimPoint = aimTrace.endPoint
 
-    -- muzzle: right of and below the eye (same convention as the HMG barrel point), kept out of walls
+    -- muzzle: right of and below the eye (same convention as the HMG barrel point); the eye if the muzzle is in a
+    -- wall or its line of fire is blocked (cover)
     local muzzle = eyePos + viewCoords.zAxis * 0.55 - viewCoords.xAxis * 0.13 - viewCoords.yAxis * 0.16
-    local muzzleTrace = Shared.TraceRay(eyePos, muzzle, CollisionRep.Damage, PhysicsMask.Bullets, filter)
-    local startPoint = muzzleTrace.fraction < 1 and eyePos or muzzle
+    local startPoint = GetClearBoltStart(eyePos, muzzle, aimPoint, filter)
 
     local toAim = aimPoint - startPoint
     local boltDir = toAim:GetLengthSquared() > 1 and GetNormalizedVector(toAim) or direction
@@ -474,8 +500,19 @@ if Client then
     end
 end
 
+-- Same damage as the Vanguard's Psionic Knife (VTPsionicKnife:GetVTDamageScalar): the frozen axe code deals the
+-- vanilla kAxeDamage, scaled by the knife's structure / player scalars.
 function VTPsionicBlade:GetVTDamageScalar(target)
-    return kVTBladeDamage / VT_Vanilla("kAxeDamage")   -- the frozen axe code deals the vanilla kAxeDamage
+    if target and target.GetReceivesStructuralDamage and target:GetReceivesStructuralDamage(VT_Vanilla("kAxeDamageType")) then
+        return kVTKnifeStructureDamageScalar
+    end
+    return kVTKnifePlayerDamageScalar
+end
+
+-- Wider hit cone than the axe: the melee box swept along the swing is kVTBladeMeleeWidth x kVTBladeMeleeHeight
+-- (vanilla axe 0.5 x 0.8, fade swipe 0.7 x 1.2, skulk bite 1.2 x 1.2).
+function VTPsionicBlade:GetMeleeBase()
+    return kVTBladeMeleeWidth, kVTBladeMeleeHeight
 end
 
 function VTPsionicBlade:GetHasSecondary(player)
@@ -797,6 +834,11 @@ function VTSingularityLauncher:OnCreate()
     self.ammo = 0
 end
 
+-- disappears with its owner (see VTPlasmaCarbine:GetIsDroppable)
+function VTSingularityLauncher:GetIsDroppable()
+    return false
+end
+
 function VTSingularityLauncher:GetClipSize()
     return kSingularityShells
 end
@@ -1038,10 +1080,7 @@ local function FireBolt(self, player)
     local filter = EntityFilterTwo(player, self)
     local aim = Shared.TraceRay(eyePos, eyePos + direction * 150, CollisionRep.Damage, PhysicsMask.Bullets, filter).endPoint
 
-    local start = GetBoltStart(self, player)
-    if Shared.TraceRay(eyePos, start, CollisionRep.Damage, PhysicsMask.Bullets, filter).fraction < 1 then
-        start = eyePos
-    end
+    local start = GetClearBoltStart(eyePos, GetBoltStart(self, player), aim, filter)
     local toAim = aim - start
     local boltDir = toAim:GetLengthSquared() > 1 and GetNormalizedVector(toAim) or direction
 

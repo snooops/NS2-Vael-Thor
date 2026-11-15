@@ -9,9 +9,9 @@
 --
 -- Selected Nexus buttons:
 --   main : Requisition Mandate, Relentless Advance, Iron Discipline,
---          Archon's Throne (research), Caste Quotas (sub menu),
+--          Archon's Throne (research), Castes (sub menu: buy lifeforms),
 --          Upgrade to Nexus Gate (until upgraded)
---   quota: Infiltrator +/-, Subject +/-, Praetor +/-, back
+--   castes: buy Infiltrator / Subject / Praetor (one lifeform each), back
 -- ============================================================================
 
 -- Team skins come from the commander's team cosmetic slots and are re-applied every update; they would paint
@@ -223,19 +223,16 @@ local kNexusButtons =
 
 local kQuotaMenuButtons =
 {
-    kTechId.VTQuotaInfiltratorUp, kTechId.VTQuotaInfiltratorDown, kTechId.VTQuotaSubjectUp, kTechId.VTQuotaSubjectDown,
-    kTechId.VTQuotaPraetorUp,     kTechId.VTQuotaPraetorDown,     N,                        kTechId.RootMenu,
+    kTechId.VTBuyInfiltrator, kTechId.VTBuySubject, kTechId.VTBuyPraetor, N,
+    N,                        N,                    N,                    kTechId.RootMenu,
 }
 
--- techId -> { quota field name, delta }
-kVTQuotaActions =
+-- techId -> caste whose stock a purchase raises by one (the commander pays kTechDataCostKey = kVTCasteCost)
+kVTCasteBuyActions =
 {
-    [kTechId.VTQuotaInfiltratorUp]   = { "Infiltrator",  1 },
-    [kTechId.VTQuotaInfiltratorDown] = { "Infiltrator", -1 },
-    [kTechId.VTQuotaSubjectUp]       = { "Subject",      1 },
-    [kTechId.VTQuotaSubjectDown]     = { "Subject",     -1 },
-    [kTechId.VTQuotaPraetorUp]       = { "Praetor",      1 },
-    [kTechId.VTQuotaPraetorDown]     = { "Praetor",     -1 },
+    [kTechId.VTBuyInfiltrator] = "Infiltrator",
+    [kTechId.VTBuySubject]     = "Subject",
+    [kTechId.VTBuyPraetor]     = "Praetor",
 }
 
 local kEdictMessages =
@@ -267,11 +264,9 @@ local function GetEmpireActionAllowed(techId)
         return info:GetEdictReady(techId)
     end
 
-    local quota = kVTQuotaActions[techId]
-    if quota then
-        local current = info:GetQuota(quota[1])
-        local target = current + quota[2]
-        return target >= 0 and target <= kVTQuotaMax[quota[1]]
+    local caste = kVTCasteBuyActions[techId]
+    if caste then
+        return info:GetStock(caste) < kVTCasteStockMax
     end
 
     return nil
@@ -307,10 +302,10 @@ if Server then
                 return true, true
             end
 
-            local quota = kVTQuotaActions[techId]
-            if quota then
-                info:SetQuota(quota[1], info:GetQuota(quota[1]) + quota[2])
-                return true, true
+            local caste = kVTCasteBuyActions[techId]
+            if caste then
+                info:SetStock(caste, info:GetStock(caste) + 1)
+                return true, false      -- one lifeform per click, even with several Nexuses selected
             end
 
         end

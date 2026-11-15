@@ -179,7 +179,7 @@ Server.HookNetworkMessage("VTMatrixChoice", function(client, message)
     end
 end)
 
--- Debug helper: "vt_status" prints quotas, counts and directive timers.
+-- Debug helper: "vt_status" prints caste counts / stock and directive timers.
 Event.Hook("Console_vt_status", function(client)
     local info = VT_GetEmpireInfo()
     if not info then
@@ -187,10 +187,10 @@ Event.Hook("Console_vt_status", function(client)
         return
     end
     local now = Shared.GetTime()
-    Shared.Message(string.format("[Vael'Thor] Infiltrator %d/%d  Subject %d/%d  Praetor %d/%d",
-            info:GetCount("Infiltrator"), info:GetQuota("Infiltrator"),
-            info:GetCount("Subject"), info:GetQuota("Subject"),
-            info:GetCount("Praetor"), info:GetQuota("Praetor")))
+    Shared.Message(string.format("[Vael'Thor] alive / in stock: Infiltrator %d/%d  Subject %d/%d  Praetor %d/%d",
+            info:GetCount("Infiltrator"), info:GetStock("Infiltrator"),
+            info:GetCount("Subject"), info:GetStock("Subject"),
+            info:GetCount("Praetor"), info:GetStock("Praetor")))
     Shared.Message(string.format("[Vael'Thor] Requisition active %.0fs, ready in %.0fs | Relentless active %.0fs, ready in %.0fs",
             math.max(0, info.requisitionEnd - now), math.max(0, info.requisitionReady - now),
             math.max(0, info.relentlessEnd - now), math.max(0, info.relentlessReady - now)))

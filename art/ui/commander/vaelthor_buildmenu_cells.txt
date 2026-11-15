@@ -15,12 +15,9 @@ VTInfiltrator 1 17
 VTSubject 2 17
 VTPraetor 3 17
 VTQuotaMenu 4 17
-VTQuotaInfiltratorUp 5 17
-VTQuotaInfiltratorDown 6 17
-VTQuotaSubjectUp 7 17
-VTQuotaSubjectDown 8 17
-VTQuotaPraetorUp 9 17
-VTQuotaPraetorDown 10 17
+VTBuyInfiltrator 5 17
+VTBuySubject 7 17
+VTBuyPraetor 9 17
 VTArchonsThrone 11 17
 VTEdictRequisition 0 18
 VTEdictRelentless 1 18
