@@ -83,7 +83,8 @@ kVTStrings =
     VT_MSG_MATCHUP_NEXT            = "Faction matchup: %s - starts with the next map.",
 
     VT_OBELISK                     = "Sentinel Obelisk",
-    VT_OBELISK_TOOLTIP             = "Psionic beam turret: a steady beam on one target. Fires only while standing inside the Subvention field - no battery needed.",
+    VT_OBELISK_TOOLTIP             = "Psionic beam turret: a steady beam on one target. Fires only while standing inside the Subvention field - no battery needed. Limit: 1 per Nexus, 2 with Authorization Tier II, 3 with Tier III.",
+    VT_OBELISK_LIMIT               = "Obelisk limit reached: 1 per Nexus, 2 with Authorization Tier II, 3 with Tier III",
     VT_OBELISK_PRISM               = "Prism Lens",
     VT_OBELISK_PRISM_TOOLTIP       = "Upgrades this Obelisk: up to 2 beams. 1 beam 115% damage, 2 beams 90% each.",
     VT_OBELISK_TRINITY             = "Trinity Lens",

@@ -9,6 +9,10 @@ Balance numbers are always first pass.
 ## 2026-11-15
 
 ### Changed
+- ✅ **Sentinel Obelisk limit**: 1 Obelisk per built Nexus at Authorization Tier I, 2 with Tier II, 3 with Tier III
+  (`VT_CheckObeliskLimit`, `Hooks/Globals.lua`). Unbuilt Obelisks count; unbuilt or destroyed Nexuses don't.
+  Losing a Nexus keeps existing Obelisks and only blocks new ones. The supply cost inherited from the vanilla
+  Sentry (15, which capped the team at 13 Obelisks) is gone, so the limit is the only cap.
 - ✅ **Sentinel Obelisk placement** no longer asks the commander for a facing. It fires all-round with its own
   target selector, so the direction step inherited from the vanilla Sentry did nothing.
 

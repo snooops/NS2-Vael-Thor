@@ -542,6 +542,48 @@ function VT_GetSubventionFieldGuides(commander)
 
 end
 
+-- Sentinel Obelisk limit (kTechDataBuildRequiresMethod, runs on the commander's client for the ghost and on the
+-- server): Obelisks per built Nexus = 1 (Authorization Tier I, the starting tier), 2 with Tier II, 3 with
+-- Tier III. Every Obelisk counts, built or not. Losing a Nexus leaves existing Obelisks standing; it only
+-- blocks new ones until the team is below the limit again.
+function VT_GetObeliskLimit(teamNumber, techEntity)
+
+    local perNexus = 1
+    if techEntity and GetHasTech(techEntity, kTechId.VTAuthorizationTier3, true) then
+        perNexus = 3
+    elseif techEntity and GetHasTech(techEntity, kTechId.VTAuthorizationTier2, true) then
+        perNexus = 2
+    end
+
+    local numNexus = 0
+    for _, nexus in ipairs(GetEntitiesForTeam("VTNexus", teamNumber)) do
+        if nexus:GetIsAlive() and (not nexus.GetIsBuilt or nexus:GetIsBuilt()) then
+            numNexus = numNexus + 1
+        end
+    end
+
+    return numNexus * perNexus, perNexus
+
+end
+
+function VT_GetNumObelisks(teamNumber)
+    local count = 0
+    for _, obelisk in ipairs(GetEntitiesForTeam("VTSentinelObelisk", teamNumber)) do
+        if obelisk:GetIsAlive() then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+function VT_CheckObeliskLimit(techId, origin, normal, commander)
+    if not commander then
+        return true
+    end
+    local teamNumber = commander:GetTeamNumber()
+    return VT_GetNumObelisks(teamNumber) < VT_GetObeliskLimit(teamNumber, commander)
+end
+
 -- Is this one of the mod's own classes (VTVanguard, VTNexus, VTSubventionPylon, ...)? Unlike the team checks
 -- above it doesn't depend on the matchup, so it is safe in code the client's Predict VM runs (use/build
 -- prediction), where kVTTeamIndex may still be the default.

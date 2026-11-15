@@ -225,8 +225,11 @@ function BuildTechData()
         [kTechDataSpecifyOrientation] = REMOVE,   -- fires all-round (own target selector), no facing to pick
         [kStructureBuildNearClass] = REMOVE,
         [kStructureAttachRange] = REMOVE,
-        [kTechDataBuildRequiresMethod] = REMOVE,
-        [kTechDataBuildMethodFailedMessage] = REMOVE,
+        -- limit: 1 / 2 / 3 per built Nexus by Authorization tier (Hooks/Globals.lua) instead of vanilla's
+        -- 3 sentries per room next to a battery; no supply cost, so the limit is the only cap
+        [kTechDataBuildRequiresMethod] = VT_CheckObeliskLimit,
+        [kTechDataBuildMethodFailedMessage] = "VT_OBELISK_LIMIT",
+        [kTechDataSupply] = REMOVE,
     })
 
     Clone(techData, kTechId.PrototypeLab, {
