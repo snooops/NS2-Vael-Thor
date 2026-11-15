@@ -13,9 +13,9 @@ antimatter and psionics**.
   (see [Faction matchups](#faction-matchups)). The aliens are unchanged.
 - **Changes:** see [CHANGELOG.md](CHANGELOG.md) for what changed when, and why.
 
-> **Current state (2026-11-14): pre-alpha, published on the Steam Workshop** as item
+> **Current state (2026-11-15): pre-alpha, published on the Steam Workshop** as item
 > [3833055653](https://steamcommunity.com/sharedfiles/filedetails/?id=3833055653). The Workshop copy is the
-> upload from 2026-11-14 17:48 (git tag `workshop-2026-11-14-2`); later changes in the changelog aren't uploaded yet.
+> upload from 2026-11-15 12:53 (git tag `workshop-2026-11-15`); later changes in the changelog aren't uploaded yet.
 > - **Confirmed in-game:** the core loop (Nexus, commander, Synthesis Matrix respawn incl. warmup), building
 >   models and hitboxes at 80 % scale, the Vael'Thor top bar, tech map (J), palette and ready room signs,
 >   **Marines vs. Vael'Thor** with the Vael'Thor on team 2 (commander, respawn, damage-number colour, marine building),

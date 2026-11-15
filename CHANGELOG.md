@@ -8,6 +8,10 @@ Balance numbers are always first pass.
 
 ## 2026-11-15
 
+### Added
+- **Steam Workshop update** of item 3833055653 (uploaded 12:53, git tag `workshop-2026-11-15`): the Obelisk
+  limit, the Obelisk placement without facing and the map arrow fix.
+
 ### Changed
 - ✅ **Sentinel Obelisk limit**: 1 Obelisk per built Nexus at Authorization Tier I, 2 with Tier II, 3 with Tier III
   (`VT_CheckObeliskLimit`, `Hooks/Globals.lua`). Unbuilt Obelisks count; unbuilt or destroyed Nexuses don't.
