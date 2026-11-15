@@ -168,7 +168,13 @@ local function WrapMinimapClass(cls)
                     end
                 end
             end
-            self.vtOwnIcon = nil
+            -- the own arrow keeps its caste cell, so it must keep the Vael'Thor atlas too. Forgetting vtOwnIcon
+            -- here (as before) left the caste cell on the vanilla atlas after a team switch: vanilla only resets
+            -- the cell when its playerClass changes, and nothing else told it to (VT -> ready room -> aliens
+            -- showed the Vael'Thor cell on the C map, because SetIconFileName runs every time the map opens).
+            if self.vtOwnIcon and self.playerIcon then
+                self.playerIcon:SetTexture(kVTAtlas)
+            end
         end
     end)
 
@@ -187,7 +193,8 @@ local function WrapMinimapClass(cls)
             elseif self.vtOwnIcon then
                 self.playerIcon:SetTexture(self.iconFileName)
                 self.vtOwnIcon = nil
-                self.playerClass = nil      -- let vanilla re-apply its own cell
+                self.playerClass = nil      -- make vanilla re-apply its own cell right now
+                base(self)
             end
         end
     end)

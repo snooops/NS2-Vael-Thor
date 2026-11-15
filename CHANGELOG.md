@@ -6,9 +6,22 @@ Balance numbers are always first pass.
 
 ---
 
+## 2026-11-15
+
+### Changed
+- ✅ **Sentinel Obelisk placement** no longer asks the commander for a facing. It fires all-round with its own
+  target selector, so the direction step inherited from the vanilla Sentry did nothing.
+
+### Fixed
+- ✅ **Own arrow on the map (C) stayed Vael'Thor** after switching from the Vael'Thor to the aliens via the ready
+  room. The map re-sets its icon atlas every time it opens, and the mod forgot there that it had put a caste icon
+  on the arrow, so it never restored the vanilla arrow on a team switch (`GUI/GUIVTMinimap.lua`).
+
 ## 2026-11-14
 
 ### Added
+- **Steam Workshop update** of item 3833055653 (uploaded 17:48, git tag `workshop-2026-11-14-2`): the fix for the
+  stuck blue HUD squares.
 - **Steam Workshop update** of item 3833055653 (uploaded 15:50, git tag `workshop-2026-11-14`): everything since the
   2026-11-03 16:48 upload. The Workshop description now names the GPL-3.0 license and links the GitHub
   source (`mod.settings`).

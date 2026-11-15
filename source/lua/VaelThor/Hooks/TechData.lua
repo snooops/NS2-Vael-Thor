@@ -222,6 +222,7 @@ function BuildTechData()
         [kTechDataHotkey] = Move.O,
         [kTechDataRequiresPower] = false,
         [kTechDataGhostGuidesMethod] = VT_GetSubventionFieldGuides,
+        [kTechDataSpecifyOrientation] = REMOVE,   -- fires all-round (own target selector), no facing to pick
         [kStructureBuildNearClass] = REMOVE,
         [kStructureAttachRange] = REMOVE,
         [kTechDataBuildRequiresMethod] = REMOVE,
