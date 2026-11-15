@@ -39,6 +39,8 @@ ModLoader.SetupFileHook("lua/TeamMixin.lua",         H .. "TeamMixin.lua",      
 ModLoader.SetupFileHook("lua/Shade.lua",             H .. "Shade.lua",           "post")
 -- Clientless players (spawn cheat) crashed the auto-order timer every second.
 ModLoader.SetupFileHook("lua/OrderSelfMixin.lua",    H .. "OrderSelfMixin.lua",  "post")
+-- Dead Vael'Thor players (VTSpectator) joining the ready room asserted "Player isn't on team!".
+ModLoader.SetupFileHook("lua/ReadyRoomTeam.lua",     H .. "ReadyRoomTeam.lua",   "post")
 
 -- HUD: no corner minimap for the Vael'Thor (marine HUD).
 ModLoader.SetupFileHook("lua/Hud/Marine/GUIMarineHUD.lua", H .. "GUIMarineHUD.lua", "post")

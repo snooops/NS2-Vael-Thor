@@ -59,7 +59,7 @@ Every feature in this README has one of these markers:
 | **Synthesis Matrix** | Dead players pick caste and loadout in a clickable menu (or keys 1–5 / R / E; B hides it) and respawn with SYNTHESIZE / Space once the 9 s timer is over. No automatic respawn (bots excepted). | ✅ (menu + manual respawn, #1) |
 | **Caste requisition** | The commander buys single lifeforms from the Nexus > Castes menu (Infiltrator 4, Subject 8 with Tier II, Praetor 25 with Tier III). Each purchase lets one soldier be synthesized in that caste and is used up when that soldier dies. No quotas, no cost at synthesis. If none is in stock (or the caste is locked), the player spawns as a Vanguard. | 🔧 |
 | **Authorization rank** | Personal score unlocks loadout tiers: rank II at 15 points, rank III at 40. | 🟡 |
-| **No sprint, no flashlight** | Sprinting is removed for every caste (the Subject uses Shift for its sprint burst / wall hold instead). The flashlight key toggles the Targeting Visor instead. Praetors can't eject. | 🟡 |
+| **No sprint, no flashlight** | Sprinting is removed for every caste (the Subject uses Shift for its sprint burst / wall hold instead). The flashlight key toggles the Targeting Visor instead (free for every soldier: a violet heat scanner, enemies in sight outlined). Praetors can't eject. | 🟡 |
 | **Vael'Thor HUD** | Replaces the marine HUD with a "psionic crystal" design: vitals, shield, burnout, ability chips, weapon energy and directives. The corner minimap is removed, but the full map (C) still works. The hidden marine HUD no longer leaves its blue boot-up squares on screen. | 🔧 |
 | **Vael'Thor top bar** | Replaces the marine top bar for the whole team: resources + income/min, Nexus / Siphon / Pylon counts, soldiers in the Synthesis Matrix, castes available (bought, not yet synthesized). | ✅ |
 | **Research panel** | Under the top bar: up to three running researches with progress bar, % and time left, visible to every soldier. | 🔧 |
@@ -190,7 +190,6 @@ Imperial Nexus  [25]  (build anywhere)                                   🟡
     ├── Overcharge Core       [20 / 60s]  Vanguard primary, rank II       🟡
     ├── Phase Dash Module     [15 / 45s]  Vanguard module                 🟡
     ├── Shield Generator  [12]                                            🟡
-    │   └── Targeting Visor   [20 / 60s]  vision mode, all castes         🔧
     ├── Sentinel Obelisk  [12]  steady psionic beam                       🔧
     │   ├── Focus Beam (commander: lock beam 1 on a clicked enemy)        🔧
     │   ├── Single / Split Beam: 1 / 2 / 3 beams (by installed lens)      🔧

@@ -258,7 +258,7 @@ function VTTeam:InitTechTree()
     t:AddResearchNode(kTechId.VTAuthorizationTier3,  kTechId.VTAuthorizationTier2, N)
     t:AddResearchNode(kTechId.VTOverchargeTech,      kTechId.VTSynthesisChamber,   N)
     t:AddResearchNode(kTechId.VTPhaseDashTech,       kTechId.VTSynthesisChamber,   N)
-    t:AddResearchNode(kTechId.VTTargetingVisorTech,  kTechId.VTShieldGenerator,    N)
+    -- (VTTargetingVisorTech is no longer researched: the visor is free for every soldier)
     t:AddResearchNode(kTechId.VTShieldOverdriveTech, kTechId.VTAuthorizationTier2, N)
     t:AddResearchNode(kTechId.VTSingularityTech,     kTechId.VTAuthorizationTier3, N)
 

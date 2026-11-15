@@ -23,6 +23,10 @@ Balance numbers are always first pass.
   limit, the Obelisk placement without facing and the map arrow fix.
 
 ### Changed
+- 🔧 **Targeting Visor free and a violet heat scanner**: no Shield Generator research any more (every soldier,
+  flashlight key). New look: own screen effect `shaders/VTHeatVision.*` (violet rework of the alien vision shader)
+  darkens the world to violet and makes every unit glow as a heat signature with a slow scanline; the exosuit
+  reticles and the lock-on circle are gone, enemy outlines stay. Plain violet tint as fallback.
 - 🔧 **Castes are bought by the commander instead of quotas**: Nexus > Castes has Requisition Infiltrator (4 res),
   Subject (8, needs Tier II) and Praetor (25, needs Tier III). Each purchase adds one lifeform to the empire's stock
   (`VTEmpireInfo` stock fields, max 15 per caste); synthesizing a player as that caste uses it up, it doesn't come
@@ -52,6 +56,20 @@ Balance numbers are always first pass.
   target selector, so the direction step inherited from the vanilla Sentry did nothing.
 
 ### Fixed
+- 🔧 **Server script error flood from marine weapons on the ground** (playtest 2026-11-15, 20 players: ~26,000
+  errors of `WeaponOwnerMixin.lua:415: assertion failed!`, Vanguards, Infiltrators and Subjects alike). A Vael'Thor
+  soldier walking over a dropped marine welder tried to auto-pick it up every tick: the welder replaces the axe in
+  slot 3, but the Psionic Knife there can't be dropped, so the pickup failed and repeated (also with E). Already
+  fixed by "no weapon swapping between the factions" above (Vael'Thor soldiers never pick up weapons); the
+  playtest server still ran the 15:09 upload.
+- 🔧 **Dead Vael'Thor players couldn't go to the ready room** (playtest: 35× `Team.lua:520: Player isn't on
+  team!`). The ready room respawned a dead soldier as a Vael'Thor spectator, which puts itself back on the
+  Vael'Thor team, so the respawn failed and the player stayed a dead Vael'Thor. Dead Vael'Thor players now become
+  normal ready room players (`Hooks/ReadyRoomTeam.lua`).
+- 🔧 **8 "Invalid/no effect type specified for effect!" errors per map load**: the Praetor and Vanguard bolt
+  effects shared one ricochet sound table, and the effect manager converts each entry in place, so the second
+  effect found them already converted. Each effect gets its own table now (`Hooks/DamageEffects.lua`); the
+  sounds played before too.
 - 🔧 **Shots over cover hit the cover**: plasma bolts start at a muzzle point below the eye, so peeking over a
   structure the eye saw the target but the bolt hit the structure. If the muzzle's line to the aim point is blocked
   short of it, the bolt now starts at the eye (`GetClearBoltStart`, Vanguard carbine and Praetor).

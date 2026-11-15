@@ -50,7 +50,7 @@ kVTStrings =
     VT_PHASEDASH                   = "Phase Dash Module",
     VT_PHASEDASH_TOOLTIP           = "Vanguard module: short directional teleport.",
     VT_VISOR                       = "Targeting Visor",
-    VT_VISOR_TOOLTIP               = "All castes: the flashlight key toggles a visor that marks enemies in your line of sight.",
+    VT_VISOR_TOOLTIP               = "All castes, free: the flashlight key toggles a violet heat scanner that outlines enemies in your line of sight.",
     VT_OVERDRIVE                   = "Shield Overdrive",
     VT_OVERDRIVE_TOOLTIP           = "Vanguard module (rank II): full shields and +20% speed for 5s, then 8s without shields.",
 

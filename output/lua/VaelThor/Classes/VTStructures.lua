@@ -204,7 +204,7 @@ function VTShieldGenerator:OnCreate()
 end
 
 function VTShieldGenerator:GetTechButtons(techId)
-    return { self.vtAegis and N or kTechId.VTAegisArrayUpgrade, kTechId.VTTargetingVisorTech, N, N, N, N, N, N }
+    return { self.vtAegis and N or kTechId.VTAegisArrayUpgrade, N, N, N, N, N, N, N }   -- Targeting Visor: free since 2026-11-15
 end
 
 function VTShieldGenerator:GetMapBlipType()

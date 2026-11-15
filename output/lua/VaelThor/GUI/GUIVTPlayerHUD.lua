@@ -259,7 +259,7 @@ function GUIVTPlayerHUD:BuildChips(player)
         end
     end
 
-    if VT_GetTeamHasTech("VTTargetingVisorTech") then
+    do   -- the visor is free for every soldier (no research)
         local on = VT_VisionScript and VT_VisionScript:GetIsActive()
         rows[#rows + 1] = { key = "[F]", name = "TARGETING VISOR", state = on and "ON" or "off",
                             frac = on and 1 or 0, stateColor = on and kColActive or kColDim }
