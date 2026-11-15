@@ -187,6 +187,10 @@ function VT_GetRespawnTime()
     end
     return kVTRespawnTime
 end
+-- Auto-synthesis: a dead player is synthesized automatically once the matrix timer has run out, but never
+-- sooner than this after death (warmup has no matrix timer, so this leaves time to change the loadout or to
+-- click, which stops the automatic synthesis; see VTSpectator).
+kVTAutoSpawnMinDelay    = 5
 kVTSpawnMinRange        = 2
 kVTSpawnMaxRange        = 6
 

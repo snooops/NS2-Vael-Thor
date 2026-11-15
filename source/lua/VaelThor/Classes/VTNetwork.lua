@@ -20,15 +20,19 @@ Shared.RegisterNetworkMessage("VTMatrixLoadout",
     secondary = "integer (0 to 15)",
     readyTime = "float",       -- when synthesis becomes possible (0 = not queued yet)
     armed     = "boolean",     -- the player asked to be synthesized
+    autoTime  = "float",       -- when automatic synthesis happens (0 = stopped by a click / not queued)
+    spawnName = "string (64)", -- chosen spawn Nexus ("" = any host)
+    spawnCount = "integer (0 to 15)",  -- built Nexuses to choose from
 })
 
 -- Client -> server: a Synthesis Matrix menu choice (GUIVTMatrixMenu: clicks and
 -- keys, sent as a message so it works in every spectator camera mode).
 -- 1-4 caste, 5 module, 6 primary mod, 7 secondary, 8 toggle "synthesize me",
--- 9-11 cycle module / primary / secondary backwards (VTSpectator:VT_ApplyChoice).
+-- 9-11 cycle module / primary / secondary backwards, 12 stop auto-synthesis,
+-- 13 / 14 next / previous spawn Nexus (VTSpectator:VT_ApplyChoice).
 Shared.RegisterNetworkMessage("VTMatrixChoice",
 {
-    choice = "integer (1 to 11)",
+    choice = "integer (1 to 14)",
 })
 
 -- Server -> players near a plasma bolt impact: play the impact locally

@@ -9,10 +9,18 @@ Balance numbers are always first pass.
 ## 2026-11-15
 
 ### Added
+- 🔧 **Auto-synthesis on the death screen**: every death starts a countdown (matrix timer, at least
+  `kVTAutoSpawnMinDelay` = 5 s, so warmup isn't instant) and the player respawns automatically. Any mouse click
+  while dead stops it; then SYNTHESIZE / Space works as before (`VTSpectator:VT_GetAutoSynthTime`).
+- 🔧 **Spawn selection**: the Synthesis Matrix menu has a SPAWN AT row (left / right click) to pick a built Nexus
+  by location, or any host (random Nexus or active Synthesis Chamber, the old behaviour). Remembered across
+  lives; falls back to any host if that Nexus is gone. Names come from the server (`VTMatrixLoadout.spawnName`).
 - **Steam Workshop update** of item 3833055653 (uploaded 12:53, git tag `workshop-2026-11-15`): the Obelisk
   limit, the Obelisk placement without facing and the map arrow fix.
 
 ### Changed
+- 🔧 **Vanguard ability on right-click** instead of B (Shield Boost / Phase Dash / Shield Overdrive): none of
+  the Vanguard's weapons has a secondary attack. HUD chip shows `[RMB]`. Infiltrator and Praetor keep B.
 - ✅ **Sentinel Obelisk limit**: 1 Obelisk per built Nexus at Authorization Tier I, 2 with Tier II, 3 with Tier III
   (`VT_CheckObeliskLimit`, `Hooks/Globals.lua`). Unbuilt Obelisks count; unbuilt or destroyed Nexuses don't.
   Losing a Nexus keeps existing Obelisks and only blocks new ones. The supply cost inherited from the vanilla

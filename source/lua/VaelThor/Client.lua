@@ -484,6 +484,9 @@ Client.HookNetworkMessage("VTMatrixLoadout", function(message)
         vtSecondary    = message.secondary,
         readyTime      = message.readyTime,
         armed          = message.armed,
+        autoTime       = message.autoTime,
+        spawnName      = message.spawnName,
+        spawnCount     = message.spawnCount,
     }
 end)
 

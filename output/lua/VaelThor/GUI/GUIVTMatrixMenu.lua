@@ -6,9 +6,12 @@
 --   * four caste cards with a portrait (ui/vaelthor/caste_portraits.dds, from
 --     art/ui/make_caste_portraits.sh), quota, cost and lock state (click, or keys 1-4)
 --   * three loadout rows (left click / right click cycles; keys 5, R, E)
---   * SYNTHESIZE button (click, or Space). There is no automatic respawn: the
---     server synthesizes the player only after this request. Asking while the
---     matrix timer still runs arms the request ("ARMED"); click again to cancel.
+--   * SPAWN AT row: which built Nexus to be synthesized at, or any host (left /
+--     right click cycles; the server sends the names, see VTMatrixLoadout)
+--   * auto-synthesis: every death starts a countdown (button "AUTO-SYNTHESIS");
+--     ANY mouse click stops it (choice 12), then the player synthesizes manually:
+--   * SYNTHESIZE button (click, or Space). Asking while the matrix timer still
+--     runs arms the request ("ARMED"); click again to cancel.
 --   * B hides / shows the menu (hidden: a small status chip stays at the bottom,
 --     camera control comes back). The number keys keep working while hidden.
 --
@@ -47,14 +50,14 @@ local kColWarn          = St.kColWarn
 local kColActive        = St.kColActive
 
 local kMargin = 28
-local kPanelW, kPanelH = 1100, 760
+local kPanelW, kPanelH = 1100, 812
 local kCardW, kCardH, kCardGap, kCardY = 245, 330, 16, 100
 local kPortraitH = 196
 local kPad = 12                                             -- text inset inside cards / rows
 local kDescY = kCardY + kCardH + 12
 local kRowW, kRowH, kRowGap, kRowY = kPanelW - 2 * kMargin, 42, 8, 512
 local kRowLabelW, kRowValueX, kRowValueW = 210, 250, 420   -- label column, value column
-local kButtonW, kButtonH, kButtonY = 400, 62, 664
+local kButtonW, kButtonH, kButtonY = 400, 62, 714
 
 local kCastes =
 {
@@ -70,9 +73,11 @@ local kRows =
     { key = "5", label = "TACTICAL MODULE", field = "vtModule",     prefix = "VT_MODULE_",    req = "kVTModuleRequirements",     fwd = 5, back = 9 },
     { key = "R", label = "PRIMARY",         field = "vtPrimaryMod", prefix = "VT_PRIMARY_",   req = "kVTPrimaryModRequirements", fwd = 6, back = 10 },
     { key = "E", label = "SECONDARY",       field = "vtSecondary",  prefix = "VT_SECONDARY_", req = "kVTSecondaryRequirements",  fwd = 7, back = 11 },
+    { key = "",  label = "SPAWN AT",        spawn = true,                                                                  fwd = 13, back = 14 },
 }
 
 local kSynthesizeChoice = 8
+local kStopAutoChoice   = 12
 
 -- Keys work whether the menu is shown or hidden (same order as the choices 1-7).
 local kChoiceBindings = { "Weapon1", "Weapon2", "Weapon3", "Weapon4", "Weapon5", "Reload", "Use" }
@@ -126,11 +131,11 @@ local function GetMatrixState()
     if player and player:isa("VTSpectator") then
         return { vtDesiredClass = player.vtDesiredClass, vtModule = player.vtModule,
                  vtPrimaryMod = player.vtPrimaryMod, vtSecondary = player.vtSecondary,
-                 readyTime = 0, armed = false }
+                 readyTime = 0, armed = false, autoTime = 0, spawnName = "", spawnCount = 0 }
     end
     return { vtDesiredClass = kVTClass.Vanguard, vtModule = kVTModule.ShieldBoost,
              vtPrimaryMod = kVTPrimaryMod.Standard, vtSecondary = kVTSecondary.Pistol,
-             readyTime = 0, armed = false }
+             readyTime = 0, armed = false, autoTime = 0, spawnName = "", spawnCount = 0 }
 end
 
 -- ----------------------------------------------------------------------------
@@ -242,7 +247,7 @@ function GUIVTMatrixMenu:Initialize()
             value = self:Text(body, Fonts.kAgencyFB_Small, kRowValueX + kRowValueW / 2, kRowH / 2, GUIItem.Align_Center, kColText),
             lock  = self:Text(body, Fonts.kAgencyFB_Small, kRowW - kPad - 4, kRowH / 2, GUIItem.Align_Max, kColWarn),
         }
-        row.key:SetText("[" .. def.key .. "]")
+        row.key:SetText(def.key ~= "" and ("[" .. def.key .. "]") or "")
         SetFittedText(row.label, def.label, kRowLabelW - 44)
         self.rows[i] = row
     end
@@ -253,7 +258,7 @@ function GUIVTMatrixMenu:Initialize()
     self.buttonText = self:Text(self.button, Fonts.kAgencyFB_Medium, kButtonW / 2, kButtonH / 2, GUIItem.Align_Center, kColText)
 
     self.hint = self:Text(self.panel, Fonts.kAgencyFB_Small, kPanelW / 2, kPanelH - 18, GUIItem.Align_Center, kColDimText)
-    SetFittedText(self.hint, "[Space] synthesize    [B] hide menu    left / right click: cycle loadout", kPanelW - 2 * kMargin)
+    SetFittedText(self.hint, "click: stop auto-synthesis    [Space] synthesize    [B] hide menu    left / right click: cycle", kPanelW - 2 * kMargin)
 
     -- ---- small chip while the menu is hidden
     self.mini = self:Box(nil, kChipTex, 460, 46, 0, 0, kColCardBody, kColFrame, kGUILayerPlayerHUDForeground1)
@@ -324,6 +329,15 @@ local function GetSynthesisStatus(state)
     local readyTime = state.readyTime or 0
     if readyTime <= 0 then
         return "AWAITING MATRIX", "waiting for a matrix slot", kColDimText
+    end
+    local autoTime = state.autoTime or 0
+    if autoTime > 0 and not state.armed then
+        local autoLeft = autoTime - now
+        if autoLeft > 0 then
+            return string.format("AUTO-SYNTHESIS  -  %d", math.ceil(autoLeft)),
+                   string.format("auto-synthesis in %d s - click to stop", math.ceil(autoLeft)), kColActive
+        end
+        return "SYNTHESIZING...", "synthesizing...", kColActive
     end
     local remaining = readyTime - now
     if remaining > 0 then
@@ -423,11 +437,23 @@ function GUIVTMatrixMenu:UpdateMenu(state)
 
     for _, row in ipairs(self.rows) do
         local def = row.def
-        local value = state[def.field] or 1
-        SetFittedText(row.value, "<   " .. VT_GetString(def.prefix .. tostring(value)) .. "   >", kRowValueW)
-        local lock = LockReason(_G[def.req][value], rank)
-        SetFittedText(row.lock, lock and ("locked: " .. lock .. " - default used") or "",
-                kRowW - (kRowValueX + kRowValueW) - kPad - 12)
+        local lockW = kRowW - (kRowValueX + kRowValueW) - kPad - 12
+        if def.spawn then
+            local name = state.spawnName or ""
+            SetFittedText(row.value, "<   " .. (name ~= "" and string.upper(name) or "ANY HOST") .. "   >", kRowValueW)
+            local note
+            if name == "" then
+                note = (state.spawnCount or 0) > 0 and string.format("random host  -  %d Nexus to choose", state.spawnCount)
+                        or "random host"
+            end
+            row.lock:SetColor(kColDimText)
+            SetFittedText(row.lock, note or "", lockW)
+        else
+            local value = state[def.field] or 1
+            SetFittedText(row.value, "<   " .. VT_GetString(def.prefix .. tostring(value)) .. "   >", kRowValueW)
+            local lock = LockReason(_G[def.req][value], rank)
+            SetFittedText(row.lock, lock and ("locked: " .. lock .. " - default used") or "", lockW)
+        end
         local hovered = GetHovered(row.body)
         row.frame:SetColor(hovered and kColFrameHover or kColFrame)
         row.body:SetColor(hovered and kColCardBodyHover or kColCardBody)
@@ -437,13 +463,14 @@ function GUIVTMatrixMenu:UpdateMenu(state)
     SetFittedText(self.buttonText, label, kButtonW - 2 * kPad)
     self.buttonText:SetColor(color)
     local ready = (state.readyTime or 0) > 0 and Shared.GetTime() >= state.readyTime and not state.armed
+            and (state.autoTime or 0) <= 0
     local frameColor, bodyColor = kColFrame, kColCardBody
     if GetHovered(self.button) then
         frameColor, bodyColor = kColFrameHover, kColCardBodyHover
     elseif ready then
         local pulse = 0.75 + 0.25 * math.sin(Shared.GetTime() * 6)
         frameColor = Color(kColReady.r * pulse, kColReady.g * pulse, kColReady.b * pulse, 1)
-    elseif state.armed then
+    elseif state.armed or (state.autoTime or 0) > 0 then
         frameColor = kColActive
     end
     self.buttonFrame:SetColor(frameColor)
@@ -492,8 +519,25 @@ local function SendChoice(choice)
     Client.SendNetworkMessage("VTMatrixChoice", { choice = choice }, true)
 end
 
+-- Any click while dead stops the auto-synthesis countdown (once; the local copy is updated at once so the
+-- button changes before the server's answer arrives).
+function GUIVTMatrixMenu:StopAutoSynthesis()
+    if not self.wasDead or not GetIsDeadVTSoldier() then
+        return
+    end
+    local state = GetMatrixState()
+    if (state.autoTime or 0) > 0 then
+        SendChoice(kStopAutoChoice)
+        if VT_MatrixLoadout then
+            VT_MatrixLoadout.autoTime = 0
+        end
+    end
+end
+
 -- From VT_MatrixMouseListener. Returns true to swallow the click.
 function GUIVTMatrixMenu:OnMouseDown(rightButton)
+
+    self:StopAutoSynthesis()
 
     if not self:GetIsMenuShown() then
         return false

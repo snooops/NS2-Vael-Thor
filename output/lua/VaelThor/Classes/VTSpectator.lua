@@ -6,10 +6,14 @@
 --   1 Vanguard   2 Infiltrator   3 Subject   4 Praetor
 --   5 cycle tactical module   R cycle primary mod   E cycle secondary
 --   Space / SYNTHESIZE button: request synthesis
--- There is no automatic respawn: once the matrix timer (kVTRespawnTime) has run
--- out the player is synthesized only after asking for it. Asking early arms the
--- request so synthesis happens the moment the timer ends. Bots are synthesized
--- automatically. The loadout is remembered per client across lives.
+--   SPAWN AT row: which built Nexus to be synthesized at (or any host)
+-- Auto-synthesis: every death starts it; the player is synthesized once the
+-- matrix timer (kVTRespawnTime) has run out, but not before kVTAutoSpawnMinDelay.
+-- Any mouse click in the menu stops it (choice 12); from then on the player is
+-- synthesized only after asking for it. Asking early arms the request so
+-- synthesis happens the moment the timer ends. Bots are synthesized
+-- automatically. The loadout and the spawn Nexus are remembered per client
+-- across lives.
 -- ============================================================================
 
 class 'VTSpectator' (MarineSpectator)
@@ -75,6 +79,7 @@ if Server then
             self.vtModule       = prefs.module    or self.vtModule
             self.vtPrimaryMod   = prefs.primary   or self.vtPrimaryMod
             self.vtSecondary    = prefs.secondary or self.vtSecondary
+            self.vtSpawnNexusId = prefs.spawnNexus or self.vtSpawnNexusId
         end
         self.vtPrefsLoaded = client ~= nil
     end
@@ -88,6 +93,7 @@ if Server then
                 module    = self.vtModule,
                 primary   = self.vtPrimaryMod,
                 secondary = self.vtSecondary,
+                spawnNexus = self.vtSpawnNexusId,
             }
         end
     end
@@ -104,6 +110,57 @@ if Server then
     end
 
     local kChoiceClasses = { kVTClass.Vanguard, kVTClass.Infiltrator, kVTClass.Subject, kVTClass.Praetor }
+
+    -- Built, living Nexuses of the team in a stable order (entity id): the spawn choices besides "any host".
+    local function GetSpawnNexuses(teamNumber)
+        local list = {}
+        for _, nexus in ipairs(GetEntitiesForTeam("VTNexus", teamNumber)) do
+            if nexus:GetIsAlive() and nexus:GetIsBuilt() then
+                list[#list + 1] = nexus
+            end
+        end
+        table.sort(list, function(a, b) return a:GetId() < b:GetId() end)
+        return list
+    end
+
+    -- The chosen spawn Nexus if it is still a valid host, else nil (= any host, the vanilla-style random pick).
+    function VTSpectator:VT_GetSpawnNexus()
+        local id = self.vtSpawnNexusId
+        if not id or id == Entity.invalidId then
+            return nil
+        end
+        local nexus = Shared.GetEntity(id)
+        if nexus and nexus:isa("VTNexus") and nexus:GetTeamNumber() == self:GetTeamNumber()
+                and nexus:GetIsAlive() and nexus:GetIsBuilt() then
+            return nexus
+        end
+        return nil
+    end
+
+    -- step +1 / -1 through: any host, Nexus 1, Nexus 2, ...
+    function VTSpectator:VT_CycleSpawnNexus(step)
+        local list = GetSpawnNexuses(self:GetTeamNumber())
+        local current = self:VT_GetSpawnNexus()
+        local index = 0
+        for i, nexus in ipairs(list) do
+            if nexus == current then index = i end
+        end
+        index = (index + step) % (#list + 1)
+        self.vtSpawnNexusId = list[index] and list[index]:GetId() or Entity.invalidId
+    end
+
+    local function GetSpawnName(nexus, list)
+        if not nexus then
+            return ""
+        end
+        local name = nexus.GetLocationName and nexus:GetLocationName() or ""
+        if name == "" then
+            for i, other in ipairs(list) do
+                if other == nexus then name = "Nexus " .. i end
+            end
+        end
+        return string.sub(name, 1, 60)
+    end
 
     -- choice: 1-4 caste, 5 cycle module, 6 cycle primary mod, 7 cycle secondary,
     -- 8 toggle the synthesis request, 9-11 cycle module/primary/secondary back.
@@ -126,6 +183,10 @@ if Server then
             self.vtPrimaryMod = CycleBack(self.vtPrimaryMod, kVTPrimaryMod)
         elseif choice == 11 then
             self.vtSecondary = CycleBack(self.vtSecondary, kVTSecondary)
+        elseif choice == 12 then
+            self.vtAutoStopped = true
+        elseif choice == 13 or choice == 14 then
+            self:VT_CycleSpawnNexus(choice == 13 and 1 or -1)
         else
             return
         end
@@ -149,9 +210,22 @@ if Server then
         return entryTime and (entryTime + VT_GetRespawnTime()) or 0
     end
 
+    -- When auto-synthesis happens (0 = stopped by a click, or not queued yet).
+    function VTSpectator:VT_GetAutoSynthTime()
+        local entryTime = self.GetRespawnQueueEntryTime and self:GetRespawnQueueEntryTime()
+        if self.vtAutoStopped or not entryTime then
+            return 0
+        end
+        return math.max(entryTime + VT_GetRespawnTime(), entryTime + kVTAutoSpawnMinDelay)
+    end
+
     -- Checked by VTTeam:UpdateSynthesisMatrix once the timer has run out.
     function VTSpectator:VT_GetWantsSynthesis()
         if self.vtSynthArmed then
+            return true
+        end
+        local autoTime = self:VT_GetAutoSynthTime()
+        if autoTime > 0 and Shared.GetTime() >= autoTime then
             return true
         end
         local client = self:GetClient()
@@ -169,6 +243,7 @@ if Server then
             return
         end
         local readyTime = self:VT_GetSynthReadyTime()
+        local list = GetSpawnNexuses(self:GetTeamNumber())
         Server.SendNetworkMessage(self, "VTMatrixLoadout",
         {
             class     = self.vtDesiredClass,
@@ -177,6 +252,9 @@ if Server then
             secondary = self.vtSecondary,
             readyTime = readyTime,
             armed     = self.vtSynthArmed == true,
+            autoTime  = self:VT_GetAutoSynthTime(),
+            spawnName = GetSpawnName(self:VT_GetSpawnNexus(), list),
+            spawnCount = math.min(#list, 15),
         }, true)
         self.vtSentReadyTime = readyTime
         self.vtNextLoadoutSync = Shared.GetTime() + 2

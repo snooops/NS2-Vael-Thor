@@ -696,8 +696,8 @@ function VTTeam:UpdateSynthesisMatrix()
     end
 
     -- Copy first: synthesizing modifies the respawn queue.
-    -- No automatic respawn (issue #1): after the timer the player must ask for
-    -- synthesis in the matrix menu (bots always want it, see VTSpectator).
+    -- After the timer the player is synthesized if they asked for it in the matrix menu or auto-synthesis is
+    -- still running (a click stops it), see VTSpectator:VT_GetWantsSynthesis; bots always want it.
     local ready = {}
     for _, player in ipairs(queue) do
         if player and player.GetRespawnQueueEntryTime and player:GetRespawnQueueEntryTime()
@@ -708,7 +708,9 @@ function VTTeam:UpdateSynthesisMatrix()
     end
 
     for _, player in ipairs(ready) do
-        self:SynthesizePlayer(player, hosts[math.random(#hosts)])
+        -- the player's chosen Nexus (matrix menu SPAWN AT), else any host as before
+        local host = player.VT_GetSpawnNexus and player:VT_GetSpawnNexus() or hosts[math.random(#hosts)]
+        self:SynthesizePlayer(player, host)
         -- Re-count so quotas hold within a single wave.
         self:UpdateCasteCounts()
     end

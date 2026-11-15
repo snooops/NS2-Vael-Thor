@@ -11,7 +11,7 @@ kVTStrings =
     VT_SIPHON_TOOLTIP              = "Strips the planet of raw material. Must stand inside the Subvention field to operate.",
 
     VT_VANGUARD                    = "Vanguard Legionnaire",
-    VT_VANGUARD_TOOLTIP            = "Core infantry. Plasma Carbine and a tactical module. Unlimited quota.",
+    VT_VANGUARD_TOOLTIP            = "Core infantry. Plasma Carbine and a tactical module (right-click). Unlimited quota.",
     VT_INFILTRATOR                 = "Infiltrator",
     VT_INFILTRATOR_TOOLTIP         = "Scout/assassin. Cloaking field (B) and Psionic Blade; right-click with the blade hacks nearby enemy structures.",
     VT_SUBJECT                     = "Subject (Bio-Construct)",

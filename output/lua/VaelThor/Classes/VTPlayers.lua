@@ -292,6 +292,22 @@ if Server then
 end
 
 InstallShared(VTVanguard)
+
+-- The Vanguard's module ability (Shield Boost / Phase Dash / Shield Overdrive) is on right-click instead of B
+-- (TertiaryAttack): none of the Vanguard's weapons has a secondary attack (carbine, knife and Singularity
+-- Launcher all report GetHasSecondary false), so the button is free. Defined after InstallShared, which would
+-- otherwise overwrite these with the shared B handlers.
+function VTVanguard:SecondaryAttack()
+    if not self.secondaryAttackLastFrame and Server and self:GetIsAlive()
+            and self:VT_GetAbilityReady() and self.VT_UseAbility then
+        self:VT_UseAbility()
+    end
+    VTBase.Marine.SecondaryAttack(self) -- still reaches a weapon secondary, should one ever be added
+end
+
+function VTVanguard:TertiaryAttack()
+end
+
 InstallNoSprint(VTVanguard)
 InstallNoFlashlight(VTVanguard)
 VT_InstallShield(VTVanguard, true)

@@ -206,7 +206,7 @@ function GUIVTPlayerHUD:BuildChips(player)
 
     local name, cooldown = CasteAbility(player)
     if name then
-        local row = { key = "[B]", name = name }
+        local row = { key = player:isa("VTVanguard") and "[RMB]" or "[B]", name = name }
         if isInfiltrator and parasited then
             row.state, row.frac, row.stateColor, row.color = "BLOCKED", 0, kColWarn, kColWarn
         elseif player.VT_GetAbilityActive and player:VT_GetAbilityActive() then
