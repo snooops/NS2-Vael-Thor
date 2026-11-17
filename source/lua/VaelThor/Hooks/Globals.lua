@@ -147,6 +147,7 @@ kVTMapNames =
     Subject         = "vt_subject",
     Praetor         = "vt_praetor",
     Praetor2        = "vt_praetor2",
+    Artificer       = "vt_artificer",
     Spectator       = "vt_spectator",
 
     Nexus           = "vt_nexus",
@@ -164,6 +165,7 @@ kVTMapNames =
     Knife           = "vt_psionicknife",
     SingularityBolt = "vt_singularitybolt",
     HomingMissile   = "vt_homingmissile",
+    Drone           = "vt_drone",
 
     EmpireInfo      = "vt_empireinfo",
 
@@ -172,7 +174,8 @@ kVTMapNames =
 }
 
 -- Praetor2: test class (2026-11-17), only via "vt_class praetor2" (cheats); not in the Synthesis Matrix menu, no stock.
-kVTClass      = enum({ "Vanguard", "Infiltrator", "Subject", "Praetor", "Praetor2" })
+-- Artificer: concept class (2026-11-17, drone factory), only via "vt_class artificer" (cheats), same rules as Praetor2.
+kVTClass      = enum({ "Vanguard", "Infiltrator", "Subject", "Praetor", "Praetor2", "Artificer" })
 kVTModule     = enum({ "ShieldBoost", "PhaseDash", "ShieldOverdrive" })
 kVTPrimaryMod = enum({ "Standard", "Overcharge" })
 kVTSecondary  = enum({ "Pistol", "Singularity" })
@@ -394,6 +397,7 @@ kVTMaxShield =
     VTSubject           = 100,
     VTPraetor           = 200,
     VTPraetor2          = 200,
+    VTArtificer         = 260,   -- concept class: the tank of the empire
     VTNexus             = 800,   -- Imperial Nexus
     VTSiphon            = 500,   -- Resource Siphon
     VTSubventionPylon   = 250,
@@ -531,6 +535,103 @@ kVTBeamKeepAngle            = 35     -- degrees: the current target is kept this
 kVTBeamEnergyPerSecond      = 20
 kVTBeamMinEnergy            = 3      -- the beam stops below this
 kVTBeamTickInterval         = 0.1    -- s between damage ticks
+-- Artificer (CONCEPT class 2026-11-17, only "vt_class artificer" with cheats): a walking drone factory on the Praetor
+-- chassis. A big energy core (kVTArtificerEnergy) pays for three drone types built from a queue (keys 1-3), each
+-- type with its own target directive (Shift + 1-3); right click marks a target, B (Swarm Command) sends every drone
+-- at the mark. Its only own weapon is a weak auto-aim defense beam on left click (holds off about one Skulk).
+-- Tankier and slower than the Praetor. Drones: VTDrone (Classes/VTDrones.lua), HUD: GUI/GUIVTDroneBay.lua.
+kVTArtificerEnergy          = 400
+kVTArtificerRechargeRate    = 10     -- per second (empty -> full 40 s), everywhere
+kVTArtificerRechargeDelay   = 0.5    -- s after spending
+kVTArtificerHealthScalar    = 1.25   -- x the Praetor's max health
+kVTArtificerSpeedScalar     = 0.9    -- x the Praetor's max speed
+kVTArtificerMaxDrones       = 6      -- alive at once (all types)
+kVTArtificerQueueSize       = 5      -- fabrication orders waiting / in progress
+kVTArtificerLeash           = 35     -- m: drones never chase further than this from the Artificer
+kVTArtificerSwarmDuration   = 8      -- s: Swarm Command (B) sends every drone at the mark
+kVTArtificerSwarmCooldown   = 20
+kVTArtificerMarkRange       = 60     -- m, right click mark
+kVTArtificerMarkAngle       = 8      -- degrees from the crosshair
+-- defense beam (left click): Praetor II beam logic with weaker numbers. A Skulk (70 hp / 10 armor) melts in ~3 s.
+kVTArtificerBeamDPS         = 30
+kVTArtificerBeamRange       = 14
+kVTArtificerBeamAngle       = 25
+kVTArtificerBeamKeepAngle   = 40
+kVTArtificerBeamEnergyPerSecond = 6
+-- drone directives (per type, cycled with Shift + 1-3)
+kVTDroneDirective = enum({ "Escort", "Hunt", "Siege", "Focus" })
+kVTDroneDirectiveNames = { "ESCORT", "HUNT", "SIEGE", "FOCUS" }
+kVTDroneDirectiveHints =
+{
+    "guards you, hits what comes close",
+    "hunts lifeforms near you",
+    "attacks structures near you",
+    "attacks your mark (RMB)",
+}
+kVTDroneEscortRadius        = 12     -- m around the Artificer that Escort drones defend
+kVTDroneSeekRadius          = 30     -- m around the Artificer that Hunt / Siege drones search
+-- drone types (index = key 1-3). beam: continuous damage like the Obelisk; sapper: flies into the target and blows up.
+kVTDroneTypes =
+{
+    {   name = "WASP", role = "fast interceptor", cost = 50, buildTime = 2.5, health = 60, radius = 0.32,
+        speed = 9.0, accel = 28, hover = 1.6, range = 5, standoff = 3, dps = 14, damageType = "Normal",
+        directive = 2, model = "models/vaelthor/drones/drone_wasp.model", beamWidth = 0.35 },
+    {   name = "LANCER", role = "ranged beam", cost = 80, buildTime = 3.5, health = 100, radius = 0.38,
+        speed = 5.5, accel = 16, hover = 2.4, range = 14, standoff = 9, dps = 20, damageType = "Normal",
+        directive = 1, model = "models/vaelthor/drones/drone_lancer.model", beamWidth = 0.5 },
+    {   name = "SAPPER", role = "anti-structure bomb", cost = 110, buildTime = 4.5, health = 140, radius = 0.4,
+        speed = 4.5, accel = 12, hover = 1.4, range = 1.5, standoff = 0, dps = 0, damageType = "Structural",
+        directive = 3, model = "models/vaelthor/drones/drone_sapper.model",
+        blastDamage = 120, blastRadius = 3.5 },      -- Structural: x2 vs structures
+}
+kVTDroneTypeCount = #kVTDroneTypes
+-- Crucible (the Artificer's look, art/artificer/build_crucible.py): leg geometry shared by the client gait
+-- (VTCrucible.lua) and the hitboxes (VTArtificer, Classes/VTPlayers.lua). NS2 local frame: +Z forward, +Y up.
+kVTCrucible =
+{
+    hipRadius = 0.50, hipHeight = 0.92,      -- hips on the hull rim
+    legAngles = { 40, 0, -40 },              -- degrees from the side axis, positive = towards the rear
+    thigh = 0.60, shin = 0.85,
+    footReach = 0.60,                        -- rest foot: this far beyond the hip, horizontally
+    unfoldTime = 1.3,                        -- s: spawn animation (legs unfold, body rises; replaces the exo deploy)
+    unfoldDrop = 0.55,                       -- m the body starts below its walking height (resting on its belly)
+    eyeHeight = 1.50,                        -- first-person camera (exo: 2.3 m; the dome top is ~1.65 m)
+}
+-- 0 (just spawned) .. 1 (unfolded), eased
+function VT_GetCrucibleUnfold(player)
+    local t = (Shared.GetTime() - (player.vtSpawnTime or 0)) / kVTCrucible.unfoldTime
+    return Clamp(t, 0, 1)
+end
+-- leg i: hip position + outward direction (local) and its tripod (1 = left front, right middle, left rear)
+function VT_GetCrucibleLegs()
+    if kVTCrucible.legs then return kVTCrucible.legs end
+    local legs = {}
+    for _, deg in ipairs(kVTCrucible.legAngles) do
+        for _, side in ipairs({ -1, 1 }) do
+            local a = math.rad(deg)
+            local out = Vector(side * math.cos(a), 0, -math.sin(a))      -- Blender +Y (rear) = NS2 -Z
+            local row = deg > 0 and 3 or (deg == 0 and 2 or 1)
+            local tripod = ((side < 0) == (row % 2 == 1)) and 1 or 2
+            legs[#legs + 1] = { hip = out * kVTCrucible.hipRadius + Vector(0, kVTCrucible.hipHeight, 0), out = out, tripod = tripod }
+        end
+    end
+    kVTCrucible.legs = legs
+    return legs
+end
+-- two-bone IK, knee above the hip-foot line: returns knee, ankle (ankle = foot clamped to the leg's reach)
+function VT_CrucibleKnee(hip, foot)
+    local L1, L2 = kVTCrucible.thigh, kVTCrucible.shin
+    local toFoot = foot - hip
+    local dist = math.max(0.05, math.min(toFoot:GetLength(), L1 + L2 - 0.01))
+    local u = GetNormalizedVector(toFoot)
+    local along = (L1 * L1 - L2 * L2 + dist * dist) / (2 * dist)
+    local h = math.sqrt(math.max(0, L1 * L1 - along * along))
+    local bend = Vector(0, 1, 0) - u * u.y
+    if bend:GetLengthSquared() < 1e-6 then bend = Vector(1, 0, 0) end
+    bend:Normalize()
+    return hip + u * along + bend * h, hip + u * dist
+end
+
 -- Plasma Carbine energy cell: no clips, no reload. Recharges round by round
 -- inside the Subvention field, slower than it can be emptied (~8 s to empty
 -- at rifle fire rate, ~13 s to refill).
@@ -676,6 +777,7 @@ kVTClassMapNames =
     [kVTClass.Subject]     = kVTMapNames.Subject,
     [kVTClass.Praetor]     = kVTMapNames.Praetor,
     [kVTClass.Praetor2]    = kVTMapNames.Praetor2,
+    [kVTClass.Artificer]   = kVTMapNames.Artificer,
 }
 
 kVTClassNames =
@@ -685,6 +787,7 @@ kVTClassNames =
     [kVTClass.Subject]     = "SUBJECT",
     [kVTClass.Praetor]     = "PRAETOR",
     [kVTClass.Praetor2]    = "PRAETOR II",
+    [kVTClass.Artificer]   = "ARTIFICER",
 }
 
 -- Requirements for each loadout choice: minimum Authorization rank and the

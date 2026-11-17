@@ -1,19 +1,35 @@
 Debug: 
 Building project 'vaelthor'...
 Debug: Building project Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\build\vaelthor.fev...
-Debug: Unique sound defs 1/3
+Debug: Unique sound defs 1/11
 Debug: Retrieving sound file info...
 Debug: Retrieving reverb info...
 Debug: FEV file written ok
 Debug: Unique Envelope Points: 0 of 0
-Debug: Unique Strings: 137 characters of 137
+Debug: Unique Strings: 557 characters of 557
 Debug: Caching sound file details for ''...
+Debug: crucible_hum.wav
+Debug: crucible_jump.wav
+Debug: crucible_land.wav
+Debug: crucible_servo.wav
+Debug: crucible_step1.wav
+Debug: crucible_step2.wav
+Debug: crucible_step3.wav
+Debug: crucible_unfold.wav
 Debug: missile_explode.wav
 Debug: missile_flight.wav
 Debug: missile_launch.wav
 Debug: Building 'vaelthor.fsb'
-Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_flight.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_jump.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_hum.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_land.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_servo.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_step1.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_step2.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_step3.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_unfold.wav
 Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_explode.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_flight.wav
 Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_launch.wav
 Debug: Writing FSB...
 Debug: Finished building FSB

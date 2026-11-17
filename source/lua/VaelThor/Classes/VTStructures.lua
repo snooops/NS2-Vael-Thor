@@ -668,7 +668,8 @@ if Client then
         return facing, turned
     end
 
-    local function UpdateBeamFx(fx, startPoint, endPoint, index, cameraPos)
+    -- widthScale (optional): thinner beams for the Artificer's defense beam and its drones
+    local function UpdateBeamFx(fx, startPoint, endPoint, index, cameraPos, widthScale)
 
         local toEnd = endPoint - startPoint
         local length = toEnd:GetLength()
@@ -683,9 +684,10 @@ if Client then
         -- a steady beam with a slight shimmer
         local t = Shared.GetTime()
         local shimmer = 1 + 0.12 * math.sin(t * 37 + index * 2.1) + 0.06 * math.sin(t * 91 + index)
+        local width = kBeamWidth * (widthScale or 1)
 
-        DynamicMesh_SetLine(fx.meshes[1], coords,  kBeamWidth * shimmer, length, kBeamColorStart, kBeamColorEnd)
-        DynamicMesh_SetLine(fx.meshes[2], crossed, kBeamWidth * shimmer * 0.6, length, kBeamColorStart, kBeamColorEnd)
+        DynamicMesh_SetLine(fx.meshes[1], coords,  width * shimmer, length, kBeamColorStart, kBeamColorEnd)
+        DynamicMesh_SetLine(fx.meshes[2], crossed, width * shimmer * 0.6, length, kBeamColorStart, kBeamColorEnd)
 
         local lightCoords = Coords.GetIdentity()
         lightCoords.origin = endPoint - direction * 0.3

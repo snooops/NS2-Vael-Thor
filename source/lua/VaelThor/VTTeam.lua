@@ -39,6 +39,7 @@ local kClassTechIds =
     [kVTClass.Subject]     = kTechId.VTSubject,
     [kVTClass.Praetor]     = kTechId.VTPraetor,
     [kVTClass.Praetor2]    = kTechId.VTPraetor,   -- test class: Praetor tech data (extents), no caste stock
+    [kVTClass.Artificer]   = kTechId.VTPraetor,   -- concept class: Praetor chassis, no caste stock
 }
 
 -- ----------------------------------------------------------------------------
@@ -576,8 +577,8 @@ end
 -- optional message key explaining a downgrade to Vanguard.
 function VTTeam:ResolveCaste(desiredClass)
 
-    -- test class (vt_class praetor2): kept across respawns while cheats are on, no stock / tech needed
-    if desiredClass == kVTClass.Praetor2 then
+    -- test / concept classes (vt_class praetor2 | artificer): kept across respawns while cheats are on, no stock / tech
+    if desiredClass == kVTClass.Praetor2 or desiredClass == kVTClass.Artificer then
         return Shared.GetCheatsEnabled() and desiredClass or kVTClass.Vanguard
     end
 

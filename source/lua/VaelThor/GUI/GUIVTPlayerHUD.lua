@@ -30,11 +30,12 @@ local kColActive  = Color(1.00, 0.85, 1.00, 1)
 local kColWarn    = Color(1.00, 0.42, 0.42, 1)
 
 local kMargin = 20
-local kVitalsW, kVitalsH = 380, 120
+local kVitalsW, kVitalsH = 380, 128
 local kChipW, kChipH, kChipGap = 300, 34, 6
 local kMaxChips = 5
 
-local kCasteNames = { VTVanguard = "VANGUARD", VTInfiltrator = "INFILTRATOR", VTSubject = "SUBJECT", VTPraetor = "PRAETOR", VTPraetor2 = "PRAETOR II" }
+local kCasteNames = { VTVanguard = "VANGUARD", VTInfiltrator = "INFILTRATOR", VTSubject = "SUBJECT", VTPraetor = "PRAETOR", VTPraetor2 = "PRAETOR II",
+                      VTArtificer = "ARTIFICER" }
 
 local function S(x, y) return GUIScale(Vector(x, y, 0)) end
 
@@ -103,16 +104,16 @@ function GUIVTPlayerHUD:Initialize()
     -- ---- bottom left: vitals
     self.vitals = self:Graphic(nil, kPanelTex, kVitalsW, kVitalsH, 0, 0, kColPanel)
     Anchored(self.vitals, GUIItem.Left, GUIItem.Bottom, kMargin, -kMargin - kVitalsH)
-    self.caste       = self:Text(self.vitals, Fonts.kAgencyFB_Small, 18, 15, nil, kColDim)
-    self.healthLabel = self:Text(self.vitals, Fonts.kAgencyFB_Small, 18, 33, nil, kColText)
-    self.healthValue = self:Text(self.vitals, Fonts.kAgencyFB_Small, kVitalsW - 18, 33, GUIItem.Align_Max, kColText)
-    self.healthBar   = self:Bar(self.vitals, 18, 42, kVitalsW - 36, 14)
-    self.armorLabel  = self:Text(self.vitals, Fonts.kAgencyFB_Small, 18, 64, nil, kColText)
-    self.armorValue  = self:Text(self.vitals, Fonts.kAgencyFB_Small, kVitalsW - 18, 64, GUIItem.Align_Max, kColText)
-    self.armorBar    = self:Bar(self.vitals, 18, 73, kVitalsW - 36, 7)
-    self.shieldLabel = self:Text(self.vitals, Fonts.kAgencyFB_Small, 18, 89, nil, kColText)
-    self.shieldValue = self:Text(self.vitals, Fonts.kAgencyFB_Small, kVitalsW - 18, 89, GUIItem.Align_Max, kColText)
-    self.shieldBar   = self:Bar(self.vitals, 18, 98, kVitalsW - 36, 11)
+    self.caste       = self:Text(self.vitals, Fonts.kAgencyFB_Small, 18, 14, nil, kColDim)
+    self.healthLabel = self:Text(self.vitals, Fonts.kAgencyFB_Small, 18, 41, nil, kColText)
+    self.healthValue = self:Text(self.vitals, Fonts.kAgencyFB_Small, kVitalsW - 18, 41, GUIItem.Align_Max, kColText)
+    self.healthBar   = self:Bar(self.vitals, 18, 50, kVitalsW - 36, 14)
+    self.armorLabel  = self:Text(self.vitals, Fonts.kAgencyFB_Small, 18, 72, nil, kColText)
+    self.armorValue  = self:Text(self.vitals, Fonts.kAgencyFB_Small, kVitalsW - 18, 72, GUIItem.Align_Max, kColText)
+    self.armorBar    = self:Bar(self.vitals, 18, 81, kVitalsW - 36, 7)
+    self.shieldLabel = self:Text(self.vitals, Fonts.kAgencyFB_Small, 18, 97, nil, kColText)
+    self.shieldValue = self:Text(self.vitals, Fonts.kAgencyFB_Small, kVitalsW - 18, 97, GUIItem.Align_Max, kColText)
+    self.shieldBar   = self:Bar(self.vitals, 18, 106, kVitalsW - 36, 11)
     self.healthLabel:SetText("INTEGRITY")
     self.armorLabel:SetText("ARMOR")
 
@@ -185,6 +186,8 @@ local function CasteAbility(player)
         return "SHIELD BOOST", kVTShieldBoostCooldown
     elseif player:isa("VTInfiltrator") then
         return "CLOAK FIELD", 1
+    elseif player:isa("VTArtificer") then
+        return "SWARM COMMAND", kVTArtificerSwarmCooldown
     elseif player:isa("VTPraetor") then
         return "TELEPORT DASH", kVTPraetorDashCooldown
     end
@@ -231,7 +234,10 @@ function GUIVTPlayerHUD:BuildChips(player)
             local remaining = player.VT_GetAbilityCooldownRemaining and player:VT_GetAbilityCooldownRemaining() or 0
             if remaining > 0 then
                 row.state, row.frac, row.stateColor = string.format("%.0fs", remaining), 1 - remaining / cooldown, kColDim
-            elseif player:isa("VTPraetor") and (player.vtEnergy or 0) < kVTPraetorDashEnergyCost then
+            elseif player:isa("VTArtificer") and not player:VT_GetMark() then
+                row.state, row.frac, row.stateColor = "NO MARK", 0, kColDim
+            elseif player:isa("VTPraetor") and not player:isa("VTArtificer")
+                    and (player.vtEnergy or 0) < kVTPraetorDashEnergyCost then
                 row.state, row.frac = string.format("NEEDS %d ENERGY", kVTPraetorDashEnergyCost), (player.vtEnergy or 0) / kVTPraetorDashEnergyCost
                 row.stateColor, row.color = kColWarn, kColWarn
             else
@@ -258,10 +264,13 @@ function GUIVTPlayerHUD:BuildChips(player)
                             stateColor = (holding or player.vtClimbing) and kColActive or (frac >= 1 and kColReady or kColDim) }
     end
 
-    if player:isa("VTPraetor2") then   -- test class: steady psionic beam on right click
+    if player:isa("VTArtificer") then
+        -- nothing: the defense beam shows in the crosshair, drones + energy in the Drone Bay (GUIVTDroneBay)
+    elseif player:isa("VTPraetor2") then   -- test class: steady psionic beam on right click
         local energy = player.vtEnergy or 0
         local firing = player.vtBeamTargetId and player.vtBeamTargetId ~= Entity.invalidId
-        local row = { key = "[RMB]", name = "PSI BEAM" }
+        local artificer = player:isa("VTArtificer")      -- concept class: left-click defense beam
+        local row = { key = artificer and "[LMB]" or "[RMB]", name = artificer and "DEFENSE BEAM" or "PSI BEAM" }
         if energy < kVTBeamMinEnergy then
             row.state, row.frac, row.stateColor, row.color = "NO ENERGY", 0, kColWarn, kColWarn
         elseif firing then
@@ -344,9 +353,10 @@ function GUIVTPlayerHUD:UpdateWeapon(player)
     if player:isa("VTPraetor") then
         -- the exo weapon holder has no useful name/slots: show the shared minigun energy instead
         local energy = math.floor(player.vtEnergy or 0)
-        local frac = energy / kVTPraetorEnergy
-        self.weaponName:SetText("PLASMA MINIGUNS")
-        self.weaponValue:SetText(string.format("ENERGY %d / %d", energy, kVTPraetorEnergy))
+        local maxEnergy = player:VT_GetMaxEnergy()
+        local frac = energy / maxEnergy
+        self.weaponName:SetText(player:isa("VTArtificer") and "FABRICATOR CORE" or "PLASMA MINIGUNS")
+        self.weaponValue:SetText(string.format("ENERGY %d / %d", energy, maxEnergy))
         SetBar(self.weaponBar, frac, frac < 0.25 and kColWarn or kColEnergy)
         for _, s in ipairs(self.slots) do
             s.box:SetIsVisible(false)
@@ -451,5 +461,10 @@ function GUIVTPlayerHUD:Update(deltaTime)
     self:UpdateTop(player)
     self:UpdateVitals(player)
     self:UpdateChips(player)
-    self:UpdateWeapon(player)
+    -- the Artificer's core energy is in the Drone Bay panel (GUIVTDroneBay): no weapon panel
+    local showWeapon = not player:isa("VTArtificer")
+    self.weapon:SetIsVisible(showWeapon)
+    if showWeapon then
+        self:UpdateWeapon(player)
+    end
 end

@@ -15,5 +15,6 @@ speeds["VTInfiltrator"] = speeds["Marine"]
 speeds["VTSubject"]     = speeds["Marine"]
 speeds["VTPraetor"]     = speeds["Exo"]
 speeds["VTPraetor2"]    = speeds["Exo"]
+speeds["VTArtificer"]   = speeds["Exo"]
 
 setmetatable(speeds, { __index = function(t) return rawget(t, "Default") or 1.0 end })

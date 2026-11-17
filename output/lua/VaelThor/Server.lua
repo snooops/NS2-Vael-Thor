@@ -260,7 +260,7 @@ Event.Hook("Console_vt_botclass", function(client, className, countArg)
 
 end)
 
--- Debug helper (cheats): "vt_class <vanguard|infiltrator|subject|praetor|praetor2>" (praetor2: test class, only here)
+-- Debug helper (cheats): "vt_class <vanguard|infiltrator|subject|praetor|praetor2|artificer>" (praetor2 / artificer: test + concept class, only here)
 -- Switches the calling player's caste immediately (bypasses quota/res/tech).
 -- While dead, it just selects the caste in the Synthesis Matrix.
 Event.Hook("Console_vt_class", function(client, className)
@@ -275,7 +275,7 @@ Event.Hook("Console_vt_class", function(client, className)
 
     local class, name = VT_ParseClassArg(className)
     if not class then
-        ServerAdminPrint(client, "[Vael'Thor] usage: vt_class <vanguard|infiltrator|subject|praetor|praetor2>")
+        ServerAdminPrint(client, "[Vael'Thor] usage: vt_class <vanguard|infiltrator|subject|praetor|praetor2|artificer>")
         return
     end
 

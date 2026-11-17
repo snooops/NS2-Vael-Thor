@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+albedoMap = "models/vaelthor/crucible/crucible.dds"
+normalMap = "models/vaelthor/crucible/crucible_normal.dds"
+emissiveMap = "models/vaelthor/crucible/crucible_illum.dds"
+specularMap = "models/vaelthor/crucible/crucible_spec.dds"
+surface = "metal"

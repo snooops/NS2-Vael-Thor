@@ -8,6 +8,91 @@ Balance numbers are always first pass.
 
 ## 2026-11-17
 
+### Added — Artificer (concept class)
+- ✅ **Crucible look** (user's pick from the concept round, `art/artificer/concepts/`): the Artificer is drawn as a
+  six-legged crab foundry built in Blender (`art/artificer/build_crucible.sh` → `models/vaelthor/crucible/`: body
+  with furnace dome, open iris, pincers, emitter, belly Sapper pods; spinning crystal core; thigh / shin / foot).
+  **Why not Tripo:** a mechanical design is cleaner built directly, and rigid parts can be animated without a
+  skeleton. `VTCrucible.lua` (client, new file) hides the Titan and places the parts every frame: procedural tripod
+  gait (feet stay planted, step in an arc when too far off, two alternating tripods), two-bone IK with upward
+  knees, body bob, core spin / pulse / flare on drone launch. The defense beam fires from the Crucible's emitter,
+  drones launch from the iris, the laser guns are gone. Hitboxes are still the Titan's (2.4 m exo capsule).
+- ✅ **Crucible spawn animation** (user: the spawn still showed the exo animation). **Why:** the exo deploy (camera
+  bouncing up from below, 1.4 s input lock, cockpit light `exo_login`) belongs to a pilot climbing into a suit. The
+  Artificer skips it (`creationTime` set into the past, no `exo_login`) and the Crucible unfolds instead
+  (`kVTCrucible.unfoldTime` 1.3 s from the networked `vtSpawnTime`, so it plays only at spawn): resting on its
+  belly with the legs folded under the hull, tripod 1 then tripod 2 lift and plant at their rest points, the body
+  rises 0.55 m, the core grows and flares. First person: the camera rises with the body, eased, no bounce.
+- ✅ **Crucible sounds** (user request "new movement sounds"): own synthesised sounds
+  (`art/sound/make_crucible_sounds.py`, new event group `crucible` in the Vael'Thor bank; `make_fdp.py` now builds
+  several groups): 3 foot-plant variants (thud + metallic clank + hydraulic hiss; one per landing tripod, random
+  variant), a servo whine loop while walking, a quiet furnace hum loop from the core, and an unfold sound at spawn.
+  The gait now also runs in first person (sounds; the body is just not drawn). The exo's sounds are off for the
+  Artificer: footsteps (world model + `view_step` tag), the cockpit idle hum, the hydraulic deploy sound
+  (`deploy_start`) and the cockpit screen dissolve (`deploy_end`).
+  Fix after the first test (script error every frame, `VTCrucible.lua:88 attempt to index local 'sound'`): the
+  sounds were precached only on the client; sound indices come from the server's precache list, so they had none
+  and `Client.CreateSoundEffect` returned nil. Now precached in shared code (`kVTCrucibleSounds`, VTPlayers.lua);
+  a missing sound is skipped silently.
+- ✅ **Crucible sounds, second pass** (user: the synthesised ones sounded "lol"; wanted authentic, mechanical,
+  robotic). Now built from NS2's own mechanical recordings: `art/sound/fsb5_extract.py` (new, minimal FSB5 reader)
+  cuts samples out of the game's banks, ffmpeg decodes them, `make_crucible_sounds.py` cuts / pitches /
+  time-stretches (sox) and layers them: steps = metal footfall + heavy marine step (pitched down) + sentry servo
+  chirp + armory hydraulic hiss; servo loop = armory deploy motor whine; hum = ambient generic hum; unfold = the
+  ARC deploy compressed to 1.75 s. New jump (hydraulic release + ARC lock thump + clank) and land (pitched-down
+  metal bash + heavy footfall + scrape) replace the exo's: `Hooks/DamageEffects.lua` puts an empty "stop"
+  component for VTArtificer first in every vanilla jump / land / footstep block with an Exo entry and adds the
+  Crucible's own jump / land block.
+  User: all Crucible sounds −30 dB, then (inaudible) +15 dB and +6 dB back: net −9 dB (`make_fdp.py`: steps −15,
+  servo −23, hum −27, unfold −13, jump −13, land −12 dB); the missile sounds are unchanged.
+- ✅ **First-person spawn no longer the exo's** (user: "still looks like an exo"): the exo view model (cockpit, arms,
+  deploy animation) showed until its override materials loaded. `VTArtificer:ModifyViewModelCoords` (asked by
+  ViewModel:OnAdjustModelCoords every frame) moves it 100 m behind the camera from the first frame; its FOV stays.
+- ✅ **Artificer first person + HUD clean-up** (user, with a screenshot: camera too high for the model, HUD
+  overloaded, the beam came out of a shoulder cannon). Eye height 1.5 m instead of the exo's 2.3 m
+  (`kVTCrucible.eyeHeight`, `GetMaxViewOffsetHeight`). New `crucible_view.model` built in camera space: emitter
+  turret at the bottom centre, pincer forearms from the lower corners; the defense beam starts at its tip, the
+  Praetor II shoulder emitter is gone for the Artificer. Drone Bay rebuilt compact (one slim panel: drones, queue
+  pips, core energy + bar; per card name / count / build bar / directive / cost; key help only for 8 s after
+  spawning, then short notices for directive changes and a full bay; the mark readout lives on the world marker).
+  No weapon panel and no defense-beam chip for the Artificer; vitals rows moved down so the caste name no longer
+  overlaps INTEGRITY (all castes); Swarm Command state shortened ("NO MARK").
+- ✅ **Titan visible for a moment at spawn** (user report). **Why:** the override materials that hide it only take
+  once the render model is ready. The Artificer now also sets its opacity to 0 on the client (`SetOpacity`,
+  applied by BaseModelMixin when the render model is created): the marine / exosuit shaders' `hiddenAmount`
+  alpha-tests every pixel away from the first frame.
+- ✅ **Crucible hitboxes** (user request: "hitbox to the real model"): the hidden Titan's model hitboxes move to
+  the ragdoll physics group (no bullet / melee / projectile / flame trace hits them); 18 kinematic boxes in the
+  player group, owned by the Artificer, follow the Crucible instead: hull (two boxes 45° apart), belly pods, dome,
+  iris, pincers + emitter, thigh + shin per leg in the rest pose. Updated every move (server) and every frame
+  (clients). Leg geometry + IK moved to `kVTCrucible` / `VT_CrucibleKnee` (Hooks/Globals.lua), shared with the gait.
+  Movement collision (player capsule) unchanged. Not lag-compensated.
+  Fix after the first test: the boxes were only updated per move, and the test dummy (`spawn vt_artificer`, no
+  client) never gets moves, so its server kept the Titan hitboxes. Now also every server tick (`OnUpdate`).
+- ✅ **Crucible gait reworked** after the first in-game test (user: "forward and backward is a bit off"). **Why:**
+  feet aimed 0.28 s of velocity ahead (~1.5 m at full speed, beyond the 1.45 m leg reach) and both tripods fell
+  behind together, so one waited while overstretched. Now a gait clock alternates the tripods while moving, the
+  step time shrinks with speed so the stride stays ≤ 0.85 m, feet land half a stride ahead (symmetric around the
+  hip; offline sim: max hip-foot 1.31 m at every speed), velocity comes from the smoothed position change, and the
+  body dips with each push-off and leans slightly into the movement. Standing / turning keeps the tidy-up steps.
+- ✅ **Artificer**, a drone-factory caste on the Praetor chassis, only via `vt_class artificer` (cheats), not in
+  the Synthesis Matrix menu. **Why:** a tanky alternative to the Praetor that fights through drones instead of
+  its own guns. 400-energy core; LMB = weak auto-aim defense beam; 1/2/3 queue Wasp / Lancer / Sapper drones,
+  4 cancels the last order; Shift + 1/2/3 cycles each type's directive (Escort / Hunt / Siege / Focus); RMB marks
+  a target; B = Swarm Command (every drone at the mark for 8 s). Max 6 drones, they die with the Artificer.
+- ✅ **`VTDrone`** (`Classes/VTDrones.lua`, new file: restart NS2): server-driven flying entity (straight flight or
+  navmesh path points, wall sliding, separation), beam damage through the drone as doer (owner gets the kill),
+  Sapper contact blast (Structural), Babbler-style kinematic sphere hitbox, client light + beam strips.
+- ✅ **Drone Bay HUD** (`GUI/GUIVTDroneBay.lua`, new file): bay panel with per-type cards, queue pips, mark
+  readout, world mark frame and drone markers with health bars. Player HUD chips: Swarm Command, defense beam,
+  "FABRICATOR CORE" energy panel.
+- 🔧 **Drone models** `art/weapons/build_drones.sh` → `models/vaelthor/drones/drone_{wasp,lancer,sapper}.model`.
+
+### Changed
+- Praetor energy pool size / recharge are methods now (`VT_GetMaxEnergy`, `VT_GetEnergyRecharge`) and the networked
+  `vtEnergy` range covers the Artificer's 400; the Praetor II beam numbers come from `VT_GetBeamParams`;
+  `VT_BeamFx.Update` takes an optional width scale. No behaviour change for Praetor / Praetor II.
+
 ### Fixed (NS2 update, build 345 / 26730580)
 - ✅ **Praetor had no guns** after the modular-exo update: `ExoWeaponHolder` now takes the view model from
   `player.viewModelName` / `viewModelGraphName` (set in `Exo:InitExoModel`, which the Praetor overrides) and

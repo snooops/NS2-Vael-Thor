@@ -60,3 +60,45 @@ GetEffectManager():AddEffectData("VaelThorBoltEffects", {
 })
 
 end -- VT_HookedDamageEffects
+
+-- ----------------------------------------------------------------------------
+-- Artificer (Crucible): own jump / land sounds instead of the exo's (it is an Exo subclass, and effect components
+-- match classnames with isa). Effect blocks are evaluated independently and "done" only ends its own block, so in
+-- every vanilla jump / land / footstep block that has an Exo component an empty "stop" component for VTArtificer
+-- is put FIRST (empty asset + done = the vanilla way to say "nothing, stop here"); the Crucible's sounds come in
+-- their own block. Footsteps are the Crucible's own (VTCrucible.lua). Sounds precached in kVTCrucibleSounds.
+-- ----------------------------------------------------------------------------
+do
+    local manager = GetEffectManager()
+    local data = manager and manager.data
+    if data and not VT_PatchedArtificerEffects then
+        VT_PatchedArtificerEffects = true
+        manager:AddEffectData("VaelThorArtificerStop", {
+            vt_artificer_stop_template = { stop = { { sound = "", classname = "VTArtificer", done = true } } },
+        })
+        local template = data.vt_artificer_stop_template
+        local stop = template and template[1] and template[1][1]
+        data.vt_artificer_stop_template = nil
+        local patched = 0
+        if stop then
+            for _, effectName in ipairs({ "jump", "land", "footstep" }) do
+                for _, block in ipairs(data[effectName] or {}) do
+                    for _, component in ipairs(block) do
+                        if component.classname == "Exo" then
+                            table.insert(block, 1, stop)
+                            patched = patched + 1
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        manager:AddEffectData("VaelThorArtificerEffects", {
+            jump = { vtArtificerJump = { { player_sound = "sound/vaelthor.fev/crucible/jump", classname = "VTArtificer", done = true } } },
+            land = { vtArtificerLand = { { player_sound = "sound/vaelthor.fev/crucible/land", classname = "VTArtificer", done = true } } },
+        })
+        if patched == 0 then
+            Shared.Message("[Vael'Thor] warning: no exo jump/land/footstep effect blocks found to silence for the Artificer")
+        end
+    end
+end

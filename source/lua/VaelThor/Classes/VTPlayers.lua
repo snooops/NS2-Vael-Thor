@@ -916,7 +916,8 @@ VT_FreezeClass(VTPraetor, { "Exo" })
 VTPraetor.kMapName = kVTMapNames.Praetor
 
 local praetorNetworkVars = AddVTNetworkVars({
-    vtEnergy = string.format("float (0 to %d by 0.0625)", kVTPraetorEnergy),
+    -- also the Artificer's (subclass) bigger core: the range covers both pools
+    vtEnergy = string.format("float (0 to %d by 0.0625)", math.max(kVTPraetorEnergy, kVTArtificerEnergy)),
     -- homing missile lock (right click), for the own crosshair only
     vtMissileLockId = "private entityid",
     vtMissileLockFraction = "private float (0 to 1 by 0.05)",
@@ -932,7 +933,7 @@ function VTPraetor:OnCreate()
     InitMixin(self, JumpMoveMixin)
     InitVTFields(self)
     self.layout = "MinigunMinigun"
-    self.vtEnergy = kVTPraetorEnergy
+    self.vtEnergy = self:VT_GetMaxEnergy()
     self.vtLastBoltTime = 0
     self.vtMissileLockId = Entity.invalidId
     self.vtMissileLockFraction = 0
@@ -987,14 +988,25 @@ end
 -- Energy pool for the plasma miniguns, homing missiles and Teleport Dash (server only; spent per bolt in
 -- VTPlasmaMinigun's FireBolt). Recharges everywhere at kVTPraetorRechargeRate, kVTPraetorRechargeDelay after the
 -- last shot (vtLastBoltTime: bolts, missiles and Teleport Dash).
+-- Pool size / recharge are methods so the Artificer (subclass) can bring its bigger, slower core.
+function VTPraetor:VT_GetMaxEnergy()
+    return kVTPraetorEnergy
+end
+
+function VTPraetor:VT_GetEnergyRecharge()
+    return kVTPraetorRechargeRate, kVTPraetorRechargeDelay
+end
+
 function VTPraetor:VT_UpdateEnergy(deltaTime)
-    if not Server or self.vtEnergy >= kVTPraetorEnergy then
+    local maxEnergy = self:VT_GetMaxEnergy()
+    if not Server or self.vtEnergy >= maxEnergy then
         return
     end
-    if Shared.GetTime() - (self.vtLastBoltTime or 0) < kVTPraetorRechargeDelay then
+    local rate, delay = self:VT_GetEnergyRecharge()
+    if Shared.GetTime() - (self.vtLastBoltTime or 0) < delay then
         return
     end
-    self.vtEnergy = math.min(kVTPraetorEnergy, self.vtEnergy + deltaTime * kVTPraetorRechargeRate)
+    self.vtEnergy = math.min(maxEnergy, self.vtEnergy + deltaTime * rate)
 end
 
 function VTPraetor:OnProcessMove(input)
@@ -1040,7 +1052,9 @@ if Server then
         if weaponHolder:GetIsActive() then
             self:SetViewModel(self.viewModelName, weaponHolder)
         end
-        weaponHolder:TriggerEffects("exo_login")
+        if not self:isa("VTArtificer") then           -- the Crucible has no cockpit (no deploy light)
+            weaponHolder:TriggerEffects("exo_login")
+        end
         self.inventoryWeight = weaponHolder:GetInventoryWeight(self)
         self:SetActiveWeapon(ExoWeaponHolder.kMapName)
     end
@@ -1191,6 +1205,23 @@ if ExoWeaponHolder and ExoWeaponHolder.CheckDualFiring and not VT_HookedPraetorD
     end
 end
 
+-- The exo view model's animation tags: footsteps for the local player ("view_step"), the hydraulic deploy sound
+-- ("deploy_start") and the cockpit screen dissolve ("deploy_end"). None of them for the Artificer's Crucible.
+if ExoWeaponHolder and ExoWeaponHolder.OnTag and not VT_HookedArtificerTags then
+    VT_HookedArtificerTags = true
+    local oldOnTag = ExoWeaponHolder.OnTag
+    local kSkip = { view_step = true, deploy_start = true, deploy_end = true }
+    function ExoWeaponHolder:OnTag(tagName)
+        if kSkip[tagName] then
+            local parent = self:GetParent()
+            if parent and parent:isa("VTArtificer") then
+                return
+            end
+        end
+        return oldOnTag(self, tagName)
+    end
+end
+
 function VTPraetor:GetMapBlipType()
     return kMinimapBlipType.Exo
 end
@@ -1248,6 +1279,16 @@ function VTPraetor2:SecondaryAttackEnd()
     self.vtBeamHeld = false
 end
 
+-- Beam numbers as a method: the Artificer (subclass) uses the same beam as its weaker left-click defense beam.
+local kPraetor2Beam =
+{
+    dps = kVTBeamDPS, range = kVTBeamRange, angle = kVTBeamAngle, keepAngle = kVTBeamKeepAngle,
+    energyPerSecond = kVTBeamEnergyPerSecond, minEnergy = kVTBeamMinEnergy,
+}
+function VTPraetor2:VT_GetBeamParams()
+    return kPraetor2Beam
+end
+
 if Server then
 
     local function GetBeamDoer(self)
@@ -1258,9 +1299,10 @@ if Server then
 
     -- replaces the missile lock (called from VTPraetor:OnProcessMove every move)
     function VTPraetor2:VT_UpdateMissile(deltaTime)
+        local beam = self:VT_GetBeamParams()
         local target
-        if self.vtBeamHeld and self:GetIsAlive() and self.vtEnergy >= kVTBeamMinEnergy then
-            target = self:VT_FindAutoTarget(Shared.GetEntity(self.vtBeamTargetId), kVTBeamAngle, kVTBeamKeepAngle, kVTBeamRange)
+        if self.vtBeamHeld and self:GetIsAlive() and self.vtEnergy >= beam.minEnergy then
+            target = self:VT_FindAutoTarget(Shared.GetEntity(self.vtBeamTargetId), beam.angle, beam.keepAngle, beam.range)
         end
         self.vtBeamTargetId = target and target:GetId() or Entity.invalidId
         if not target then
@@ -1269,9 +1311,9 @@ if Server then
         end
 
         local now = Shared.GetTime()
-        self.vtEnergy = math.max(0, self.vtEnergy - kVTBeamEnergyPerSecond * deltaTime)
+        self.vtEnergy = math.max(0, self.vtEnergy - beam.energyPerSecond * deltaTime)
         self.vtLastBoltTime = now                 -- the beam counts as firing for the recharge delay
-        self.vtBeamDamage = self.vtBeamDamage + kVTBeamDPS * deltaTime
+        self.vtBeamDamage = self.vtBeamDamage + beam.dps * deltaTime
         if now < self.vtNextBeamTick then
             return
         end
@@ -1291,3 +1333,497 @@ end
 
 -- shield, network vars and the Praetor's installs (shared, flashlight, shield) are inherited from VTPraetor
 Shared.LinkClassToMap("VTPraetor2", VTPraetor2.kMapName, praetor2NetworkVars, true)
+
+-- ----------------------------------------------------------------------------
+-- Artificer (CONCEPT class, 2026-11-17): a walking drone factory. Only reachable with "vt_class artificer" (cheats);
+-- not in the Synthesis Matrix menu, no caste stock. Built on the Praetor II (Praetor chassis, energy, shoulder beam
+-- emitter), but:
+--   * bigger, slower core: kVTArtificerEnergy, kVTArtificerRechargeRate; tankier (health x kVTArtificerHealthScalar,
+--     shield kVTMaxShield.VTArtificer) and slower (kVTArtificerSpeedScalar)
+--   * LEFT click: the shoulder beam as a weak auto-aim defense beam (kVTArtificerBeam*); the arm guns stay silent
+--   * 1 / 2 / 3: queue a Wasp / Lancer / Sapper drone (paid from the core when ordered); 4: cancel the last order
+--     (refund). One drone is fabricated at a time; it launches when its build time is up and the bay has room
+--     (kVTArtificerMaxDrones alive).
+--   * Shift + 1 / 2 / 3: cycle that drone type's directive (Escort / Hunt / Siege / Focus)
+--   * RIGHT click: mark the enemy closest to the crosshair (again on the same target / on nothing: clear the mark)
+--   * B (Swarm Command): for kVTArtificerSwarmDuration every drone attacks the mark, whatever its directive
+-- The drones (VTDrone, Classes/VTDrones.lua) read the directives / mark / swarm from their owner every think.
+-- HUD: GUI/GUIVTDroneBay.lua (bay panel, drone + mark markers), GUIVTPlayerHUD chips.
+-- ----------------------------------------------------------------------------
+-- The Crucible's sounds (played on clients by VTCrucible.lua). Precached HERE, in shared code: sound indices come
+-- from the server's precache list, so a sound precached only on the client has no index and
+-- Client.CreateSoundEffect returns nil (2026-11-17: "attempt to index local 'sound'" every frame).
+kVTCrucibleSounds =
+{
+    steps  = { PrecacheAsset("sound/vaelthor.fev/crucible/step1"), PrecacheAsset("sound/vaelthor.fev/crucible/step2"),
+               PrecacheAsset("sound/vaelthor.fev/crucible/step3") },
+    servo  = PrecacheAsset("sound/vaelthor.fev/crucible/servo"),
+    hum    = PrecacheAsset("sound/vaelthor.fev/crucible/hum"),
+    unfold = PrecacheAsset("sound/vaelthor.fev/crucible/unfold"),
+    jump   = PrecacheAsset("sound/vaelthor.fev/crucible/jump"),    -- played via effects (Hooks/DamageEffects.lua)
+    land   = PrecacheAsset("sound/vaelthor.fev/crucible/land"),
+}
+
+class 'VTArtificer' (VTPraetor2)
+
+VTArtificer.kMapName = kVTMapNames.Artificer
+
+local kQueueSlotType = string.format("private integer (0 to %d)", kVTDroneTypeCount)
+local kDroneCountType = string.format("private integer (0 to %d)", kVTArtificerMaxDrones + 2)
+local kDirectiveType = string.format("private integer (1 to %d)", #kVTDroneDirectiveNames)
+
+local artificerNetworkVars =
+{
+    vtMarkId        = "private entityid",
+    vtBuildStart    = "private time",
+    vtBuildEnd      = "private time",
+    vtBayFull       = "private boolean",       -- the order at the head is done but the bay has no room
+    vtSpawnTime     = "time",                  -- all clients: the Crucible's unfold animation (VTCrucible.lua)
+}
+for i = 1, kVTArtificerQueueSize do
+    artificerNetworkVars["vtQueue" .. i] = kQueueSlotType
+end
+for t = 1, kVTDroneTypeCount do
+    artificerNetworkVars["vtDirective" .. t] = kDirectiveType
+    artificerNetworkVars["vtDrones" .. t] = kDroneCountType
+end
+
+function VTArtificer:OnCreate()
+    VTPraetor2.OnCreate(self)
+    -- no exo deploy (camera bounce from below, 1.4 s input lock, cockpit light): the Crucible unfolds instead
+    self.creationTime = Shared.GetTime() - kExosuitDeployDuration - 1
+    self.vtSpawnTime = Shared.GetTime()
+    -- no exo cockpit hum (the Crucible's core hums instead, VTCrucible.lua)
+    if Server and self.idleSound2D then
+        self.idleSound2D:Stop()
+    end
+    self.vtEnergy = kVTArtificerEnergy
+    if Server then
+        local maxHealth = math.floor(self:GetMaxHealth() * kVTArtificerHealthScalar + 0.5)
+        self:SetMaxHealth(maxHealth)
+        self.health = maxHealth
+    end
+    self.vtMarkId = Entity.invalidId
+    self.vtBuildStart = 0
+    self.vtBuildEnd = 0
+    self.vtBayFull = false
+    for i = 1, kVTArtificerQueueSize do
+        self["vtQueue" .. i] = 0
+    end
+    for t = 1, kVTDroneTypeCount do
+        self["vtDirective" .. t] = kVTDroneTypes[t].directive
+        self["vtDrones" .. t] = 0
+    end
+    self.vtFactoryKeys = 0
+    self.vtMarkHeld = false
+    self.vtNextDroneSlot = 0
+end
+
+-- The Titan underneath must never render (VTCrucible.lua draws the Crucible). VTCrucible's override materials only
+-- take once the render model is ready, so the Titan showed for a few frames at spawn. The opacity system is applied
+-- by BaseModelMixin the moment the render model is created: hiddenAmount 1 makes the marine / exosuit shaders
+-- alpha-test every pixel away (their dissolve effect).
+function VTArtificer:OnInitialized()
+    VTPraetor2.OnInitialized(self)
+    if Client then
+        self:SetOpacity(0, "vtCrucible")
+    end
+end
+
+-- First person: the exo's view model (cockpit, minigun arms, deploy animation) must never show - the Crucible draws
+-- its own (crucible_view.model, Client.lua). Override materials only take once the model has loaded, which is after
+-- the deploy started; ViewModel:OnAdjustModelCoords asks the parent instead, every frame from the first: put the
+-- model 100 m behind the camera. Its camera FOV (the view zone's) is kept.
+function VTArtificer:ModifyViewModelCoords(coords)
+    coords.origin = coords.origin + Vector(0, 0, -100)
+    return coords
+end
+
+-- the Crucible has its own steps (VTCrucible.lua): no exo footsteps (other players' view of the world model)
+if Client then
+    function VTArtificer:TriggerFootstep()
+    end
+end
+
+-- eye at the Crucible's height (the exo's 2.3 m looked down from above the dome); also the beam / mark origin
+function VTArtificer:GetMaxViewOffsetHeight()
+    return kVTCrucible.eyeHeight
+end
+
+-- first person: the camera rises with the unfolding body (instead of the exo's bounce)
+function VTArtificer:PlayerCameraCoordsAdjustment(cameraCoords)
+    cameraCoords = VTPraetor2.PlayerCameraCoordsAdjustment(self, cameraCoords)
+    local u = VT_GetCrucibleUnfold(self)
+    if u < 1 and self:GetIsAlive() then
+        local e = 1 - (1 - u) * (1 - u) * (1 - u)          -- ease out
+        cameraCoords.origin.y = cameraCoords.origin.y - kVTCrucible.unfoldDrop * (1 - e)
+    end
+    return cameraCoords
+end
+
+function VTArtificer:VT_GetMaxEnergy()
+    return kVTArtificerEnergy
+end
+
+function VTArtificer:VT_GetEnergyRecharge()
+    return kVTArtificerRechargeRate, kVTArtificerRechargeDelay
+end
+
+local kArtificerBeam =
+{
+    dps = kVTArtificerBeamDPS, range = kVTArtificerBeamRange, angle = kVTArtificerBeamAngle,
+    keepAngle = kVTArtificerBeamKeepAngle, energyPerSecond = kVTArtificerBeamEnergyPerSecond, minEnergy = kVTBeamMinEnergy,
+}
+function VTArtificer:VT_GetBeamParams()
+    return kArtificerBeam
+end
+
+function VTArtificer:GetMaxSpeed(possible)
+    return VTPraetor2.GetMaxSpeed(self, possible) * kVTArtificerSpeedScalar
+end
+
+-- left click = defense beam (the plasma miniguns never get the attack)
+function VTArtificer:PrimaryAttack()
+    self.vtBeamHeld = true
+end
+
+function VTArtificer:PrimaryAttackEnd()
+    self.vtBeamHeld = false
+end
+
+-- right click = mark (press edge, server)
+function VTArtificer:SecondaryAttack()
+    if not self.vtMarkHeld then
+        self.vtMarkHeld = true
+        if Server then
+            self:VT_MarkTarget()
+        end
+    end
+end
+
+function VTArtificer:SecondaryAttackEnd()
+    self.vtMarkHeld = false
+end
+
+-- ---- queue helpers (shared: the HUD reads them on the client) ------------------------------------------------
+function VTArtificer:VT_GetQueueLength()
+    for i = 1, kVTArtificerQueueSize do
+        if (self["vtQueue" .. i] or 0) == 0 then
+            return i - 1
+        end
+    end
+    return kVTArtificerQueueSize
+end
+
+function VTArtificer:VT_GetDroneCount()
+    local n = 0
+    for t = 1, kVTDroneTypeCount do
+        n = n + (self["vtDrones" .. t] or 0)
+    end
+    return n
+end
+
+-- 0..1 progress of the order at the head of the queue (nil: idle)
+function VTArtificer:VT_GetBuildProgress()
+    if (self.vtQueue1 or 0) == 0 then
+        return nil
+    end
+    local span = math.max(0.01, self.vtBuildEnd - self.vtBuildStart)
+    return Clamp((Shared.GetTime() - self.vtBuildStart) / span, 0, 1)
+end
+
+function VTArtificer:VT_GetMark()
+    local mark = self.vtMarkId and self.vtMarkId ~= Entity.invalidId and Shared.GetEntity(self.vtMarkId) or nil
+    if mark and HasMixin(mark, "Live") and mark:GetIsAlive() then
+        return mark
+    end
+    return nil
+end
+
+-- 1-4: drone type keys, Shift: directive modifier
+local kFactoryKeys = { Move.Weapon1, Move.Weapon2, Move.Weapon3, Move.Weapon4 }
+local kFactoryKeyMask = bit.bor(Move.Weapon1, Move.Weapon2, Move.Weapon3, Move.Weapon4, Move.Weapon5)
+
+function VTArtificer:HandleButtons(input)
+    local commands = input.commands
+    if Server then
+        local held = bit.band(commands, kFactoryKeyMask)
+        local pressed = bit.band(held, bit.bnot(self.vtFactoryKeys or 0))
+        self.vtFactoryKeys = held
+        if pressed ~= 0 and self:GetIsAlive() then
+            local shift = bit.band(commands, Move.MovementModifier) ~= 0
+            for key, flag in ipairs(kFactoryKeys) do
+                if bit.band(pressed, flag) ~= 0 then
+                    if key == 4 then
+                        self:VT_CancelLastOrder()
+                    elseif shift then
+                        self:VT_CycleDirective(key)
+                    else
+                        self:VT_OrderDrone(key)
+                    end
+                end
+            end
+        end
+    end
+    -- the number keys never reach the weapon switch
+    input.commands = bit.band(commands, bit.bnot(kFactoryKeyMask))
+    VTPraetor2.HandleButtons(self, input)
+end
+
+if Server then
+
+    function VTArtificer:VT_OrderDrone(droneType)
+        local spec = kVTDroneTypes[droneType]
+        local length = self:VT_GetQueueLength()
+        if length >= kVTArtificerQueueSize then
+            VT_SendMessageToPlayer(self, "Fabrication queue full.")
+            return
+        end
+        if self.vtEnergy < spec.cost then
+            VT_SendMessageToPlayer(self, string.format("%s drone needs %d energy.", spec.name, spec.cost))
+            return
+        end
+        local now = Shared.GetTime()
+        self.vtEnergy = self.vtEnergy - spec.cost
+        self.vtLastBoltTime = now                       -- spending pauses the recharge
+        self["vtQueue" .. (length + 1)] = droneType
+        if length == 0 then
+            self.vtBuildStart = now
+            self.vtBuildEnd = now + spec.buildTime
+        end
+    end
+
+    function VTArtificer:VT_CancelLastOrder()
+        local length = self:VT_GetQueueLength()
+        if length == 0 then
+            return
+        end
+        local droneType = self["vtQueue" .. length]
+        self["vtQueue" .. length] = 0
+        self.vtEnergy = math.min(kVTArtificerEnergy, self.vtEnergy + kVTDroneTypes[droneType].cost)
+        if length == 1 then
+            self.vtBuildStart, self.vtBuildEnd, self.vtBayFull = 0, 0, false
+        end
+    end
+
+    function VTArtificer:VT_CycleDirective(droneType)
+        local key = "vtDirective" .. droneType
+        self[key] = (self[key] % #kVTDroneDirectiveNames) + 1
+    end
+
+    function VTArtificer:VT_MarkTarget()
+        local current = self:VT_GetMark()
+        local target = self:VT_FindAutoTarget(nil, kVTArtificerMarkAngle, kVTArtificerMarkAngle, kVTArtificerMarkRange)
+        if not target or target == current then
+            self.vtMarkId = Entity.invalidId
+        else
+            self.vtMarkId = target:GetId()
+        end
+    end
+
+    -- B: Swarm Command
+    function VTArtificer:VT_UseAbility()
+        if not self:VT_GetMark() then
+            VT_SendMessageToPlayer(self, "Swarm Command needs a marked target (right click).")
+            return
+        end
+        if self:VT_GetDroneCount() == 0 then
+            VT_SendMessageToPlayer(self, "Swarm Command: no drones in the field.")
+            return
+        end
+        self.vtAbilityActiveEnd = Shared.GetTime() + kVTArtificerSwarmDuration
+        self:VT_StartCooldown(kVTArtificerSwarmCooldown)
+    end
+
+    function VTArtificer:VT_GetSwarmActive()
+        return self:VT_GetAbilityActive() and self:VT_GetMark() ~= nil
+    end
+
+    -- Launch point: out of the Crucible's furnace iris (VTCrucible.lua: core at 1.5 m), a bit above it.
+    function VTArtificer:VT_GetDroneLaunchPoint()
+        local point = self:GetOrigin() + Vector(0, 1.95, 0)
+        local eye = self:GetEyePos()
+        local trace = Shared.TraceRay(eye, point, CollisionRep.Move, PhysicsMask.Movement, EntityFilterAll())
+        return trace.fraction < 1 and (eye + (point - eye) * math.max(0, trace.fraction - 0.15)) or point
+    end
+
+    local function UpdateDroneCounts(self)
+        local counts = {}
+        local myId = self:GetId()
+        for _, drone in ientitylist(Shared.GetEntitiesWithClassname("VTDrone")) do
+            if drone.vtOwnerId == myId and drone:GetIsAlive() then
+                local t = drone.vtDroneType
+                counts[t] = (counts[t] or 0) + 1
+            end
+        end
+        for t = 1, kVTDroneTypeCount do
+            self["vtDrones" .. t] = math.min(kVTArtificerMaxDrones + 2, counts[t] or 0)
+        end
+    end
+
+    local function UpdateFabrication(self)
+        UpdateDroneCounts(self)
+        local mark = self.vtMarkId ~= Entity.invalidId and Shared.GetEntity(self.vtMarkId)
+        if mark ~= nil and not (mark and HasMixin(mark, "Live") and mark:GetIsAlive()) then
+            self.vtMarkId = Entity.invalidId              -- the mark died / left relevancy
+        end
+        local droneType = self.vtQueue1 or 0
+        if droneType == 0 then
+            self.vtBayFull = false
+            return
+        end
+        local now = Shared.GetTime()
+        if now < self.vtBuildEnd then
+            return
+        end
+        if self:VT_GetDroneCount() >= kVTArtificerMaxDrones then
+            self.vtBayFull = true                         -- done, waits for room
+            return
+        end
+        self.vtBayFull = false
+        local drone = CreateEntity(VTDrone.kMapName, self:VT_GetDroneLaunchPoint(), self:GetTeamNumber())
+        if drone then
+            self.vtNextDroneSlot = (self.vtNextDroneSlot + 1) % kVTArtificerMaxDrones
+            drone:VT_Setup(self, droneType, self.vtNextDroneSlot)
+            self["vtDrones" .. droneType] = (self["vtDrones" .. droneType] or 0) + 1
+        end
+        -- pop the head, start the next order
+        for i = 1, kVTArtificerQueueSize - 1 do
+            self["vtQueue" .. i] = self["vtQueue" .. (i + 1)]
+        end
+        self["vtQueue" .. kVTArtificerQueueSize] = 0
+        local nextType = self.vtQueue1
+        if nextType ~= 0 then
+            self.vtBuildStart = now
+            self.vtBuildEnd = now + kVTDroneTypes[nextType].buildTime
+        else
+            self.vtBuildStart, self.vtBuildEnd = 0, 0
+        end
+    end
+
+    -- called by VTPraetor:OnProcessMove (server) every move: the defense beam, then the factory
+    function VTArtificer:VT_UpdateMissile(deltaTime)
+        VTPraetor2.VT_UpdateMissile(self, deltaTime)
+        if self:GetIsAlive() then
+            UpdateFabrication(self)
+        end
+        self:VT_UpdateHitboxes()          -- the Crucible's hitboxes follow the player (below)
+    end
+
+end
+
+-- ---- hitboxes: the Crucible's shape instead of the hidden Titan -------------------------------------------------
+-- The Titan model's own hitboxes move to the ragdoll physics group (bullets, melee, spit, grenades and flames all
+-- ignore it); kinematic boxes in the player group, owned by this entity, take their place (like the Babbler
+-- hitbox): hull (two boxes, 45 degrees apart = the octagon), belly pods, dome, iris, pincers + emitter, and a thigh
+-- and shin box per leg in its rest pose (the client's gait swings the feet +-0.4 m around it). Updated every move on
+-- the server, every server tick (OnUpdate) and every frame on clients (VTCrucible.lua). Movement collision is the player capsule, unchanged.
+-- Not lag-compensated (the engine rewinds model hitboxes only): at the Artificer's speed a high-ping shooter may
+-- be off by a few decimetres.
+local kCrucibleBoxes =      -- local centre, half extents, yaw (radians)
+{
+    { Vector(0, 0.85, 0),      Vector(0.50, 0.22, 0.50), 0 },
+    { Vector(0, 0.85, 0),      Vector(0.50, 0.22, 0.50), math.pi / 4 },
+    { Vector(0, 0.60, 0),      Vector(0.40, 0.08, 0.40), 0 },
+    { Vector(0, 1.27, -0.04),  Vector(0.33, 0.19, 0.33), 0 },
+    { Vector(0, 1.55, -0.04),  Vector(0.28, 0.11, 0.28), 0 },
+    { Vector(0, 1.05, 0.72),   Vector(0.62, 0.17, 0.30), 0 },
+}
+local kThighHalf, kShinHalf = 0.08, 0.065
+
+local function BoxCoords(origin, zAxis, yHint)
+    local c = Coords.GetIdentity()
+    c.origin = origin
+    c.zAxis = zAxis
+    local y = yHint - zAxis * zAxis:DotProduct(yHint)
+    if y:GetLengthSquared() < 1e-6 then y = Vector(1, 0, 0) end
+    y:Normalize()
+    c.yAxis = y
+    c.xAxis = y:CrossProduct(zAxis)
+    return c
+end
+
+-- every box as { coords, half extents } in world space
+function VTArtificer:VT_GetHitboxShapes()
+    local body = Angles(0, self:GetAngles().yaw, 0):GetCoords()
+    body.origin = self:GetOrigin()
+    local shapes = {}
+    for _, b in ipairs(kCrucibleBoxes) do
+        local c = Angles(0, b[3], 0):GetCoords()
+        local world = Coords.GetIdentity()
+        world.xAxis = body:TransformVector(c.xAxis)
+        world.yAxis = body:TransformVector(c.yAxis)
+        world.zAxis = body:TransformVector(c.zAxis)
+        world.origin = body:TransformPoint(b[1])
+        shapes[#shapes + 1] = { world, b[2] }
+    end
+    for _, leg in ipairs(VT_GetCrucibleLegs()) do
+        local hip = body:TransformPoint(leg.hip)
+        local foot = body:TransformPoint(leg.hip + leg.out * kVTCrucible.footReach - Vector(0, kVTCrucible.hipHeight - 0.1, 0))
+        local knee, ankle = VT_CrucibleKnee(hip, foot)
+        for _, part in ipairs({ { hip, knee, kThighHalf }, { knee, ankle, kShinHalf } }) do
+            local from, to, half = part[1], part[2], part[3]
+            local length = (to - from):GetLength()
+            shapes[#shapes + 1] = { BoxCoords((from + to) * 0.5, GetNormalizedVector(to - from), Vector(0, 1, 0)),
+                                    Vector(half, half, length * 0.5) }
+        end
+    end
+    return shapes
+end
+
+function VTArtificer:VT_DestroyHitboxes()
+    for _, box in ipairs(self.vtHitboxes or {}) do
+        Shared.DestroyCollisionObject(box)
+    end
+    self.vtHitboxes = nil
+end
+
+function VTArtificer:VT_UpdateHitboxes()
+    if not self:GetIsAlive() then
+        self:VT_DestroyHitboxes()
+        return
+    end
+    -- the hidden Titan's hitboxes: out of every damage trace (re-applied: the group is reset on (re)spawn)
+    if self.vtTitanGroupSet ~= self:GetId() then
+        self:SetPhysicsGroup(PhysicsGroup.RagdollGroup)
+        self.vtTitanGroupSet = self:GetId()
+    end
+    local shapes = self:VT_GetHitboxShapes()
+    if not self.vtHitboxes then
+        self.vtHitboxes = {}
+        for i, shape in ipairs(shapes) do
+            local box = Shared.CreatePhysicsBoxBody(false, shape[2], 0, shape[1])
+            box:SetGroup(PhysicsGroup.PlayerGroup)
+            box:SetEntity(self)
+            box:SetPhysicsType(CollisionObject.Kinematic)
+            self.vtHitboxes[i] = box
+        end
+    end
+    for i, shape in ipairs(shapes) do
+        self.vtHitboxes[i]:SetCoords(shape[1])
+    end
+end
+
+-- Every server tick as well, not only per move: an Artificer without a controlling client (spawned with "spawn",
+-- a lagging player) gets no moves - its hitboxes stayed with the Titan in the first test (2026-11-17).
+function VTArtificer:OnUpdate(deltaTime)
+    VTPraetor2.OnUpdate(self, deltaTime)
+    if Server then
+        self:VT_UpdateHitboxes()
+    end
+end
+
+function VTArtificer:OnDestroy()
+    self:VT_DestroyHitboxes()
+    VTPraetor2.OnDestroy(self)
+end
+
+function VTArtificer:OnKill(attacker, doer, point, direction)
+    self:VT_DestroyHitboxes()
+    if VTPraetor2.OnKill then
+        VTPraetor2.OnKill(self, attacker, doer, point, direction)
+    end
+end
+
+-- network vars and installs (shared, flashlight, shield) are inherited from VTPraetor / VTPraetor2
+Shared.LinkClassToMap("VTArtificer", VTArtificer.kMapName, artificerNetworkVars, true)

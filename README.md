@@ -143,6 +143,24 @@ Shield Matrix I–III adds +15 max psi shield per level (armor stays fixed).
 | **No exo HUD**: cockpit frame and screens, rings, info bars and fuel bar are hidden | ✅ (cockpit) · 🔧 (rest) |
 | Player model: "Titan Sentinel" on the exosuit skeleton | 🔧 |
 
+### Artificer (concept class, only `vt_class artificer` with cheats)
+A walking drone factory on the Praetor chassis, meant as a tanky alternative to the Praetor. Not in the Synthesis
+Matrix menu, no caste stock. Numbers are first pass (`kVTArtificer*`, `kVTDroneTypes` in `Hooks/Globals.lua`).
+
+| Feature | Status |
+|---|---|
+| **Chassis**: Praetor health ×1.25, psi shield 260, speed ×0.9. **Fabricator core**: 400 energy, recharges everywhere at 10/s, 0.5 s after spending | 🔧 |
+| **Defense beam (LMB)**: thin auto-aim shoulder beam on the enemy closest to the crosshair (25° cone, 14 m), 30 DPS (about one Skulk in 3 s), 6 energy/s. The arm guns stay silent | 🔧 |
+| **Fabrication (1 / 2 / 3)**: queue a Wasp (50 energy, 2.5 s) / Lancer (80, 3.5 s) / Sapper (110, 4.5 s), paid when ordered; up to 5 orders, built one at a time; **4** cancels the last order (refund). At most 6 drones alive; a finished order waits ("BAY FULL") | 🔧 |
+| **Drones** (`VTDrone`, `Classes/VTDrones.lua`): **Wasp** fast interceptor (60 HP, 9 m/s, 5 m beam, 14 DPS) · **Lancer** ranged beam (100 HP, 14 m beam, 20 DPS, high standoff) · **Sapper** armoured bomb (140 HP, rams its target: 120 Structural blast in 3.5 m = double vs structures; half blast when shot down). Fly straight or along the navmesh, slide along walls, take Plasma Calibration. Enemies hit them with bullets and melee (Babbler-style hitbox). They die with the Artificer | 🔧 |
+| **Directives (Shift + 1 / 2 / 3)** per drone type: **Escort** (guards the Artificer, attacks what comes within 12 m) · **Hunt** (enemy lifeforms within 30 m) · **Siege** (enemy structures within 30 m) · **Focus** (the mark). Defaults: Wasp Hunt, Lancer Escort, Sapper Siege | 🔧 |
+| **Mark (RMB)**: the enemy closest to the crosshair (8°, 60 m); again on the same target or on nothing clears it. **Swarm Command (B)**: 8 s every drone attacks the mark, 20 s cooldown | 🔧 |
+| **Drone Bay HUD** (`GUI/GUIVTDroneBay.lua`): bottom-centre panel with drones in the field, the queue as coloured pips, the mark, and one card per type (count, cost, orders, build bar, directive + explanation, key hints). In the world: a pulsing frame on the mark and a type-coloured marker + health bar over every own drone | 🔧 |
+| Drone models (`art/weapons/build_drones.sh`, laser gun material) | 🔧 |
+| **Crucible look**: six-legged crab foundry (furnace dome + open iris, pincers, emitter, Sapper pods), built in Blender (`art/artificer/build_crucible.sh`); drawn from rigid parts by `VTCrucible.lua` with a procedural tripod gait and two-bone leg IK; the Titan underneath is hidden and its hitboxes are replaced by 18 boxes shaped like the Crucible (body, dome, pincers, legs in rest pose; not lag-compensated). Concepts: `art/artificer/concepts/` | 🔧 |
+| **First person**: eye at 1.5 m, own view model (emitter turret at the bottom centre, pincers in the lower corners); compact Drone Bay panel with the core energy | 🔧 |
+| Not done yet: drone sounds, bot support | 🎨 |
+
 ---
 
 ## Structures

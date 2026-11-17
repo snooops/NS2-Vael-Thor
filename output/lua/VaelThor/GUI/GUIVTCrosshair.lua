@@ -320,7 +320,7 @@ function GUIVTCrosshair:DrawPraetor(player, flash)
     self:Put("p_bl", kCornerBL, -f,  f, s, WithAlpha(col, 0.6))
     self:Put("p_br", kCornerBR,  f,  f, s, WithAlpha(col, 0.6))
 
-    local frac = energy / kVTPraetorEnergy
+    local frac = energy / (player.VT_GetMaxEnergy and player:VT_GetMaxEnergy() or kVTPraetorEnergy)
     local pipCol = frac < 0.25 and kColWarn or kColPraetor
     local ar = r + len + U(16)
     self:PipArc("p_el", 8, frac, ar, 125, 235, U(6), pipCol, kColDim)    -- left arc, bottom -> top

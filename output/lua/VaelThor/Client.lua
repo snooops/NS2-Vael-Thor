@@ -30,6 +30,8 @@ Script.Load("lua/VaelThor/GUI/GUIVTMatrixMenu.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTVision.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTPlayerHUD.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTCrosshair.lua")
+Script.Load("lua/VaelThor/GUI/GUIVTDroneBay.lua")
+Script.Load("lua/VaelThor/VTCrucible.lua")      -- the Artificer's Crucible body + legs
 Script.Load("lua/VaelThor/GUI/GUIVTTopBar.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTUnitStatus.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTMinimap.lua")
@@ -46,6 +48,7 @@ Event.Hook("UpdateClient", function()
             VT_VisionScript = manager:CreateGUIScript("VaelThor/GUI/GUIVTVision")
             VT_PlayerHUD = manager:CreateGUIScript("VaelThor/GUI/GUIVTPlayerHUD")
             VT_CrosshairScript = manager:CreateGUIScript("VaelThor/GUI/GUIVTCrosshair")
+            VT_DroneBayScript = manager:CreateGUIScript("VaelThor/GUI/GUIVTDroneBay")
             VT_TopBarScript = manager:CreateGUIScript("VaelThor/GUI/GUIVTTopBar")
         end
     end
@@ -509,6 +512,7 @@ local function UpdatePraetorGuns()
         local alive = praetor:GetIsAlive()
         local isLocal = praetor == localPlayer
         local firstPerson = isLocal and not praetor:GetIsThirdPerson()
+        local noGuns = praetor:isa("VTArtificer")      -- the Crucible (VTCrucible.lua) carries no guns
 
         -- recoil timing per arm
         local weapons = { GetArmWeapons(praetor) }
@@ -531,7 +535,7 @@ local function UpdatePraetorGuns()
         local aimDistance = isLocal and UpdateLocalAimDistance(praetor, now) or kGunConvergeRemote
         local worldAimPoint = praetor:GetEyePos() + aim.zAxis * aimDistance
         for side = 1, 2 do
-            if alive and not firstPerson and worldModel then
+            if alive and not firstPerson and worldModel and not noGuns then
                 PlaceGun(st.world[side], GetMuzzleCoords(praetor, kWorldMuzzles[side], aim, worldAimPoint), GetKick(st.lastShot[side], now))
             else
                 HideGun(st.world[side])
@@ -550,9 +554,9 @@ local function UpdatePraetorGuns()
                 for side = 1, 2 do
                     -- the view model zone is camera space (ViewModel:OnAdjustModelCoords = inverse model camera):
                     -- forward +Z, up +Y, whatever the world view direction
-                    PlaceGun(st.view[side], GetMuzzleCoords(viewModel, kViewMuzzles[side], kCameraSpace,
+                    if noGuns then HideGun(st.view[side]) else PlaceGun(st.view[side], GetMuzzleCoords(viewModel, kViewMuzzles[side], kCameraSpace,
                             Vector(0, 0, aimDistance), kGunScreenDrop * Client.GetScreenHeight(), focal),
-                            GetKick(st.lastShot[side], now), aim)
+                            GetKick(st.lastShot[side], now), aim) end
                 end
             end
         end
@@ -601,6 +605,8 @@ Event.Hook("UpdateRender", UpdatePraetorGuns)
 local kEmitterModel     = PrecacheAsset("models/vaelthor/lasergun/beam_emitter.model")
 local kEmitterRingModel = PrecacheAsset("models/vaelthor/lasergun/beam_emitter_ring.model")
 local kPraetorBeamSound = PrecacheAsset("sound/NS2.fev/marine/commander/nano_loop")
+local kCrucibleViewModel = PrecacheAsset("models/vaelthor/crucible/crucible_view.model")
+local kCrucibleViewEmitter = Vector(0, -0.25, 0.76)    -- emitter tip in camera space (build_crucible.py VIEW_EMITTER_TIP)
 -- world: lens tip relative to the upper torso attach point, in the Praetor's view frame (x = left); shared with the
 -- server (missile spawn point of the Praetor's pod), Hooks/Globals.lua
 local kEmitterUp, kEmitterRight, kEmitterForward = kVTShoulderMountUp, kVTShoulderMountRight, kVTShoulderMountForward
@@ -682,8 +688,13 @@ local function UpdatePraetorBeams()
         local targetPoint = target and VT_BeamFx.GetEndPoint(target, localPlayer, cameraCoords)
         local beamStart
 
+        -- the Artificer's Crucible fires from its own emitter under the eyes (VTCrucible.lua), no shoulder emitter
+        local crucibleTip = praetor:isa("VTArtificer") and VT_GetCrucibleEmitterPoint and VT_GetCrucibleEmitterPoint(praetor)
+        if crucibleTip then
+            SetEmitterVisible(st.world, false)
+            beamStart = crucibleTip
         -- world emitter on the right shoulder (others, or yourself in third person)
-        if alive and not firstPerson then
+        elseif alive and not firstPerson and not praetor:isa("VTArtificer") then
             local anchor = praetor:GetAttachPointIndex("Exosuit_UpprTorso") >= 0
                     and praetor:GetAttachPointCoords("Exosuit_UpprTorso").origin or praetor:GetEyePos()
             local tip = anchor + view.yAxis * kEmitterUp - view.xAxis * kEmitterRight + view.zAxis * kEmitterForward
@@ -693,8 +704,39 @@ local function UpdatePraetorBeams()
             SetEmitterVisible(st.world, false)
         end
 
+        -- Artificer in first person: crucible_view.model (camera space: emitter turret at the bottom centre, pincers
+        -- from the lower corners) in the view model zone, bobbing with the gait; the beam starts at its emitter
+        -- tip. No shoulder emitter.
+        local crucibleView = alive and firstPerson and cameraCoords and praetor:isa("VTArtificer")
+        if crucibleView then
+            local viewModel = praetor:GetViewModelEntity()
+            if viewModel then
+                if not st.crucible then
+                    st.crucible = Client.CreateRenderModel(RenderScene.Zone_ViewModel)
+                    st.crucible:SetModel(kCrucibleViewModel)
+                    st.crucible:SetCastsShadows(false)
+                end
+                local speed = praetor:GetVelocity():GetLengthXZ()
+                local bob = math.min(speed / 5, 1) * 0.012 * math.sin(now * 13)
+                local c = Coords.GetIdentity()
+                c.origin = Vector(0, bob, 0)
+                st.crucible:SetCoords(c)
+                st.crucible:SetIsVisible(true)
+                local tip = kCrucibleViewEmitter + Vector(0, bob, 0)
+                local fView = GetViewZoneFocal(viewModel)
+                local fWorld = GetWorldFocal(cameraCoords)
+                local d = 1.0
+                local k = fView / fWorld * d / tip.z
+                beamStart = cameraCoords.origin + cameraCoords.zAxis * d
+                        + cameraCoords.xAxis * (tip.x * k) + cameraCoords.yAxis * (tip.y * k)
+            end
+            if st.view then SetEmitterVisible(st.view, false) end
+        elseif st.crucible then
+            st.crucible:SetIsVisible(false)
+        end
+
         -- first-person emitter in the view model zone (camera space: +Z forward, +Y up, +X left)
-        if alive and firstPerson and cameraCoords then
+        if alive and firstPerson and cameraCoords and not crucibleView then
             local viewModel = praetor:GetViewModelEntity()
             if viewModel then
                 st.view = st.view or CreateEmitter(RenderScene.Zone_ViewModel)
@@ -719,13 +761,14 @@ local function UpdatePraetorBeams()
                 beamStart = cameraCoords.origin + cameraCoords.zAxis * d
                         + cameraCoords.xAxis * (tip.x * k) + cameraCoords.yAxis * (tip.y * k)
             end
-        elseif st.view then
+        elseif st.view and not crucibleView then
             SetEmitterVisible(st.view, false)
         end
 
         if firing and beamStart then
             local cameraPos = cameraCoords and cameraCoords.origin or praetor:GetEyePos()
-            VT_BeamFx.Update(st.fx, beamStart, targetPoint, 1, cameraPos)
+            -- the Artificer's defense beam is a thin one
+            VT_BeamFx.Update(st.fx, beamStart, targetPoint, 1, cameraPos, praetor:isa("VTArtificer") and 0.55 or 1)
             if not st.playing then st.sound:Start(); st.playing = true end
         else
             VT_BeamFx.SetVisible(st.fx, false)
@@ -738,6 +781,7 @@ local function UpdatePraetorBeams()
             Client.DestroySoundEffect(st.sound)
             DestroyEmitter(st.world)
             if st.view then DestroyEmitter(st.view) end
+            if st.crucible then Client.DestroyRenderModel(st.crucible) end
             beamStates[id] = nil
         end
     end
