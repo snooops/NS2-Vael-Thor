@@ -6,7 +6,7 @@
 set -euo pipefail
 STEAM="$HOME/.local/share/Steam"
 NS2="$STEAM/steamapps/common/Natural Selection 2"
-PROTON="${PROTON:-$STEAM/compatibilitytools.d/GE-Proton11-7/proton}"   # same Proton the game uses
+PROTON="${PROTON:-$STEAM/compatibilitytools.d/GE-Proton11-12/proton}"   # same Proton the game uses (both share the compatdata/4920 prefix)
 pgrep -x steam >/dev/null || pgrep -f "ubuntu12_32/steam" >/dev/null || { echo "Steam is not running - start it first"; exit 1; }
 export STEAM_COMPAT_CLIENT_INSTALL_PATH="$STEAM"
 export STEAM_COMPAT_DATA_PATH="$STEAM/steamapps/compatdata/4920"
