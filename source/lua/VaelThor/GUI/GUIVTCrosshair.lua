@@ -233,8 +233,29 @@ function GUIVTCrosshair:DrawBlades(player, weapon, flash)
     self:Put("b_r", kCrescR,  side, 0, U(20), col)
     self:Put("b_dot", kDot, 0, 0, U(3), col)
 
-    local ready = Shared.GetTime() >= (player.vtHackReadyTime or 0)
-    self:Put("b_hack", kPip, 0, -U(22), U(ready and 9 or 6), ready and kColInfiltrator or kColDim)
+    self:DrawHackReady(player, U(34))
+    self:DrawCloakEnergy(player, U(34))
+end
+
+-- Hack (blade right-click): arc of pips above the crosshair, filling while the hack recharges; all lit and pulsing
+-- when it is ready.
+function GUIVTCrosshair:DrawHackReady(player, radius)
+    local now = Shared.GetTime()
+    local remaining = math.max(0, (player.vtHackReadyTime or 0) - now)
+    local ready = remaining <= 0
+    local frac = ready and 1 or Clamp(1 - remaining / kVTHackCooldown, 0, 1)
+    local col = ready and Mix(kColInfiltrator, kColAccent, 0.35 + 0.35 * math.sin(now * 6)) or WithAlpha(kColInfiltrator, 0.55)
+    self:PipArc("b_hk", 5, frac, radius, 240, 300, U(ready and 7 or 5), col, kColDim)
+end
+
+-- Cloak energy (Shift field): arc of pips below the crosshair like the carbine's energy; bright while cloaked,
+-- red when there is too little to switch the field on.
+function GUIVTCrosshair:DrawCloakEnergy(player, radius)
+    local energy = player.vtCloakEnergy or 0
+    local frac = Clamp(energy / kVTCloakEnergy, 0, 1)
+    local active = player.VT_GetAbilityActive and player:VT_GetAbilityActive()
+    local col = energy < kVTCloakMinEnergy and kColWarn or (active and kColAccent or kColInfiltrator)
+    self:PipArc("b_ce", 10, frac, radius, 125, 55, U(5), col, kColDim)
 end
 
 function GUIVTCrosshair:DrawEchoScanner(player, weapon, flash)
@@ -256,6 +277,7 @@ function GUIVTCrosshair:DrawEchoScanner(player, weapon, flash)
         self.items["e_vortex"]:SetRotation(Vector(0, 0, Shared.GetTime() * 4))
     end
     self:Put("e_dot", kDot, 0, 0, U(3), Mix(col, kColAccent, flash))
+    self:DrawCloakEnergy(player, U(34))
 end
 
 function GUIVTCrosshair:DrawClaws(player, weapon, flash)

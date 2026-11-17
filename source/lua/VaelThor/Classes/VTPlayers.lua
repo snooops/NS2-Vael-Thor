@@ -345,6 +345,7 @@ VTInfiltrator.kMapName = kVTMapNames.Infiltrator
 local infiltratorNetworkVars = AddVTNetworkVars({
     vtEchoScanning = "boolean",   -- Echo Scan held: every VT client draws this cone's contacts
     vtHackReadyTime = "time",     -- networked for the HUD's hack cooldown line
+    vtCloakEnergy = string.format("float (0 to %d by 0.0625)", kVTCloakEnergy),   -- cloak field energy (HUD)
 })
 AddMixinNetworkVars(CloakableMixin, infiltratorNetworkVars)
 
@@ -354,6 +355,7 @@ function VTInfiltrator:OnCreate()
     InitVTFields(self)
     self.vtHackReadyTime = 0
     self.vtEchoScanning = false
+    self.vtCloakEnergy = kVTCloakEnergy
 end
 
 -- Player model: Fab "Cyber Sentinel" rigged to the marine skeleton (art/fab/cyber_sentinel/build_cyber.sh),
@@ -426,7 +428,34 @@ if Server then
     end
 end
 
+-- Cloak energy (server): the active field drains it and collapses at 0; inside a Subvention field the energy
+-- recharges while not cloaked. Nothing else restores it.
+local kCloakFieldOpen = 3600      -- the field has no duration of its own: "until toggled off / drained"
+if Server then
+    function VTInfiltrator:VT_UpdateCloakEnergy(deltaTime)
+        if self:VT_GetAbilityActive() then
+            local drain = VT_GetTeamHasTech("VTPhaseCloakTech") and kVTPhaseCloakDrainPerSecond or kVTCloakDrainPerSecond
+            self.vtCloakEnergy = math.max(0, self.vtCloakEnergy - drain * deltaTime)
+            if self.vtCloakEnergy <= 0 then
+                self.vtAbilityActiveEnd = Shared.GetTime()
+                if self.TriggerUncloak then self:TriggerUncloak() end
+            end
+        elseif self.vtCloakEnergy < kVTCloakEnergy and self:GetIsAlive() and VT_GetIsPointInField(self:GetOrigin()) then
+            self.vtCloakEnergy = math.min(kVTCloakEnergy, self.vtCloakEnergy + kVTCloakRechargeRate * deltaTime)
+        end
+    end
+end
+
 function VTInfiltrator:OnProcessMove(input)
+    if Server then
+        -- Shift toggles the cloak field (press edge). InstallNoSprint records vtShiftHeld before stripping it.
+        local shift = self.vtShiftHeld == true
+        if shift and not self.vtCloakKeyWasDown and self:GetIsAlive() then
+            self:VT_UseAbility()
+        end
+        self.vtCloakKeyWasDown = shift
+        self:VT_UpdateCloakEnergy(input.time)
+    end
     -- Parasite reveals: an active field collapses at once.
     if Server and self:VT_GetAbilityActive() and self:VT_GetIsParasited() then
         self.vtAbilityActiveEnd = Shared.GetTime()
@@ -454,6 +483,8 @@ end
 
 function VTInfiltrator:PrimaryAttack()
     if self:VT_GetAbilityActive() then
+        -- ambush: the first hit within kVTAmbushWindow deals double damage (shared, so predicted numbers match)
+        self.vtAmbushUntil = Shared.GetTime() + kVTAmbushWindow
         if Server then
             self.vtAbilityActiveEnd = Shared.GetTime()
         end
@@ -479,14 +510,22 @@ if Server then
 
     end
 
+    -- Shift toggles the cloak field (no cooldown); it runs on cloak energy (VT_UpdateCloakEnergy).
     function VTInfiltrator:VT_UseAbility()
+        if self:VT_GetAbilityActive() then
+            self.vtAbilityActiveEnd = Shared.GetTime()
+            if self.TriggerUncloak then self:TriggerUncloak() end
+            return
+        end
         if self:VT_GetIsParasited() then
             VT_SendMessageToPlayer(self, "Cloak field blocked: you are parasited.")
             return
         end
-        local duration = VT_GetTeamHasTech("VTPhaseCloakTech") and kVTPhaseCloakDuration or kVTCloakDuration
-        self.vtAbilityActiveEnd = Shared.GetTime() + duration
-        self:VT_StartCooldown(kVTCloakCooldown)
+        if self.vtCloakEnergy < kVTCloakMinEnergy then
+            VT_SendMessageToPlayer(self, "Cloak field needs energy: recharge it near a pylon or Nexus.")
+            return
+        end
+        self.vtAbilityActiveEnd = Shared.GetTime() + kCloakFieldOpen
     end
 
     function VTInfiltrator:VT_TriggerHack()
@@ -529,6 +568,11 @@ if Server then
 end
 
 InstallShared(VTInfiltrator)
+
+-- The cloak field is on Shift (VTInfiltrator:OnProcessMove), not on B. Defined after InstallShared, which would
+-- otherwise install the shared B handler.
+function VTInfiltrator:TertiaryAttack()
+end
 InstallNoSprint(VTInfiltrator)
 InstallNoFlashlight(VTInfiltrator)
 VT_InstallShield(VTInfiltrator, true)

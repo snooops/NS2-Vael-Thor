@@ -42,6 +42,17 @@ Balance numbers are always first pass.
   project built with NS2's `fmod_designercl.exe`): missile launch (−30 dB), flight loop, explosion.
 - 🔧 **Energy**: recharges everywhere (no pylon needed) at 16/s, 0.2 s after the last shot / missile / dash.
 
+### Changed — Infiltrator
+- 🔧 **Ambush**: an attack started while the cloak field is active opens a 0.5 s window; the first hit inside it
+  deals +150% damage (`kVTAmbushDamageScalar` 2.5, `kVTAmbushWindow`; `Hooks/DamageTypes.lua`). Blade vs players
+  out of cloak: 125.
+- 🔧 **Psionic Blade reach +50%**: `VTPsionicBlade:GetRange` = the axe's reach × `kVTBladeRangeScalar` 1.5.
+- 🔧 **Cloak field runs on energy**: Shift toggles it (B does nothing for the Infiltrator), no cooldown. It drains
+  10/s from a 100 pool (Phase Cloak: 15 s on a full pool) and collapses at 0; needs 10 to switch on. The energy
+  recharges only inside a Subvention field (pylon / Nexus), 10/s, while not cloaked (`kVTCloak*`).
+- 🔧 **Infiltrator HUD**: crosshair shows the hack recharge (pips above, pulsing when ready) and the cloak energy
+  (pips below); the bottom-right panel shows CLOAK ENERGY like the Vanguard's carbine energy.
+
 ### Added
 - 🔧 **Praetor II (test class)**: `vt_class praetor2` only (cheats), not in the Synthesis Matrix menu, no stock.
   A Praetor with a steady auto-targeting psi beam on right click (60 DPS, 20 energy/s, `kVTBeam*`) from a

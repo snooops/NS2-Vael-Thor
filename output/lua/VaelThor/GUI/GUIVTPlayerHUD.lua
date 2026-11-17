@@ -184,7 +184,7 @@ local function CasteAbility(player)
         if player.vtModule == kVTModule.ShieldOverdrive then return "OVERDRIVE", kVTOverdriveCooldown end
         return "SHIELD BOOST", kVTShieldBoostCooldown
     elseif player:isa("VTInfiltrator") then
-        return "CLOAK FIELD", kVTCloakCooldown
+        return "CLOAK FIELD", 1
     elseif player:isa("VTPraetor") then
         return "TELEPORT DASH", kVTPraetorDashCooldown
     end
@@ -206,9 +206,23 @@ function GUIVTPlayerHUD:BuildChips(player)
 
     local name, cooldown = CasteAbility(player)
     if name then
-        local row = { key = player:isa("VTVanguard") and "[RMB]" or "[B]", name = name }
+        local row = { key = player:isa("VTVanguard") and "[RMB]" or (isInfiltrator and "[SHIFT]" or "[B]"), name = name }
         if isInfiltrator and parasited then
             row.state, row.frac, row.stateColor, row.color = "BLOCKED", 0, kColWarn, kColWarn
+        elseif isInfiltrator then
+            -- cloak energy instead of duration / cooldown: toggled with B, recharges only near pylons
+            local energy = player.vtCloakEnergy or 0
+            local frac = energy / kVTCloakEnergy
+            row.frac = frac
+            if player:VT_GetAbilityActive() then
+                row.state, row.stateColor = string.format("ACTIVE %d%%", math.floor(frac * 100 + 0.5)), kColActive
+                row.color = Color(kColActive.r, kColActive.g, kColActive.b, 0.6 + 0.4 * math.sin(now * 8))
+            elseif energy < kVTCloakMinEnergy then
+                row.state, row.stateColor, row.color = "NO ENERGY", kColWarn, kColWarn
+            else
+                row.state = string.format("%d%%", math.floor(frac * 100 + 0.5))
+                row.stateColor = frac >= 1 and kColReady or kColDim
+            end
         elseif player.VT_GetAbilityActive and player:VT_GetAbilityActive() then
             local left = (player.vtAbilityActiveEnd or now) - now
             row.state, row.frac, row.stateColor = string.format("ACTIVE %.0fs", left), 1, kColActive
@@ -343,7 +357,15 @@ function GUIVTPlayerHUD:UpdateWeapon(player)
         self.weaponName:SetText(""); self.weaponValue:SetText(""); SetBar(self.weaponBar, 0)
     else
         self.weaponName:SetText(WeaponName(weapon))
-        if weapon:isa("VTPlasmaCarbine") then
+        if player:isa("VTInfiltrator") then
+            -- like the Vanguard's carbine cell: the cloak energy (Shift field, recharges near pylons)
+            local energy = math.floor(player.vtCloakEnergy or 0)
+            local frac = energy / kVTCloakEnergy
+            local scanning = weapon:isa("VTEchoPulse") and player.vtEchoScanning
+            self.weaponValue:SetText(string.format("%sCLOAK ENERGY %d / %d", scanning and "SCANNING  -  " or "", energy, kVTCloakEnergy))
+            SetBar(self.weaponBar, frac, energy < kVTCloakMinEnergy and kColWarn
+                    or (player:VT_GetAbilityActive() and kColActive or kColEnergy))
+        elseif weapon:isa("VTPlasmaCarbine") then
             local clip = weapon.clip or 0
             self.weaponValue:SetText(string.format("ENERGY %d / %d", clip, kVTCarbineEnergy))
             SetBar(self.weaponBar, clip / kVTCarbineEnergy, clip / kVTCarbineEnergy < 0.25 and kColWarn or kColEnergy)

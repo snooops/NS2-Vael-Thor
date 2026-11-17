@@ -28,6 +28,12 @@ function VT_ModifyDamage(target, attacker, doer, damage)
             scalar = scalar * doer:GetVTDamageScalar(target)
         end
 
+        -- Infiltrator ambush: first hit of an attack started from the cloak field (kVTAmbushWindow), used up by it
+        if attacker.vtAmbushUntil and Shared.GetTime() <= attacker.vtAmbushUntil and attacker ~= target then
+            scalar = scalar * kVTAmbushDamageScalar
+            attacker.vtAmbushUntil = nil
+        end
+
     end
 
     -- Iron Discipline: imperial soldiers take less damage.

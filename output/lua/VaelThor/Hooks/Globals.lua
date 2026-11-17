@@ -425,9 +425,18 @@ kVTOverdriveDuration        = 5
 kVTOverdriveSpeedScalar     = 1.2
 kVTOverdriveBurnout         = 8      -- seconds without shields after Overdrive ends
 kVTOverdriveCooldown        = 22
-kVTCloakDuration            = 10
-kVTPhaseCloakDuration       = 15     -- with Phase Cloak research
-kVTCloakCooldown            = 15
+-- Cloak field (user 2026-11-17): B toggles it, no cooldown; it drains the Infiltrator's own cloak energy and collapses
+-- at 0. The energy only recharges inside a Subvention field (pylon / Nexus) while not cloaked.
+kVTCloakEnergy              = 100
+kVTCloakDrainPerSecond      = 10     -- full -> empty in 10 s (the old field duration)
+kVTPhaseCloakDrainPerSecond = 100 / 15   -- with Phase Cloak research: 15 s (the old research bonus)
+kVTCloakMinEnergy           = 10     -- needed to switch the field on
+kVTCloakRechargeRate        = 10     -- per second inside a field, not while cloaked (empty -> full in 10 s)
+-- Ambush (user 2026-11-17): an attack started while the cloak field is active opens a short window; the first hit the
+-- Infiltrator lands inside it deals kVTAmbushDamageScalar x damage (the attack itself ends the field at once, the
+-- blade hit lands later). Hooks/DamageTypes.lua VT_ModifyDamage, window set in VTInfiltrator:PrimaryAttack.
+kVTAmbushDamageScalar       = 2.5    -- +150% (user 2026-11-17, was +100%)
+kVTAmbushWindow             = 0.5    -- s from the attack press
 kVTCloakMovementPenalty     = 0.35   -- 1 = vanilla camouflage (full speed leaves ~20% cloak)
 kVTHackRadius               = 7
 kVTHackDuration             = 10
@@ -539,6 +548,7 @@ kVTOverchargeDamageScalar   = 1.9    -- per bolt
 kVTOverchargeFireDelay      = 0.2    -- min seconds between heavy bolts
 -- Psionic Blade (Infiltrator): damage = the Psionic Knife's (kVTKnife*DamageScalar, 50 vs players); hit box
 -- (width x height of the melee box swept along the swing) wider than the axe's 0.5 x 0.8.
+kVTBladeRangeScalar         = 1.5    -- reach x the axe's (1 m + floor bonus), user 2026-11-17: +50%
 kVTBladeMeleeWidth          = 1.0
 kVTBladeMeleeHeight         = 1.2
 kVTClawsDamage              = 60

@@ -516,6 +516,12 @@ function VTPsionicBlade:GetMeleeBase()
     return kVTBladeMeleeWidth, kVTBladeMeleeHeight
 end
 
+-- Reach: the axe's (Axe.kRange 1 m + up to 0.8 m when aiming at the floor) x kVTBladeRangeScalar. The swing
+-- (AttackMeleeCapsule) and the crosshair's "enemy in reach" both read GetRange.
+function VTPsionicBlade:GetRange()
+    return VTBase.Axe.GetRange(self) * kVTBladeRangeScalar
+end
+
 function VTPsionicBlade:GetHasSecondary(player)
     return true
 end
