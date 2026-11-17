@@ -45,6 +45,8 @@ ModLoader.SetupFileHook("lua/ReadyRoomTeam.lua",     H .. "ReadyRoomTeam.lua",  
 -- HUD: no corner minimap for the Vael'Thor (marine HUD).
 ModLoader.SetupFileHook("lua/Hud/Marine/GUIMarineHUD.lua", H .. "GUIMarineHUD.lua", "post")
 ModLoader.SetupFileHook("lua/GUIClassicAmmo.lua", H .. "GUIClassicAmmo.lua", "post")
+-- No "Hold G to eject" badge for the Praetor (every Exo shows it since the 2026-11-17 game update).
+ModLoader.SetupFileHook("lua/GUIExoEject.lua",    H .. "GUIExoEject.lua",     "post")
 -- Damage numbers / world texts in Vael'Thor colours for Vael'Thor players.
 ModLoader.SetupFileHook("lua/GUIWorldText.lua",    H .. "GUIWorldText.lua",    "post")
 -- UI team checks: vanilla compares team number with team type (Vael'Thor on team 2 looked alien).

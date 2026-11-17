@@ -34,7 +34,7 @@ local kVitalsW, kVitalsH = 380, 120
 local kChipW, kChipH, kChipGap = 300, 34, 6
 local kMaxChips = 5
 
-local kCasteNames = { VTVanguard = "VANGUARD", VTInfiltrator = "INFILTRATOR", VTSubject = "SUBJECT", VTPraetor = "PRAETOR" }
+local kCasteNames = { VTVanguard = "VANGUARD", VTInfiltrator = "INFILTRATOR", VTSubject = "SUBJECT", VTPraetor = "PRAETOR", VTPraetor2 = "PRAETOR II" }
 
 local function S(x, y) return GUIScale(Vector(x, y, 0)) end
 
@@ -242,6 +242,37 @@ function GUIVTPlayerHUD:BuildChips(player)
                                     or (frac >= 1 and "READY" or string.format("%.0f%%", frac * 100))),
                             frac = frac, color = frac < 0.25 and kColWarn or kColEnergy,
                             stateColor = (holding or player.vtClimbing) and kColActive or (frac >= 1 and kColReady or kColDim) }
+    end
+
+    if player:isa("VTPraetor2") then   -- test class: steady psionic beam on right click
+        local energy = player.vtEnergy or 0
+        local firing = player.vtBeamTargetId and player.vtBeamTargetId ~= Entity.invalidId
+        local row = { key = "[RMB]", name = "PSI BEAM" }
+        if energy < kVTBeamMinEnergy then
+            row.state, row.frac, row.stateColor, row.color = "NO ENERGY", 0, kColWarn, kColWarn
+        elseif firing then
+            row.state, row.frac, row.stateColor = "FIRING", 1, kColActive
+        else
+            row.state, row.frac, row.stateColor = "READY", 1, kColReady
+        end
+        rows[#rows + 1] = row
+    elseif player:isa("VTPraetor") then   -- homing missile (right click), paid from the minigun energy
+        local energy = player.vtEnergy or 0
+        local locking = (player.vtMissileLockFraction or 0) > 0
+        local row = { key = "[RMB]", name = "HOMING MISSILE" }
+        local cooldown = math.max(0, (player.vtNextMissileTime or 0) - Shared.GetTime())
+        if energy < kVTMissileEnergyCost then
+            row.state, row.frac = string.format("NEEDS %d ENERGY", kVTMissileEnergyCost), energy / kVTMissileEnergyCost
+            row.stateColor, row.color = kColWarn, kColWarn
+        elseif cooldown > 0 then
+            row.state, row.frac, row.stateColor = string.format("%.1fs", cooldown), 1 - cooldown / kVTMissileRefireDelay, kColDim
+        elseif locking then
+            local lock = player.vtMissileLockFraction or 0
+            row.state, row.frac, row.stateColor = lock >= 1 and "LOCKED" or "LOCKING", lock, lock >= 1 and kColWarn or kColActive
+        else
+            row.state, row.frac, row.stateColor = "READY", 1, kColReady
+        end
+        rows[#rows + 1] = row
     end
 
     if isInfiltrator then

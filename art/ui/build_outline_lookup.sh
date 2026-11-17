@@ -2,7 +2,7 @@
 # Mod override of ui/marine_outline_lookup.dds with a fading red band (Echo Scan).
 set -euo pipefail
 NS2="$HOME/.steam/steam/steamapps/common/Natural Selection 2"
-MOD="$HOME/Dokumente/NS2 mod"; HERE="$MOD/art/ui"; OUT="$MOD/output/ui"
+MOD="$HOME/Dokumente/NS2_VaelThor"; HERE="$MOD/art/ui"; OUT="$MOD/output/ui"
 export WINEPREFIX="${WINEPREFIX:-$HOME/.local/share/ns2-tools-wine}" WINEDEBUG=-all WINEDLLOVERRIDES="mscoree,mshtml="
 w(){ echo "Z:$(echo "$1" | sed 's#/#\\#g')"; }
 mkdir -p "$OUT"

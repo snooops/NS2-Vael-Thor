@@ -1,7 +1,7 @@
-"""Build the mod's ui/marine_outline_lookup.dds: the vanilla 5-band outline colour lookup
-(TSFBlue, Green, Fuchsia, Yellow, Red, 64 px each) with the right half of the red band
+"""Build the mod's ui/marine_outline_lookup.dds: the vanilla outline colour lookup
+(TSFBlue, Green, Fuchsia, Yellow, Red[, Orange since the 2026-11-17 update], 64 px each) with the right half of the red band
 turned into a red -> black gradient. Vanilla samples each band at its centre (red: x=288),
-which stays untouched; the Echo Scan fade slides its "outline" parameter from the centre
+which stays untouched; bands after red (Orange) stay vanilla. The Echo Scan fade slides its "outline" parameter from the centre
 to the band's end (see Client.lua, kEchoFadeU*). The outline composite is additive, so
 black = invisible. Alpha stays 255 (alpha < 1 would fill the silhouette instead).
 
@@ -13,7 +13,7 @@ from PIL import Image
 src, out = sys.argv[1], sys.argv[2]
 im = Image.open(src).convert("RGBA")
 w, h = im.size
-assert (w, h) == (320, 8), (w, h)
+assert h == 8 and w % 64 == 0 and w >= 320, (w, h)     # 5 bands (320) before 2026-11-17, 6 (384) after
 px = im.load()
 START, END = 289, 319          # 288 = red band centre (kept), 319 = last texel (black)
 for x in range(START, END + 1):

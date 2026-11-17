@@ -6,6 +6,49 @@ Balance numbers are always first pass.
 
 ---
 
+## 2026-11-17
+
+### Fixed (NS2 update, build 345 / 26730580)
+- ✅ **Praetor had no guns** after the modular-exo update: `ExoWeaponHolder` now takes the view model from
+  `player.viewModelName` / `viewModelGraphName` (set in `Exo:InitExoModel`, which the Praetor overrides) and
+  `Exo.kDualAnimationGraph` is gone. `VTPraetor:InitExoModel` sets both from `kExoWeaponRightLeftComboModels`;
+  the holder reports `"minigun"` (15-char network string, dual-fire lock). New `Hooks/GUIExoEject.lua` hides the
+  new "Hold G to eject" badge for the Praetor.
+- ✅ **Commander icons**: vanilla `ui/buildmenu.dds` grew from 16 to 18 rows; the mod atlas is rebuilt on the new
+  one and the VT rows start at `kVTFirstRow` = 18 (`Hooks/TechTreeButtons.lua`, `make_command_icons.py` reads the
+  vanilla row count).
+- ✅ **Outline colours / Echo Scan fade**: vanilla `ui/marine_outline_lookup.dds` has 6 bands now (new Orange);
+  the mod lookup is rebuilt at 384 px and the fade uses `kEquipmentOutlineColorCount`.
+- 🔧 **"| 800 psi" repeated across the screen** above structures: vanilla now caches the unit status text; the
+  psi suffix is stripped before it is appended (`GUI/GUIVTUnitStatus.lua`).
+- `Baseline/VanillaReference.lua` regenerated (244 balance values changed); the extractor reads
+  `kMaxRelevancyDistance` from `Globals.lua`.
+
+### Changed — Praetor rework
+- ✅ **Laser guns instead of miniguns**: own models (`art/weapons/build_lasergun.sh`: body + sliding emitter
+  barrel), drawn by `Client.lua` at the exo muzzle attach points in first person (view-model zone = camera space)
+  and on the Titan; the vanilla minigun face sets are hidden. Recoil per bolt (kick, barrel slide, muzzle light).
+  The guns converge on the crosshair target; first-person guns sit 20% of the screen height lower.
+- ✅ **Firing**: left click fires both guns alternately, immediately (timer in `ProcessMoveOnWeapon` instead of the
+  minigun spin-up animation), 8.5 bolts/s per gun, no spread; bolts start at the gun muzzles
+  (`kVTPraetorBolt*`). No big splash impact effect per bolt any more (FPS); splash damage unchanged.
+- ✅ **Homing missiles on right click**: hold to lock the enemy closest to the crosshair (0.15 s), launches only
+  with a lock, 1.8 s cooldown, 140 direct + 40 splash, 12 energy (`kVTMissile*`). Own rocket model with an
+  animated exhaust flame + launch burst (`art/weapons/build_missile.sh`), lock brackets and a cooldown arc in the
+  crosshair, HUD row.
+- ✅ **Shoulder missile pod** (`art/weapons/build_missilepod.sh`) on the right shoulder / upper right of the
+  screen; missiles start there (`kVTShoulderMount*`), the pod kicks back on launch.
+- ✅ **Own sound bank** `output/sound/vaelthor.fev` (`art/sound/build_sounds.sh`: synthesised WAVs, FMOD Designer
+  project built with NS2's `fmod_designercl.exe`): missile launch (−30 dB), flight loop, explosion.
+- 🔧 **Energy**: recharges everywhere (no pylon needed) at 16/s, 0.2 s after the last shot / missile / dash.
+
+### Added
+- 🔧 **Praetor II (test class)**: `vt_class praetor2` only (cheats), not in the Synthesis Matrix menu, no stock.
+  A Praetor with a steady auto-targeting psi beam on right click (60 DPS, 20 energy/s, `kVTBeam*`) from a
+  shoulder beam emitter with a spinning focus ring (`art/weapons/build_beamemitter.sh`).
+
+---
+
 ## 2026-11-15
 
 ### Added

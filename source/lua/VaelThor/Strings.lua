@@ -17,7 +17,7 @@ kVTStrings =
     VT_SUBJECT                     = "Subject (Bio-Construct)",
     VT_SUBJECT_TOOLTIP             = "Engineered war-beast. Huge health pool and brutal melee. Double-tap a direction to dodge, jump again in mid-air to double jump. Needs a Subject bought by the commander.",
     VT_PRAETOR                     = "Praetor",
-    VT_PRAETOR_TOOLTIP             = "Heavy elite. Gatling-Plasma cannons and Teleport Dash (B).",
+    VT_PRAETOR_TOOLTIP             = "Heavy elite. Twin Gatling-Plasma cannons (left click), lock-on homing missiles (hold right click) and Teleport Dash (B).",
 
     VT_PYLON                       = "Subvention Pylon",
     VT_PYLON_TOOLTIP               = "Extends the Subvention field. Structures only function inside the field; units inside it regenerate shields.",

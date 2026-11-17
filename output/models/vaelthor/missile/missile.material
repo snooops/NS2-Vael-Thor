@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+albedoMap = "models/vaelthor/missile/missile.dds"
+normalMap = "models/vaelthor/missile/missile_normal.dds"
+emissiveMap = "models/vaelthor/missile/missile_illum.dds"
+specularMap = "models/vaelthor/missile/missile_spec.dds"
+surface = "metal"

@@ -39,7 +39,11 @@ local function WrapStatusInfo()
             local shield = math.max(0, unit.vtShield or 0)
             state.VTShieldFraction = Clamp(shield / unit.vtMaxShield, 0, 1)
             if state.HealthAndArmorFraction and state.HealthAndArmorFraction ~= "" then
-                state.HealthAndArmorFraction = string.format("%s  |  %d psi", state.HealthAndArmorFraction, math.ceil(shield))
+                -- Since the 2026-11-17 game update vanilla caches the unit state and reuses its HealthAndArmorFraction
+                -- while HP/armor are unchanged, so the text may already carry our suffix: strip it before appending
+                -- (otherwise "| N psi" piles up every frame).
+                local base = state.HealthAndArmorFraction:gsub("  |  %d+ psi", "")
+                state.HealthAndArmorFraction = string.format("%s  |  %d psi", base, math.ceil(shield))
             end
         end
         return state

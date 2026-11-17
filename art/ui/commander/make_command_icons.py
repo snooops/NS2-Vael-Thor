@@ -1,9 +1,9 @@
-"""Vael'Thor commander icons: vanilla ui/buildmenu.dds (12 columns x 16 rows of 80 px) plus five rows of
+"""Vael'Thor commander icons: vanilla ui/buildmenu.dds (12 columns x N rows of 80 px; 18 since the 2026-11-17 game update) plus five rows of
 original Vael'Thor icons in the vanilla style (shaded greyscale metal on transparency, lit from the top left),
 with violet crystal accents. Usage: python3 make_command_icons.py <vanilla_buildmenu.png> <out.tga> [preview.png]
 
 The cell table (ICONS, in order) is mirrored in source/lua/VaelThor/Hooks/TechTreeButtons.lua: icon i sits at
-column i % 12, row 16 + i // 12. Every vanilla icon keeps its pixel position (consumers address cells in pixels).
+column i % 12, row N + i // 12 (N = vanilla row count). Every vanilla icon keeps its pixel position (consumers address cells in pixels).
 """
 import sys, math
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
@@ -12,7 +12,8 @@ SRC, OUT = sys.argv[1], sys.argv[2]
 PREVIEW = sys.argv[3] if len(sys.argv) > 3 else None
 SS = 4
 S = 80 * SS                       # drawing size of one cell
-COLS, VANILLA_ROWS, NEW_ROWS = 12, 16, 5
+COLS, NEW_ROWS = 12, 5
+VANILLA_ROWS = None                # set from the vanilla atlas height in __main__
 
 VIOLET = (170, 90, 255)
 VIOLET_DARK = (70, 25, 130)
@@ -526,7 +527,9 @@ ICONS = [
 
 if __name__ == "__main__":
     vanilla = Image.open(SRC).convert("RGBA")
-    assert vanilla.size == (COLS * 80, VANILLA_ROWS * 80), vanilla.size
+    assert vanilla.size[0] == COLS * 80 and vanilla.size[1] % 80 == 0, vanilla.size
+    VANILLA_ROWS = vanilla.size[1] // 80
+    print("vanilla atlas:", vanilla.size, VANILLA_ROWS, "rows")
     atlas = Image.new("RGBA", (COLS * 80, (VANILLA_ROWS + NEW_ROWS) * 80), (0, 0, 0, 0))
     atlas.paste(vanilla, (0, 0))
     assert len(ICONS) <= COLS * NEW_ROWS

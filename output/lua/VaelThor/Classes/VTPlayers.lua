@@ -873,6 +873,10 @@ VTPraetor.kMapName = kVTMapNames.Praetor
 
 local praetorNetworkVars = AddVTNetworkVars({
     vtEnergy = string.format("float (0 to %d by 0.0625)", kVTPraetorEnergy),
+    -- homing missile lock (right click), for the own crosshair only
+    vtMissileLockId = "private entityid",
+    vtMissileLockFraction = "private float (0 to 1 by 0.05)",
+    vtNextMissileTime = "time",              -- missile cooldown end: own crosshair / HUD; all clients kick the pod
 })
 -- Normal Marine-style jump instead of the exo's thruster hover (Exo has no JumpMoveMixin).
 AddMixinNetworkVars(JumpMoveMixin, praetorNetworkVars)
@@ -886,16 +890,42 @@ function VTPraetor:OnCreate()
     self.layout = "MinigunMinigun"
     self.vtEnergy = kVTPraetorEnergy
     self.vtLastBoltTime = 0
+    self.vtMissileLockId = Entity.invalidId
+    self.vtMissileLockFraction = 0
+    self.vtMissileHeld = false
+    self.vtMissileFiredThisHold = false
+    self.vtNextMissileTime = 0
 end
 
 -- Player model: Fab "Titan Sentinel" rigged to the Exosuit dual-minigun skeleton, keeping the exo's own
 -- minigun geometry (art/fab/titan_sentinel/build_titan.sh); borrows exosuit_mm's animations and attach points.
 kVTPraetorPlayerModel = PrecacheAsset("models/vaelthor/titan/titan_player.model")
 
--- Exo:InitExoModel picks the vanilla model by layout; the Praetor is always dual minigun.
+-- Vanilla dual-minigun graphs + first-person view model. Since the 2026-11-17 game update (modular exo) these come
+-- from kExoWeaponRightLeftComboModels (Weapons/ModularExo_Data.lua); Exo.kDualAnimationGraph is gone.
+local function GetDualMinigunModelData()
+    local data = kExoWeaponRightLeftComboModels and kExoArmTypes and kExoWeaponRightLeftComboModels[kExoArmTypes.Minigun]
+    data = data and data[kExoArmTypes.Minigun] or {}
+    return
+    {
+        worldAnimGraph = data.worldAnimGraph or "models/marine/exosuit/exosuit_mm.animation_graph",
+        viewModel      = data.viewModel      or "models/marine/exosuit/exosuit_mm_view.model",
+        viewAnimGraph  = data.viewAnimGraph  or "models/marine/exosuit/exosuit_mm_view.animation_graph",
+    }
+end
+local kVTPraetorModelData = GetDualMinigunModelData()
+PrecacheAsset(kVTPraetorModelData.worldAnimGraph)
+PrecacheAsset(kVTPraetorModelData.viewModel)
+PrecacheAsset(kVTPraetorModelData.viewAnimGraph)
+
+-- Exo:InitExoModel picks the vanilla model by arm modules; the Praetor is always dual minigun.
+-- ExoWeaponHolder:GetViewModelName/GetAnimationGraphName read the player's viewModelName/viewModelGraphName
+-- (2026-11-17 update): without them the holder has no view model -> no shoot tags -> the guns never fire.
 function VTPraetor:InitExoModel()
     self.hasDualGuns = true
-    self:SetModel(kVTPraetorPlayerModel, VTBase.Exo.kDualAnimationGraph)
+    self:SetModel(kVTPraetorPlayerModel, kVTPraetorModelData.worldAnimGraph)
+    self.viewModelName = kVTPraetorModelData.viewModel
+    self.viewModelGraphName = kVTPraetorModelData.viewAnimGraph
     self.lastExoLayout = self.layout
 end
 
@@ -910,29 +940,25 @@ function VTPraetor:HandleButtons(input)
     VTBase.Exo.HandleButtons(self, input)
 end
 
--- Energy pool for the plasma miniguns (server only; spent per bolt in VTPlasmaMinigun's FireBolt).
--- Inside a field: fast recharge like the carbine. Outside: slow regeneration, only out of combat.
+-- Energy pool for the plasma miniguns, homing missiles and Teleport Dash (server only; spent per bolt in
+-- VTPlasmaMinigun's FireBolt). Recharges everywhere at kVTPraetorRechargeRate, kVTPraetorRechargeDelay after the
+-- last shot (vtLastBoltTime: bolts, missiles and Teleport Dash).
 function VTPraetor:VT_UpdateEnergy(deltaTime)
     if not Server or self.vtEnergy >= kVTPraetorEnergy then
         return
     end
-    local sinceBolt = Shared.GetTime() - (self.vtLastBoltTime or 0)
-    local rate = 0
-    if VT_GetIsPointInField(self:GetOrigin()) then
-        if sinceBolt >= kVTPraetorRechargeDelay then
-            rate = kVTPraetorRechargeRate
-        end
-    elseif sinceBolt >= kVTPraetorSlowRechargeDelay and not self:GetIsInCombat() then
-        rate = kVTPraetorSlowRechargeRate
+    if Shared.GetTime() - (self.vtLastBoltTime or 0) < kVTPraetorRechargeDelay then
+        return
     end
-    if rate > 0 then
-        self.vtEnergy = math.min(kVTPraetorEnergy, self.vtEnergy + deltaTime * rate)
-    end
+    self.vtEnergy = math.min(kVTPraetorEnergy, self.vtEnergy + deltaTime * kVTPraetorRechargeRate)
 end
 
 function VTPraetor:OnProcessMove(input)
     VTBase.Exo.OnProcessMove(self, input)
     self:VT_UpdateEnergy(input.time)
+    if Server then
+        self:VT_UpdateMissile(input.time)
+    end
 end
 
 -- No exo thrusters at all (Space hover, Shift boosts): Space is a plain jump via JumpMoveMixin.
@@ -958,12 +984,17 @@ if Server then
     function VTPraetor:InitWeapons()
         Player.InitWeapons(self)
         local weaponHolder = self:GetWeapon(ExoWeaponHolder.kMapName) or self:GiveItem(ExoWeaponHolder.kMapName, false)
+        if not self.viewModelName then
+            self:InitExoModel()
+        end
         weaponHolder:SetWeapons(VTPlasmaMinigun.kMapName, VTPlasmaMinigun.kMapName)
-        -- The holder looks up its view model + animation graph by "<leftMapName>+<rightMapName>"; ours isn't in
-        -- its tables (no view model, no animation graph -> no shoot tags -> no guns). Use the vanilla setup.
-        weaponHolder.weaponSetupName = "minigun+minigun"
+        -- Networked as "string (15)" ("vt_plasmaminigun" has 16) and compared with "minigun" by the dual-fire
+        -- lock (CheckDualFiring): report the vanilla name. The arm entities stay VTPlasmaMinigun.
+        weaponHolder.weaponMapNameLeft = "minigun"
+        weaponHolder.weaponMapNameRight = "minigun"
+        weaponHolder.weaponSetupName = "minigun+minigun"   -- pre-2026-11-17 holder looked the view model up by this
         if weaponHolder:GetIsActive() then
-            self:SetViewModel(weaponHolder:GetViewModelName(), weaponHolder)
+            self:SetViewModel(self.viewModelName, weaponHolder)
         end
         weaponHolder:TriggerEffects("exo_login")
         self.inventoryWeight = weaponHolder:GetInventoryWeight(self)
@@ -987,6 +1018,135 @@ end
 
 InstallShared(VTPraetor)
 
+-- ---- homing missiles (right click) ---------------------------------------------------------------------------
+-- Left click fires both plasma miniguns (vanilla dual-fire lock forced on, see ExoWeaponHolder:CheckDualFiring
+-- below); right click no longer reaches the weapon holder. Hold right click: VT_UpdateMissile (server, every move)
+-- locks the enemy closest to the crosshair and launches a VTHomingMissile (Classes/VTWeapons.lua) once the lock is
+-- complete, then every kVTMissileRefireDelay while it holds. No lock, no missile (user 2026-11-17).
+-- own sound bank: art/sound/build_sounds.sh -> output/sound/vaelthor.fev
+local kMissileLaunchSound = PrecacheAsset("sound/vaelthor.fev/missile/launch")
+
+function VTPraetor:SecondaryAttack()
+    self.vtMissileHeld = true
+end
+
+function VTPraetor:SecondaryAttackEnd()
+    self.vtMissileHeld = false
+    self.vtMissileFiredThisHold = false
+end
+
+if Server then
+
+    local function GetIsLockable(self, entity, eye)
+        if not (entity:GetIsAlive() and entity:GetCanTakeDamage()) then return false end
+        if HasMixin(entity, "Cloakable") and entity:GetIsCloaked() then return false end
+        local trace = Shared.TraceRay(eye, entity:GetEngagementPoint(), CollisionRep.LOS, PhysicsMask.Bullets, EntityFilterAll())
+        return trace.fraction >= 0.99
+    end
+
+    -- Enemy closest to the crosshair within lockAngle (keepAngle for the current target), range, line of sight,
+    -- not cloaked. Defaults: the missile lock. Also used by the Praetor II beam (VTPraetor2).
+    function VTPraetor:VT_FindAutoTarget(current, lockAngle, keepAngle, range)
+        local eye = self:GetEyePos()
+        local forward = self:GetViewCoords().zAxis
+        local lockCos = math.cos(math.rad(lockAngle or kVTMissileLockAngle))
+        local keepCos = math.cos(math.rad(keepAngle or kVTMissileKeepAngle))
+        local best, bestCos
+        local enemies = GetEntitiesWithMixinForTeamWithinRange("Live", GetEnemyTeamNumber(self:GetTeamNumber()), eye,
+                range or kVTMissileLockRange)
+        for _, entity in ipairs(enemies) do
+            local toTarget = entity:GetEngagementPoint() - eye
+            local dist = toTarget:GetLength()
+            if dist > 1 then
+                local c = forward:DotProduct(toTarget / dist)
+                if c >= (entity == current and keepCos or lockCos) and (not bestCos or c > bestCos)
+                        and GetIsLockable(self, entity, eye) then
+                    best, bestCos = entity, c
+                end
+            end
+        end
+        return best
+    end
+
+    function VTPraetor:VT_UpdateMissile(deltaTime)
+        if not self.vtMissileHeld or not self:GetIsAlive() then
+            self.vtMissileLockId = Entity.invalidId
+            self.vtMissileLockFraction = 0
+            return
+        end
+        local current = Shared.GetEntity(self.vtMissileLockId)
+        local target = self:VT_FindAutoTarget(current)
+        if target ~= current then
+            self.vtMissileLockId = target and target:GetId() or Entity.invalidId
+            self.vtMissileLockFraction = 0
+        end
+        if target then
+            self.vtMissileLockFraction = math.min(1, self.vtMissileLockFraction + deltaTime / kVTMissileLockTime)
+            if self.vtMissileLockFraction >= 1 then
+                self:VT_FireMissile(target)
+            end
+        end
+    end
+
+    -- target: the locked entity (only VT_UpdateMissile calls this, with a completed lock). True when it launched.
+    function VTPraetor:VT_FireMissile(target)
+        local now = Shared.GetTime()
+        if now < self.vtNextMissileTime or self:GetIsWebbed() then
+            return false
+        end
+        if self.vtEnergy < kVTMissileEnergyCost then
+            if not self.vtMissileWarned or now - self.vtMissileWarned > 2 then
+                self.vtMissileWarned = now
+                VT_SendMessageToPlayer(self, string.format("Homing missile needs %d energy.", kVTMissileEnergyCost))
+            end
+            return false
+        end
+        self.vtEnergy = self.vtEnergy - kVTMissileEnergyCost
+        self.vtLastBoltTime = now                       -- counts as a shot for the recharge delay
+        self.vtNextMissileTime = now + kVTMissileRefireDelay
+        self.vtMissileFiredThisHold = true
+
+        local view = self:GetViewCoords()
+        local eye = self:GetEyePos()
+        -- launch from the right-shoulder pod (Client.lua draws it at the same point), slightly up when homing
+        local anchor = self:GetAttachPointIndex("Exosuit_UpprTorso") >= 0
+                and self:GetAttachPointCoords("Exosuit_UpprTorso").origin or eye
+        if (anchor - eye):GetLengthSquared() > 4 then
+            anchor = eye                -- model coords not ready (identity attach coords = map origin)
+        end
+        local start = anchor + view.yAxis * kVTShoulderMountUp - view.xAxis * kVTShoulderMountRight
+                + view.zAxis * kVTShoulderMountForward
+        local clear = Shared.TraceRay(eye, start, CollisionRep.Damage, PhysicsMask.Bullets, EntityFilterAll())
+        if clear.fraction < 1 then
+            start = eye + view.zAxis * 0.3
+        end
+        local direction = target and GetNormalizedVector(view.zAxis + view.yAxis * 0.25) or view.zAxis
+
+        local missile = CreateEntity(VTHomingMissile.kMapName, start, self:GetTeamNumber())
+        if missile then
+            missile:SetOwner(self)
+            missile:VT_Launch(direction, target)
+        end
+        -- no predictor: missiles launch on the server only, the Praetor must hear its own launch too
+        StartSoundEffectOnEntity(kMissileLaunchSound, self, 1)
+        return true
+    end
+
+end
+
+-- Left click fires both arms: the vanilla dual-fire lock (an Exo client option) is always on for the Praetor.
+if ExoWeaponHolder and ExoWeaponHolder.CheckDualFiring and not VT_HookedPraetorDualFire then
+    VT_HookedPraetorDualFire = true
+    local oldCheckDualFiring = ExoWeaponHolder.CheckDualFiring
+    function ExoWeaponHolder:CheckDualFiring()
+        local parent = self:GetParent()
+        if parent and parent:isa("VTPraetor") then
+            return true
+        end
+        return oldCheckDualFiring(self)
+    end
+end
+
 function VTPraetor:GetMapBlipType()
     return kMinimapBlipType.Exo
 end
@@ -1000,3 +1160,90 @@ end
 
 VT_InstallShield(VTPraetor, true)
 Shared.LinkClassToMap("VTPraetor", VTPraetor.kMapName, praetorNetworkVars, true)
+
+-- ----------------------------------------------------------------------------
+-- Praetor II (TEST class, 2026-11-17): a Praetor whose right click is a steady psionic beam instead of homing
+-- missiles. Only reachable with "vt_class praetor2" (cheats); not in the Synthesis Matrix menu, no caste stock.
+-- Subclass of VTPraetor, so everything else (laser guns, energy, Teleport Dash, HUD) is the Praetor's.
+-- Hold right click: the enemy closest to the crosshair (kVTBeamAngle, kVTBeamRange, line of sight, not cloaked)
+-- is targeted automatically and kept while it stays inside kVTBeamKeepAngle; kVTBeamDPS is dealt every
+-- kVTBeamTickInterval through the right arm weapon (so kills are credited and Plasma Calibration applies) and
+-- kVTBeamEnergyPerSecond is drained from the Praetor pool. vtBeamTargetId is networked to everyone: the clients
+-- draw the beam (Client.lua, Obelisk beam strips) from in front of the Praetor's chest to the target.
+-- ----------------------------------------------------------------------------
+class 'VTPraetor2' (VTPraetor)
+
+VTPraetor2.kMapName = kVTMapNames.Praetor2
+
+local praetor2NetworkVars =
+{
+    vtBeamTargetId = "entityid",
+}
+
+function VTPraetor2:OnCreate()
+    VTPraetor.OnCreate(self)
+    -- the map name "vt_praetor2" has no TechData entry: use the Praetor's (health, extents, icon, name)
+    self.techId = kTechId.VTPraetor
+    if Server then
+        -- LiveMixin read the health while the tech id was still None (default 100): apply the Praetor's
+        local maxHealth = LookupTechData(kTechId.VTPraetor, kTechDataMaxHealth, self.maxHealth)
+        self:SetMaxHealth(maxHealth)
+        self.health = maxHealth
+    end
+    self.vtBeamTargetId = Entity.invalidId
+    self.vtBeamHeld = false
+    self.vtBeamDamage = 0
+    self.vtNextBeamTick = 0
+end
+
+function VTPraetor2:SecondaryAttack()
+    self.vtBeamHeld = true
+end
+
+function VTPraetor2:SecondaryAttackEnd()
+    self.vtBeamHeld = false
+end
+
+if Server then
+
+    local function GetBeamDoer(self)
+        local holder = self:GetWeapon(ExoWeaponHolder.kMapName)
+        local weapon = holder and Shared.GetEntity(holder.rightWeaponId)
+        return weapon and HasMixin(weapon, "Damage") and weapon or nil
+    end
+
+    -- replaces the missile lock (called from VTPraetor:OnProcessMove every move)
+    function VTPraetor2:VT_UpdateMissile(deltaTime)
+        local target
+        if self.vtBeamHeld and self:GetIsAlive() and self.vtEnergy >= kVTBeamMinEnergy then
+            target = self:VT_FindAutoTarget(Shared.GetEntity(self.vtBeamTargetId), kVTBeamAngle, kVTBeamKeepAngle, kVTBeamRange)
+        end
+        self.vtBeamTargetId = target and target:GetId() or Entity.invalidId
+        if not target then
+            self.vtBeamDamage = 0
+            return
+        end
+
+        local now = Shared.GetTime()
+        self.vtEnergy = math.max(0, self.vtEnergy - kVTBeamEnergyPerSecond * deltaTime)
+        self.vtLastBoltTime = now                 -- the beam counts as firing for the recharge delay
+        self.vtBeamDamage = self.vtBeamDamage + kVTBeamDPS * deltaTime
+        if now < self.vtNextBeamTick then
+            return
+        end
+        self.vtNextBeamTick = now + kVTBeamTickInterval
+
+        local doer = GetBeamDoer(self)
+        if doer and self.vtBeamDamage > 0 then
+            local point = target:GetEngagementPoint()
+            local direction = GetNormalizedVector(point - self:GetEyePos())
+            -- surface "none": no impact effect per tick (the clients draw the beam and its glow)
+            doer:DoDamage(self.vtBeamDamage, target, point, direction, "none", false, false)
+        end
+        self.vtBeamDamage = 0
+    end
+
+end
+
+-- shield, network vars and the Praetor's installs (shared, flashlight, shield) are inherited from VTPraetor
+Shared.LinkClassToMap("VTPraetor2", VTPraetor2.kMapName, praetor2NetworkVars, true)

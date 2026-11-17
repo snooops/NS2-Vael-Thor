@@ -146,6 +146,7 @@ kVTMapNames =
     Infiltrator     = "vt_infiltrator",
     Subject         = "vt_subject",
     Praetor         = "vt_praetor",
+    Praetor2        = "vt_praetor2",
     Spectator       = "vt_spectator",
 
     Nexus           = "vt_nexus",
@@ -162,6 +163,7 @@ kVTMapNames =
     EchoPulse       = "vt_echopulse",
     Knife           = "vt_psionicknife",
     SingularityBolt = "vt_singularitybolt",
+    HomingMissile   = "vt_homingmissile",
 
     EmpireInfo      = "vt_empireinfo",
 
@@ -169,7 +171,8 @@ kVTMapNames =
     Spire           = "vt_psionicspire",
 }
 
-kVTClass      = enum({ "Vanguard", "Infiltrator", "Subject", "Praetor" })
+-- Praetor2: test class (2026-11-17), only via "vt_class praetor2" (cheats); not in the Synthesis Matrix menu, no stock.
+kVTClass      = enum({ "Vanguard", "Infiltrator", "Subject", "Praetor", "Praetor2" })
 kVTModule     = enum({ "ShieldBoost", "PhaseDash", "ShieldOverdrive" })
 kVTPrimaryMod = enum({ "Standard", "Overcharge" })
 kVTSecondary  = enum({ "Pistol", "Singularity" })
@@ -390,6 +393,7 @@ kVTMaxShield =
     VTInfiltrator       = 35,
     VTSubject           = 100,
     VTPraetor           = 200,
+    VTPraetor2          = 200,
     VTNexus             = 800,   -- Imperial Nexus
     VTSiphon            = 500,   -- Resource Siphon
     VTSubventionPylon   = 250,
@@ -469,25 +473,68 @@ kVTCarbineBoltLightIntensity = 5
 kVTPraetorFireRateScalar    = 1.275  -- 0.85 x 1.5 (fire rate raised 50%, 2026-11-03)
 kVTPraetorBoltDamageScalar  = 1.15
 kVTPraetorBoltBatch         = 3
-kVTPraetorSpread            = 5      -- degrees, bolt spread cone of the plasma miniguns (crosshair ring uses it)
+kVTPraetorSpread            = 0      -- degrees, bolt spread cone of the plasma miniguns (crosshair ring uses it); 0 = exact
+-- Bolts per second per arm, timed by VTPlasmaMinigun:ProcessMoveOnWeapon (fires on the click, no spin-up). The old
+-- tag-driven fire was 10 shoot tags/s per arm x kVTPraetorFireRateScalar / batch = 4.25; doubled (user 2026-11-17).
+-- The arms alternate (right fires half an interval after left): 17 bolts/s in total, 17 energy/s.
+kVTPraetorBoltsPerSecond    = 2 * 10 * kVTPraetorFireRateScalar / kVTPraetorBoltBatch   -- 8.5
 kVTPraetorSplashRadius      = 1.8    -- m; enemies around a Praetor bolt impact take splash damage
 kVTPraetorSplashDamage      = 1.0    -- x the bolt's base damage at the centre, falling off to 0 at the edge
+-- Bolt start relative to the eye (view frame, m), shared by server and client prediction. Matches the muzzles of the
+-- first-person laser guns (Client.lua) at the default 90 deg FOV, 16:9: measured +-460 px / 58 px below centre at
+-- 2000 px width, then the guns were lowered by 20% of the screen height (Client.lua kGunScreenDrop):
+-- 0.2 x 1125 px at 1000 px focal x 0.9 m = 0.20 m lower (was -0.05).
+kVTPraetorBoltForward       = 0.9
+kVTPraetorBoltSide          = 0.41
+kVTPraetorBoltUp            = -0.25
+-- Praetor homing missiles (right click, 2026-11-17 rework; left click fires both miniguns). Hold right click: the enemy
+-- closest to the crosshair (cone, range, line of sight) is locked after kVTMissileLockTime and a missile launches
+-- automatically, then every kVTMissileRefireDelay while the lock holds. Without a lock nothing fires.
+-- Paid from the shared minigun energy (kVTPraetorEnergy).
+-- Right-shoulder mount of the Praetor's missile pod / Praetor II beam emitter: muzzle point relative to the
+-- Exosuit_UpprTorso attach point, in the Praetor's view frame (x = left). Server (missile spawn) and clients (models).
+kVTShoulderMountUp          = 0.55
+kVTShoulderMountRight       = 0.38
+kVTShoulderMountForward     = 0.20
+kVTMissileEnergyCost        = 12     -- per missile (a bolt costs 1)
+kVTMissileLockTime          = 0.15   -- s on target until locked
+kVTMissileLockAngle         = 6      -- degrees from the crosshair to start a lock
+kVTMissileKeepAngle         = 12     -- degrees: a running lock survives this far off the crosshair
+kVTMissileLockRange         = 40     -- m (kMaxRelevancyDistance: beyond it clients don't see the target)
+kVTMissileRefireDelay       = 1.8    -- s cooldown between missiles (user 2026-11-17, was 0.6)
+kVTMissileSpeed             = 25     -- m/s
+kVTMissileTurnRate          = 150    -- degrees per second: turn radius ~9.5 m, a strafing target up close can dodge
+kVTMissileLifetime          = 3      -- s (~75 m), then it detonates in the air
+kVTMissileRadius            = 0.15   -- m, collision capsule
+kVTMissileProximity         = 0.8    -- m: detonates this close to its locked target's engagement point
+kVTMissileDamage            = 140    -- direct hit (before Plasma Calibration and the damage-type rules), Normal type (user 2026-11-17, was 75)
+kVTMissileSplashRadius      = 2.5    -- m
+kVTMissileSplashDamage      = 40     -- at the centre, falling off to 0 at the edge; walls block
+kVTMissileLightRadius       = 5
+kVTMissileLightIntensity    = 8
+-- Praetor II (test class): right click = steady psionic beam instead of missiles. Held: auto-targets the enemy
+-- closest to the crosshair (cone, range, line of sight, not cloaked) and keeps it while it stays in the wider keep
+-- cone; damage every kVTBeamTickInterval through the right arm weapon, energy from the shared Praetor pool.
+kVTBeamDPS                  = 60     -- Obelisk beam: 33.3
+kVTBeamRange                = 20     -- m
+kVTBeamAngle                = 20     -- degrees from the crosshair to pick a target
+kVTBeamKeepAngle            = 35     -- degrees: the current target is kept this far off the crosshair
+kVTBeamEnergyPerSecond      = 20
+kVTBeamMinEnergy            = 3      -- the beam stops below this
+kVTBeamTickInterval         = 0.1    -- s between damage ticks
 -- Plasma Carbine energy cell: no clips, no reload. Recharges round by round
 -- inside the Subvention field, slower than it can be emptied (~8 s to empty
 -- at rifle fire rate, ~13 s to refill).
 kVTCarbineEnergy            = 80
 kVTCarbineRechargeDelay     = 0.5    -- seconds after the last shot before recharging starts
 kVTCarbineRechargeRate      = 16     -- rounds per second while inside the field (empty -> full in 5 s)
--- Praetor energy: one shared pool for both plasma miniguns, 1 per bolt.
--- Inside a pylon/Nexus field it recharges like the Vanguard's carbine (same delay and rate: empty -> full in 6.25 s).
--- Outside a field it slowly regenerates, but only out of combat (no damage dealt/taken for kCombatTimeOut = 3 s,
--- no bolt for kVTPraetorSlowRechargeDelay): empty -> full in 60 s.
+-- Praetor energy: one shared pool for the plasma miniguns (1 per bolt), homing missiles and Teleport Dash.
+-- Recharges everywhere at the carbine's in-field rate once kVTPraetorRechargeDelay has passed since the last
+-- bolt / missile / dash (no field, no combat check; user design 2026-11-17): empty -> full in 6.25 s.
 kVTPraetorEnergy            = 100
 kVTPraetorEnergyPerBolt     = 1
-kVTPraetorRechargeDelay     = kVTCarbineRechargeDelay
-kVTPraetorRechargeRate      = kVTCarbineRechargeRate
-kVTPraetorSlowRechargeDelay = 3
-kVTPraetorSlowRechargeRate  = kVTPraetorEnergy / 60
+kVTPraetorRechargeRate      = kVTCarbineRechargeRate   -- 16 per second
+kVTPraetorRechargeDelay     = 0.2                      -- s after the last shot
 kVTOverchargeDamageScalar   = 1.9    -- per bolt
 kVTOverchargeFireDelay      = 0.2    -- min seconds between heavy bolts
 -- Psionic Blade (Infiltrator): damage = the Psionic Knife's (kVTKnife*DamageScalar, 50 vs players); hit box
@@ -618,6 +665,7 @@ kVTClassMapNames =
     [kVTClass.Infiltrator] = kVTMapNames.Infiltrator,
     [kVTClass.Subject]     = kVTMapNames.Subject,
     [kVTClass.Praetor]     = kVTMapNames.Praetor,
+    [kVTClass.Praetor2]    = kVTMapNames.Praetor2,
 }
 
 kVTClassNames =
@@ -626,6 +674,7 @@ kVTClassNames =
     [kVTClass.Infiltrator] = "INFILTRATOR",
     [kVTClass.Subject]     = "SUBJECT",
     [kVTClass.Praetor]     = "PRAETOR",
+    [kVTClass.Praetor2]    = "PRAETOR II",
 }
 
 -- Requirements for each loadout choice: minimum Authorization rank and the

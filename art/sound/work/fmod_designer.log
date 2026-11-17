@@ -1,0 +1,26 @@
+Debug: 
+Building project 'vaelthor'...
+Debug: Building project Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\build\vaelthor.fev...
+Debug: Unique sound defs 1/3
+Debug: Retrieving sound file info...
+Debug: Retrieving reverb info...
+Debug: FEV file written ok
+Debug: Unique Envelope Points: 0 of 0
+Debug: Unique Strings: 137 characters of 137
+Debug: Caching sound file details for ''...
+Debug: missile_explode.wav
+Debug: missile_flight.wav
+Debug: missile_launch.wav
+Debug: Building 'vaelthor.fsb'
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_flight.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_explode.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_launch.wav
+Debug: Writing FSB...
+Debug: Finished building FSB
+Debug: 
+Debug: 
+Summary of build:
+SUCCESS: Z:/home/snooops/Dokumente/NS2_VaelThor/art/sound/work/build/vaelthor.fev
+SUCCESS: vaelthor.fsb
+Debug: Information : FMOD Designer : Build finished.  Took 00:00:00
+

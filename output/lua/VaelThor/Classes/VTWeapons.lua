@@ -187,12 +187,13 @@ if Server then
             nx = Clamp(n.x, -1, 1), ny = Clamp(n.y, -1, 1), nz = Clamp(n.z, -1, 1),
             surface = kHitEffectSurface[surface],
             decal = targetHit == nil and trace.fraction < 1,
-            splash = (self.vtSplashRadius or 0) > 0,
+            splash = self.vtSplashEffect == true,   -- big impact: missiles only (minigun bolts: FPS, 2026-11-17)
         }
         for _, player in ipairs(GetEntitiesWithinRange("Player", hitPoint, kHitEffectRelevancyDistance)) do
             Server.SendNetworkMessage(player, "VTBoltImpact", message, false)
         end
     end
+    VT_SendBoltImpact = SendImpact   -- also used by VTHomingMissile (needs self.vtSplashRadius)
 
     local function DebugReport(self, text)
         local owner = self:GetOwner()
@@ -1040,6 +1041,11 @@ VT_FreezeClass(VTPlasmaMinigun, { "Minigun" })
 
 VTPlasmaMinigun.kMapName = "vt_plasmaminigun"
 
+function VTPlasmaMinigun:OnCreate()
+    VTBase.Minigun.OnCreate(self)
+    self.vtNextBoltTime = 0
+end
+
 local kMinigunBoltSound = PrecacheAsset("sound/NS2.fev/marine/heavy/railgun_quick_fire")
 
 -- Same barrel point on server and predicting client (vanilla's differs for the local player).
@@ -1047,31 +1053,30 @@ local function GetBoltStart(self, player)
     local eye = player:GetEyePos()
     local view = player:GetViewCoords()
     local side = self:GetIsLeftSlot() and 1 or -1
-    return eye + view.zAxis * 0.9 + view.xAxis * (0.45 * side) + view.yAxis * -0.17
+    return eye + view.zAxis * kVTPraetorBoltForward + view.xAxis * (kVTPraetorBoltSide * side)
+            + view.yAxis * kVTPraetorBoltUp
 end
 
 local function FireBolt(self, player)
 
     self.shooting = true             -- (no gatling spin loop: the bolts carry their own sound)
 
-    self.vtFireCredit = (self.vtFireCredit or 0) + kVTPraetorFireRateScalar / kVTPraetorBoltBatch
-    if self.vtFireCredit < 1 then
-        return
-    end
-    self.vtFireCredit = self.vtFireCredit - 1
-
     -- Shared Praetor energy pool (VTPraetor:VT_UpdateEnergy recharges it). Server-authoritative: the client
     -- only reads the networked value to stop firing when empty. Spending it in client prediction too made the
     -- HUD sawtooth (each server update reset vtEnergy, and replayed moves don't re-fire the animation tags).
     if player.vtEnergy then
         if player.vtEnergy < kVTPraetorEnergyPerBolt then
-            self.vtFireCredit = 0
             return
         end
         if Server then
             player.vtEnergy = player.vtEnergy - kVTPraetorEnergyPerBolt
             player.vtLastBoltTime = Shared.GetTime()
         end
+    end
+
+    -- recoil of the client-side laser gun model on this arm (Client.lua, Praetor laser guns)
+    if Client and not Shared.GetIsRunningPrediction() then
+        self.vtShotTime = Shared.GetTime()
     end
 
     local view = player:GetViewAngles():GetCoords()
@@ -1099,28 +1104,38 @@ local function FireBolt(self, player)
 
 end
 
--- Only the shoot tags matter: the vanilla spin-up/spin-down sounds and the overheat tags are dropped.
+-- Bolts are timed here, not by the minigun animation's shoot tags (those only start after the 0.47 s spin-up
+-- "attack_*_into"): the first bolt leaves on the click, then one every 1 / kVTPraetorBoltsPerSecond. vtNextBoltTime is
+-- networked so client prediction replays fire the same bolts as the server. All animation tags are ignored (no
+-- spin-up / spin-down sounds, no overheat).
 function VTPlasmaMinigun:OnTag(tagName)
-    local isShootTag = (self:GetIsLeftSlot() and tagName == "l_shoot") or (not self:GetIsLeftSlot() and tagName == "r_shoot")
-    if isShootTag then
-        local player = self:GetParent()
-        if self.minigunAttacking and player then
-            FireBolt(self, player)
-        end
-    end
 end
 
 -- No gatling tail sound / spin loop to stop.
 function VTPlasmaMinigun:OnPrimaryAttackEnd(player)
-    self.vtFireCredit = 0
     self.shooting = false
     self.minigunAttacking = false
 end
 
--- No overheating: heat stays at 0 (the heat UI just reads 0).
 function VTPlasmaMinigun:ProcessMoveOnWeapon(player, input)
+    -- no overheating: heat stays at 0 (the heat UI just reads 0)
     self.heatAmount = 0
     self.overheated = false
+
+    if not self.minigunAttacking or not player then
+        return
+    end
+    local now = Shared.GetTime()
+    local interval = 1 / kVTPraetorBoltsPerSecond
+    if (self.vtNextBoltTime or 0) < now - interval then
+        -- trigger just pulled (or a long pause): left arm fires right away, right arm half an interval later,
+        -- so the two guns alternate
+        self.vtNextBoltTime = now + (self:GetIsLeftSlot() and 0 or interval * 0.5)
+    end
+    if now >= self.vtNextBoltTime then
+        FireBolt(self, player)
+        self.vtNextBoltTime = self.vtNextBoltTime + interval
+    end
 end
 
 if Client then
@@ -1136,4 +1151,278 @@ if Client then
     end
 end
 
-Shared.LinkClassToMap("VTPlasmaMinigun", VTPlasmaMinigun.kMapName, {})
+Shared.LinkClassToMap("VTPlasmaMinigun", VTPlasmaMinigun.kMapName, { vtNextBoltTime = "private time" })
+
+-- ----------------------------------------------------------------------------
+-- Praetor homing missile (right click, see VTPraetor:VT_UpdateMissile in VTPlayers.lua). Server-driven entity, not
+-- a predicted projectile: it steers toward its locked target every update with a limited turn rate
+-- (kVTMissileTurnRate), so client prediction couldn't follow it. Clients see the networked position/angles.
+-- Detonates on contact (capsule trace), near its target (kVTMissileProximity) or after kVTMissileLifetime:
+-- kVTMissileDamage to the unit hit + kVTMissileSplashDamage splash (falloff, walls block), Praetor splash effects.
+-- Look (art/weapons/build_missile.sh): models/vaelthor/missile/missile.model (nose at the entity origin, body
+-- trailing 0.75 m behind) + a client-side exhaust plume (missile_flame.model, additive) at the nozzle. The plume
+-- is animated per frame: launch burst (kVTMissileBurstTime: long and wide, bright light flash, easing out), then
+-- a flickering exhaust; the rocket rolls slowly around its flight axis.
+-- ----------------------------------------------------------------------------
+Script.Load("lua/Mixins/BaseModelMixin.lua")
+Script.Load("lua/Mixins/ClientModelMixin.lua")
+
+class 'VTHomingMissile' (ScriptActor)
+
+VTHomingMissile.kMapName   = kVTMapNames.HomingMissile
+VTHomingMissile.kModelName = PrecacheAsset("models/vaelthor/missile/missile.model")
+VTHomingMissile.kFlameModelName = PrecacheAsset("models/vaelthor/missile/missile_flame.model")
+-- own sound bank (art/sound/build_sounds.sh): looping engine roar while flying (client), detonation (server)
+VTHomingMissile.kFlightSound  = PrecacheAsset("sound/vaelthor.fev/missile/flight")
+VTHomingMissile.kExplodeSound = PrecacheAsset("sound/vaelthor.fev/missile/explode")
+local kMissileLength   = 0.75     -- nose (origin) to nozzle, see build_missile.py
+local kMissileBurstTime = 0.35    -- s of launch burst
+local kMissileRollSpeed = 5       -- rad/s
+
+local kMissileLightColor = Color(0.85, 0.35, 1.0)
+
+local missileNetworkVars = {}
+AddMixinNetworkVars(BaseModelMixin, missileNetworkVars)
+AddMixinNetworkVars(ClientModelMixin, missileNetworkVars)
+AddMixinNetworkVars(TeamMixin, missileNetworkVars)
+
+function VTHomingMissile:OnCreate()
+    ScriptActor.OnCreate(self)
+    -- ScriptActor updates at kDefaultUpdateRate (server 0.25 s, client 0.1 s): the missile then jumped ~6 m per
+    -- server update (looked like warping) and the plume animated at 10 fps. Every tick / every frame instead.
+    self:SetUpdates(true, kRealTimeUpdateRate)
+    InitMixin(self, BaseModelMixin)
+    InitMixin(self, ClientModelMixin)
+    InitMixin(self, TeamMixin)
+    InitMixin(self, DamageMixin)
+    self.vtTargetId = Entity.invalidId
+    self.vtVelocity = Vector(0, 0, 0)
+    self.vtSpawnTime = Shared.GetTime()
+    self.vtSplashRadius = kVTMissileSplashRadius
+    self.vtSplashEffect = true                       -- VT_SendBoltImpact: full-size impact + big scorch
+end
+
+function VTHomingMissile:OnInitialized()
+    ScriptActor.OnInitialized(self)
+    self:SetModel(VTHomingMissile.kModelName)
+    if Client then
+        self.vtClientSpawnTime = Shared.GetTime()
+        self.vtFlame = Client.CreateRenderModel(RenderScene.Zone_Default)
+        self.vtFlame:SetModel(VTHomingMissile.kFlameModelName)
+        self.vtFlame:SetCastsShadows(false)
+        self.vtFlightSound = Client.CreateSoundEffect(Shared.GetSoundIndex(VTHomingMissile.kFlightSound))
+        self.vtFlightSound:SetParent(self:GetId())
+        self.vtFlightSound:Start()
+        self.vtLight = Client.CreateRenderLight()
+        self.vtLight:SetType(RenderLight.Type_Point)
+        self.vtLight:SetCastsShadows(false)
+        self.vtLight:SetSpecular(false)
+        self.vtLight:SetColor(kMissileLightColor)
+        self.vtLight:SetIntensity(kVTMissileLightIntensity)
+        self.vtLight:SetRadius(kVTMissileLightRadius)
+        self.vtLight:SetCoords(Coords.GetTranslation(self:GetOrigin()))
+    end
+end
+
+function VTHomingMissile:GetVTDamageScalar(target)
+    return 1
+end
+
+function VTHomingMissile:GetDamageType()
+    return kDamageType.Normal
+end
+
+function VTHomingMissile:GetIsAffectedByWeaponUpgrades()
+    return true          -- Plasma Calibration I-III, like the miniguns
+end
+
+function VTHomingMissile:GetWeaponTechId()
+    return kTechId.Minigun
+end
+
+function VTHomingMissile:GetDeathIconIndex()
+    return kDeathMessageIcon.Minigun
+end
+
+if Client then
+
+    -- 0 (steady) .. 1 (launch): eased-out launch burst
+    local function GetBurst(self, now)
+        local t = (now - (self.vtClientSpawnTime or now)) / kMissileBurstTime
+        if t >= 1 then return 0 end
+        return (1 - t) * (1 - t)
+    end
+
+    -- cheap per-missile flicker in 0..1
+    local function Flicker(self, now, speed)
+        local seed = self:GetId() * 1.7
+        return 0.5 + 0.25 * math.sin(now * speed + seed) + 0.25 * math.sin(now * speed * 1.93 + seed * 2.1)
+    end
+
+    -- slow roll around the flight axis (render only)
+    function VTHomingMissile:OnAdjustModelCoords(coords)
+        local a = Shared.GetTime() * kMissileRollSpeed + self:GetId()
+        local c, s = math.cos(a), math.sin(a)
+        local rolled = Coords.GetIdentity()
+        rolled.origin = coords.origin
+        rolled.xAxis = coords.xAxis * c + coords.yAxis * s
+        rolled.yAxis = coords.yAxis * c - coords.xAxis * s
+        rolled.zAxis = coords.zAxis
+        return rolled
+    end
+
+    function VTHomingMissile:OnUpdate(deltaTime)
+        if ScriptActor.OnUpdate then ScriptActor.OnUpdate(self, deltaTime) end
+        local now = Shared.GetTime()
+        local coords = self:GetCoords()
+        local burst = GetBurst(self, now)
+        local flicker = Flicker(self, now, 47)
+
+        if self.vtFlame then
+            local length = (0.8 + 0.35 * flicker) * (1 + 2.2 * burst)
+            local width = (0.85 + 0.3 * Flicker(self, now, 61)) * (1 + 0.9 * burst)
+            local flame = Coords.GetIdentity()
+            flame.origin = coords.origin - coords.zAxis * kMissileLength
+            flame.xAxis = coords.xAxis * width
+            flame.yAxis = coords.yAxis * width
+            flame.zAxis = coords.zAxis * length
+            self.vtFlame:SetCoords(flame)
+        end
+        if self.vtLight then
+            self.vtLight:SetCoords(Coords.GetTranslation(coords.origin - coords.zAxis * kMissileLength))
+            self.vtLight:SetIntensity(kVTMissileLightIntensity * (0.8 + 0.4 * flicker) * (1 + 2.5 * burst))
+            self.vtLight:SetRadius(kVTMissileLightRadius * (1 + 0.8 * burst))
+        end
+    end
+
+    function VTHomingMissile:OnDestroy()
+        if self.vtFlightSound then
+            Client.DestroySoundEffect(self.vtFlightSound)
+            self.vtFlightSound = nil
+        end
+        if self.vtFlame then
+            Client.DestroyRenderModel(self.vtFlame)
+            self.vtFlame = nil
+        end
+        if self.vtLight then
+            Client.DestroyRenderLight(self.vtLight)
+            self.vtLight = nil
+        end
+        ScriptActor.OnDestroy(self)
+    end
+
+end
+
+if Server then
+
+    -- direction: initial flight direction (unit); target: locked entity or nil (unguided)
+    function VTHomingMissile:VT_Launch(direction, target)
+        self.vtVelocity = direction * kVTMissileSpeed
+        self.vtTargetId = target and target:GetId() or Entity.invalidId
+        self:SetCoords(Coords.GetLookIn(self:GetOrigin(), direction))
+    end
+
+    local function GetLiveTarget(self)
+        local target = Shared.GetEntity(self.vtTargetId)
+        if target and HasMixin(target, "Live") and target:GetIsAlive() then
+            return target
+        end
+        self.vtTargetId = Entity.invalidId    -- dead / gone: fly on straight
+        return nil
+    end
+
+    -- Turn dir toward desired by at most maxAngle (radians). Both unit vectors.
+    local function TurnToward(dir, desired, maxAngle)
+        local angle = math.acos(Clamp(dir:DotProduct(desired), -1, 1))
+        if angle <= maxAngle then
+            return desired
+        end
+        -- rotate in the plane of dir and desired (pick any perpendicular when they are opposite)
+        local axis = dir:CrossProduct(desired)
+        if axis:GetLengthSquared() < 1e-6 then
+            axis = dir:CrossProduct(math.abs(dir.y) < 0.9 and kUpVector or Vector(1, 0, 0))
+        end
+        axis:Normalize()
+        local side = axis:CrossProduct(dir)          -- unit, perpendicular to dir, toward desired
+        return GetNormalizedVector(dir * math.cos(maxAngle) + side * math.sin(maxAngle))
+    end
+
+    function VTHomingMissile:VT_Detonate(hitEntity, point, normal, surface)
+        if self.vtDetonated then return end
+        self.vtDetonated = true
+        local owner = self:GetOwner()
+        local direction = GetNormalizedVector(self.vtVelocity)
+        local enemyTeam = GetEnemyTeamNumber(self:GetTeamNumber())
+        local direct = hitEntity and HasMixin(hitEntity, "Live") and HasMixin(hitEntity, "Team")
+                and hitEntity:GetTeamNumber() == enemyTeam and hitEntity or nil
+        if direct then
+            self:DoDamage(kVTMissileDamage, direct, point, direction, surface or "metal", false, false)
+        end
+        local victims = {}
+        for _, e in ipairs(GetEntitiesWithMixinForTeamWithinRange("Live", enemyTeam, point, kVTMissileSplashRadius)) do
+            if e ~= direct then victims[#victims + 1] = e end
+        end
+        if #victims > 0 then
+            RadiusDamage(victims, point, kVTMissileSplashRadius, kVTMissileSplashDamage, self)
+        end
+        if VT_SendBoltImpact then
+            VT_SendBoltImpact(self, owner, direct, point, direction, normal)
+        end
+        StartSoundEffectAtOrigin(VTHomingMissile.kExplodeSound, point)
+        DestroyEntity(self)
+    end
+
+    function VTHomingMissile:OnUpdate(deltaTime)
+        if ScriptActor.OnUpdate then ScriptActor.OnUpdate(self, deltaTime) end
+        if self.vtDetonated or deltaTime <= 0 then return end
+
+        local origin = self:GetOrigin()
+        if Shared.GetTime() - self.vtSpawnTime > kVTMissileLifetime then
+            self:VT_Detonate(nil, origin, nil, nil)
+            return
+        end
+
+        local dir = GetNormalizedVector(self.vtVelocity)
+        local target = GetLiveTarget(self)
+        local aimPoint
+        if target then
+            aimPoint = target:GetEngagementPoint()
+            local toTarget = aimPoint - origin
+            if toTarget:GetLength() <= kVTMissileProximity then
+                self:VT_Detonate(target, origin, -dir, nil)
+                return
+            end
+            dir = TurnToward(dir, GetNormalizedVector(toTarget), math.rad(kVTMissileTurnRate) * deltaTime)
+        end
+        self.vtVelocity = dir * kVTMissileSpeed
+        local newOrigin = origin + self.vtVelocity * deltaTime
+
+        -- contact: world or any non-friendly entity along this step
+        local owner = self:GetOwner()
+        local team = self:GetTeamNumber()
+        local filter = function(test)
+            return test == self or test == owner
+                    or (HasMixin(test, "Team") and test:GetTeamNumber() == team)
+        end
+        local trace = Shared.TraceCapsule(origin, newOrigin, kVTMissileRadius, 0, CollisionRep.Damage, PhysicsMask.Bullets, filter)
+        if trace.fraction < 1 then
+            self:VT_Detonate(trace.entity, trace.endPoint, trace.normal, trace.surface)
+            return
+        end
+        -- passed its target between two updates (fast target / long frame): proximity along the step
+        if target then
+            local seg = newOrigin - origin
+            local t = Clamp((aimPoint - origin):DotProduct(seg) / math.max(seg:DotProduct(seg), 1e-6), 0, 1)
+            local closest = origin + seg * t
+            if (aimPoint - closest):GetLength() <= kVTMissileProximity then
+                self:VT_Detonate(target, closest, -dir, nil)
+                return
+            end
+        end
+
+        self:SetCoords(Coords.GetLookIn(newOrigin, dir))
+    end
+
+end
+
+Shared.LinkClassToMap("VTHomingMissile", VTHomingMissile.kMapName, missileNetworkVars)

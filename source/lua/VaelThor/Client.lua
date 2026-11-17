@@ -330,6 +330,550 @@ end
 Event.Hook("UpdateRender", UpdateInfiltratorBlades)
 
 -- ----------------------------------------------------------------------------
+-- Praetor laser guns (art/weapons/build_lasergun.sh) instead of the exo miniguns. The minigun geometry is hidden
+-- with the transparent override material (Titan world model: face set 1; exo first-person view model: face set 0,
+-- turret + arm mount). Each arm gets a client render model pair - body + emitter barrel, origin = muzzle tip -
+-- anchored every frame at the exo's muzzle attach point (child of the arm / wrist bone, so it follows the
+-- animation but never the barrel spin). Recoil per bolt: the gun kicks back and up, the barrel slides back further
+-- into its shroud, and a violet light flashes at the muzzle; all ease out over ~0.2 s.
+-- Own guns kick on every bolt (VTPlasmaMinigun's FireBolt stamps vtShotTime on the client); other Praetors' guns
+-- kick at kGunAutoKickInterval while their arm's networked "shooting" flag is set.
+-- ----------------------------------------------------------------------------
+local kLaserBodyModel   = PrecacheAsset("models/vaelthor/lasergun/lasergun_body.model")
+local kLaserBarrelModel = PrecacheAsset("models/vaelthor/lasergun/lasergun_barrel.model")
+local kViewGunFaceSet, kWorldGunFaceSet = 0, 1
+local kViewMuzzles  = { "fxnode_l_minigun_muzzle", "fxnode_r_minigun_muzzle" }    -- left, right
+local kWorldMuzzles = { "fxnode_l_minigun_muzzle", "fxnode_r_minigun_muzzle1" }
+local kGunKickBack      = 0.05     -- m, whole gun
+local kGunBarrelSlide   = 0.09     -- m, barrel on top of the gun kick
+local kGunKickPitch     = math.rad(3)
+local kGunKickDecay     = 16       -- 1/s, exponential ease-out
+local kGunAutoKickInterval = 0.11  -- s, other Praetors (no per-bolt info on remote clients)
+local kGunFlashColor    = Color(0.80, 0.40, 1.0)
+local kGunFlashIntensity, kGunFlashRadius = 6, 3
+
+local kCameraSpace = Coords.GetIdentity()
+local gunStates = {}       -- praetor id -> { world = {gun, gun}, view = {gun, gun}, hideTime, worldModel }
+local viewOverride = nil   -- render model whose face set 0 we hid
+local viewOverrideTime = nil
+
+local function CreateGun(zone)
+    local gun = {}
+    gun.body = Client.CreateRenderModel(zone)
+    gun.body:SetModel(kLaserBodyModel)
+    gun.barrel = Client.CreateRenderModel(zone)
+    gun.barrel:SetModel(kLaserBarrelModel)
+    if zone == RenderScene.Zone_ViewModel then
+        gun.body:SetCastsShadows(false)
+        gun.barrel:SetCastsShadows(false)
+    end
+    gun.light = Client.CreateRenderLight()
+    gun.light:SetType(RenderLight.Type_Point)
+    gun.light:SetCastsShadows(false)
+    gun.light:SetSpecular(false)
+    gun.light:SetColor(kGunFlashColor)
+    gun.light:SetRadius(kGunFlashRadius)
+    gun.light:SetIntensity(0)
+    return gun
+end
+
+local function DestroyGun(gun)
+    Client.DestroyRenderModel(gun.body)
+    Client.DestroyRenderModel(gun.barrel)
+    Client.DestroyRenderLight(gun.light)
+end
+
+local function HideGun(gun)
+    gun.body:SetIsVisible(false)
+    gun.barrel:SetIsVisible(false)
+    gun.light:SetIntensity(0)
+end
+
+-- Muzzle frame from an attach point: the attach axis closest to the aim direction becomes the barrel axis
+-- (attach point axis conventions differ between the view and world models), up = the aim frame's up.
+-- The barrel points from the attach point at aimPoint (same space as the attach point): the bolts fly from the
+-- muzzles to the point under the crosshair, so the guns converge on it too (on screen a barrel aimed there runs
+-- from the muzzle to the crosshair, along the bolt).
+-- dropPx/focalPx (first person only): move the gun down by dropPx screen pixels at its own depth.
+local function GetMuzzleCoords(model, attachName, aim, aimPoint, dropPx, focalPx)
+    if not model or model:GetAttachPointIndex(attachName) < 0 then
+        return nil
+    end
+    local origin = model:GetAttachPointCoords(attachName).origin
+    if dropPx and focalPx and origin.z > 0 then
+        origin = origin - aim.yAxis * (dropPx * origin.z / focalPx)
+    end
+    local forward = aimPoint - origin
+    if forward:GetLengthSquared() < 0.01 or forward:DotProduct(aim.zAxis) <= 0 then
+        forward = aim.zAxis
+    end
+    return Coords.GetLookIn(origin, GetNormalizedVector(forward), aim.yAxis)
+end
+
+-- First-person guns sit kGunScreenDrop of the screen height lower than the exo arm muzzles (user 2026-11-17: they
+-- looked like they were mounted at the head). Bolts start lower to match: kVTPraetorBoltUp (Globals).
+local kGunScreenDrop = 0.20
+
+-- Focal length (px) of the view model zone: ViewModel:OnAdjustModelCoords sets its horizontal FOV to
+-- GetScreenAdjustedFov(model camera FOV or 65 deg, 1900 / 1200).
+local function GetViewZoneFocal(viewModel)
+    local fov = math.rad(65)
+    if viewModel.GetNumModelCameras and viewModel:GetNumModelCameras() > 0 then
+        fov = viewModel:GetModelCamera(0):GetFov()
+    end
+    fov = GetScreenAdjustedFov(fov, 1900 / 1200)
+    return Client.GetScreenWidth() * 0.5 / math.tan(fov * 0.5)
+end
+
+-- Distance to what the local crosshair is on, smoothed (the guns' convergence point).
+local kGunConvergeMin, kGunConvergeMax, kGunConvergeRemote = 2.5, 60, 20
+local gunAimDistance, gunAimTime = kGunConvergeRemote, nil
+local function UpdateLocalAimDistance(player, now)
+    local eye = player:GetEyePos()
+    local forward = player:GetViewCoords().zAxis
+    local trace = Shared.TraceRay(eye, eye + forward * kGunConvergeMax, CollisionRep.Damage, PhysicsMask.Bullets,
+            EntityFilterOne(player))
+    local target = Clamp(trace.fraction * kGunConvergeMax, kGunConvergeMin, kGunConvergeMax)
+    local dt = gunAimTime and math.min(0.1, now - gunAimTime) or 0.1
+    gunAimTime = now
+    gunAimDistance = gunAimDistance + (target - gunAimDistance) * math.min(1, dt * 12)
+    return gunAimDistance
+end
+
+-- toWorld: for guns in the view model zone (camera space), the camera's world coords - the muzzle light is a
+-- world light.
+local function PlaceGun(gun, muzzle, kick, toWorld)
+    if not muzzle then
+        HideGun(gun)
+        return
+    end
+    local t = math.tan(kGunKickPitch * kick)
+    local z = GetNormalizedVector(muzzle.zAxis + muzzle.yAxis * t)
+    local y = GetNormalizedVector(muzzle.yAxis - muzzle.zAxis * t)
+    local coords = Coords.GetIdentity()
+    coords.xAxis, coords.yAxis, coords.zAxis = muzzle.xAxis, y, z
+    coords.origin = muzzle.origin - z * (kGunKickBack * kick)
+    gun.body:SetCoords(coords)
+    local barrel = Coords.GetIdentity()
+    barrel.xAxis, barrel.yAxis, barrel.zAxis = coords.xAxis, coords.yAxis, coords.zAxis
+    barrel.origin = coords.origin - z * (kGunBarrelSlide * kick)
+    gun.barrel:SetCoords(barrel)
+    gun.body:SetIsVisible(true)
+    gun.barrel:SetIsVisible(true)
+    local flashPoint = muzzle.origin + muzzle.zAxis * 0.1
+    if toWorld then
+        flashPoint = toWorld:TransformPoint(flashPoint)
+    end
+    gun.light:SetCoords(Coords.GetTranslation(flashPoint))
+    gun.light:SetIntensity(kGunFlashIntensity * kick * kick)
+end
+
+-- 1 right after a shot, easing to 0
+local function GetKick(lastShot, now)
+    local t = now - (lastShot or -10)
+    if t < 0 or t > 0.4 then return 0 end
+    return math.exp(-t * kGunKickDecay)
+end
+
+local function GetArmWeapons(praetor)
+    local holder = praetor.GetWeapon and praetor:GetWeapon(ExoWeaponHolder.kMapName)
+    if not holder then return nil, nil end
+    return Shared.GetEntity(holder.leftWeaponId), Shared.GetEntity(holder.rightWeaponId)
+end
+
+local function SetFaceSetHidden(model, faceSet, hidden)
+    if model and model:GetReadyForOverrideMaterials() then
+        if hidden then
+            model:SetOverrideMaterial(faceSet, kBladesHiddenMaterial)
+        else
+            model:RemoveOverrideMaterial(faceSet)
+        end
+    end
+end
+
+local function UpdatePraetorGuns()
+    local now = Shared.GetTime()
+    local localPlayer = Client.GetLocalPlayer()
+    local seen = {}
+    local viewModelToHide = nil
+
+    for _, praetor in ientitylist(Shared.GetEntitiesWithClassname("VTPraetor")) do
+        local id = praetor:GetId()
+        seen[id] = true
+        local st = gunStates[id]
+        if not st then
+            st = { world = { CreateGun(RenderScene.Zone_Default), CreateGun(RenderScene.Zone_Default) }, lastShot = {} }
+            gunStates[id] = st
+        end
+
+        local alive = praetor:GetIsAlive()
+        local isLocal = praetor == localPlayer
+        local firstPerson = isLocal and not praetor:GetIsThirdPerson()
+
+        -- recoil timing per arm
+        local weapons = { GetArmWeapons(praetor) }
+        for side = 1, 2 do
+            local weapon = weapons[side]
+            if isLocal then
+                st.lastShot[side] = weapon and weapon.vtShotTime or st.lastShot[side]
+            elseif weapon and weapon.shooting and now - (st.lastShot[side] or -10) >= kGunAutoKickInterval then
+                st.lastShot[side] = now
+            end
+        end
+
+        -- world guns (everyone else, or yourself in third person); vanilla miniguns hidden on the Titan
+        local worldModel = praetor:GetRenderModel()
+        if worldModel and (st.worldModel ~= worldModel or now - (st.hideTime or 0) > 1) then
+            SetFaceSetHidden(worldModel, kWorldGunFaceSet, true)
+            st.worldModel, st.hideTime = worldModel, now
+        end
+        local aim = praetor:GetViewCoords()
+        local aimDistance = isLocal and UpdateLocalAimDistance(praetor, now) or kGunConvergeRemote
+        local worldAimPoint = praetor:GetEyePos() + aim.zAxis * aimDistance
+        for side = 1, 2 do
+            if alive and not firstPerson and worldModel then
+                PlaceGun(st.world[side], GetMuzzleCoords(praetor, kWorldMuzzles[side], aim, worldAimPoint), GetKick(st.lastShot[side], now))
+            else
+                HideGun(st.world[side])
+            end
+        end
+
+        -- first-person guns in the view model zone
+        if firstPerson and alive then
+            local viewModel = praetor:GetViewModelEntity()
+            if viewModel and viewModel:GetRenderModel() then
+                viewModelToHide = viewModel:GetRenderModel()
+                if not st.view then
+                    st.view = { CreateGun(RenderScene.Zone_ViewModel), CreateGun(RenderScene.Zone_ViewModel) }
+                end
+                local focal = GetViewZoneFocal(viewModel)
+                for side = 1, 2 do
+                    -- the view model zone is camera space (ViewModel:OnAdjustModelCoords = inverse model camera):
+                    -- forward +Z, up +Y, whatever the world view direction
+                    PlaceGun(st.view[side], GetMuzzleCoords(viewModel, kViewMuzzles[side], kCameraSpace,
+                            Vector(0, 0, aimDistance), kGunScreenDrop * Client.GetScreenHeight(), focal),
+                            GetKick(st.lastShot[side], now), aim)
+                end
+            end
+        end
+        if st.view and not (firstPerson and alive and viewModelToHide) then
+            HideGun(st.view[1]); HideGun(st.view[2])
+        end
+    end
+
+    -- the first-person minigun geometry: hidden while we are a Praetor, restored afterwards. Only touch a render
+    -- model that is still the local view model's current one (an old one may already be destroyed).
+    if viewOverride ~= viewModelToHide then
+        if viewOverride and not viewModelToHide and localPlayer and localPlayer.GetViewModelEntity then
+            local viewModel = localPlayer:GetViewModelEntity()
+            if viewModel and viewModel:GetRenderModel() == viewOverride then
+                SetFaceSetHidden(viewOverride, kViewGunFaceSet, false)
+            end
+        end
+        viewOverride = viewModelToHide
+        viewOverrideTime = nil
+    end
+    if viewModelToHide and (not viewOverrideTime or now - viewOverrideTime > 1) then
+        SetFaceSetHidden(viewModelToHide, kViewGunFaceSet, true)
+        viewOverrideTime = now
+    end
+
+    for id, st in pairs(gunStates) do
+        if not seen[id] then
+            DestroyGun(st.world[1]); DestroyGun(st.world[2])
+            if st.view then DestroyGun(st.view[1]); DestroyGun(st.view[2]) end
+            gunStates[id] = nil
+        end
+    end
+end
+
+Event.Hook("UpdateRender", UpdatePraetorGuns)
+
+-- ----------------------------------------------------------------------------
+-- Praetor II (test class) psionic beam from a shoulder emitter (art/weapons/build_beamemitter.sh: body + focus
+-- ring, origin = lens tip, laser gun material). The emitter sits on the Titan's right shoulder (world zone, anchored
+-- at the Exosuit_UpprTorso attach point) and, for the shooter in first person, peeks in from the upper right of
+-- the screen (view model zone). It aims at the beam target (else straight ahead); the focus ring spins up while the
+-- beam fires. The beam (Sentinel Obelisk strips, VT_BeamFx from Classes/VTStructures.lua) starts at the lens: in
+-- first person at the world point on the screen ray through the view-zone lens (the zones have different FOVs).
+-- A looping hum (vanilla nanoshield loop, like the Obelisk) plays on the Praetor while the beam is on.
+-- ----------------------------------------------------------------------------
+local kEmitterModel     = PrecacheAsset("models/vaelthor/lasergun/beam_emitter.model")
+local kEmitterRingModel = PrecacheAsset("models/vaelthor/lasergun/beam_emitter_ring.model")
+local kPraetorBeamSound = PrecacheAsset("sound/NS2.fev/marine/commander/nano_loop")
+-- world: lens tip relative to the upper torso attach point, in the Praetor's view frame (x = left); shared with the
+-- server (missile spawn point of the Praetor's pod), Hooks/Globals.lua
+local kEmitterUp, kEmitterRight, kEmitterForward = kVTShoulderMountUp, kVTShoulderMountRight, kVTShoulderMountForward
+-- first person: lens tip on screen (fractions of width / height right of / above the centre) and its depth (m)
+local kViewEmitterScreenX, kViewEmitterScreenY, kViewEmitterDepth = 0.30, 0.20, 0.75
+local kRingSpinIdle, kRingSpinFiring = 1.0, 14.0     -- rad/s
+local beamStates = {}   -- praetor id -> { fx, sound, playing, world = {body, ring}, view = {body, ring}, spin }
+
+local function CreateEmitter(zone)
+    local e = { body = Client.CreateRenderModel(zone), ring = Client.CreateRenderModel(zone) }
+    e.body:SetModel(kEmitterModel)
+    e.ring:SetModel(kEmitterRingModel)
+    if zone == RenderScene.Zone_ViewModel then
+        e.body:SetCastsShadows(false)
+        e.ring:SetCastsShadows(false)
+    end
+    return e
+end
+
+local function DestroyEmitter(e)
+    Client.DestroyRenderModel(e.body)
+    Client.DestroyRenderModel(e.ring)
+end
+
+local function SetEmitterVisible(e, visible)
+    e.body:SetIsVisible(visible)
+    e.ring:SetIsVisible(visible)
+end
+
+local function PlaceEmitter(e, tip, aimPoint, up, spin)
+    local forward = aimPoint - tip
+    if forward:GetLengthSquared() < 0.01 then forward = Vector(0, 0, 1) end
+    local coords = Coords.GetLookIn(tip, GetNormalizedVector(forward), up)
+    e.body:SetCoords(coords)
+    local c, s = math.cos(spin), math.sin(spin)
+    local ring = Coords.GetIdentity()
+    ring.origin, ring.zAxis = coords.origin, coords.zAxis
+    ring.xAxis = coords.xAxis * c + coords.yAxis * s
+    ring.yAxis = coords.yAxis * c - coords.xAxis * s
+    e.ring:SetCoords(ring)
+    SetEmitterVisible(e, true)
+end
+
+-- World focal length (px) of the current camera, measured with WorldToScreen.
+local function GetWorldFocal(camera)
+    local p = Client.WorldToScreen(camera.origin + camera.zAxis * 10 + camera.xAxis)
+    local f = math.abs(p.x - Client.GetScreenWidth() * 0.5) * 10
+    return f > 1 and f or Client.GetScreenWidth() * 0.5
+end
+
+local function UpdatePraetorBeams()
+    if not VT_BeamFx then return end
+    local now = Shared.GetTime()
+    local localPlayer = Client.GetLocalPlayer()
+    local cameraCoords = localPlayer and localPlayer.GetCameraViewCoords and localPlayer:GetCameraViewCoords()
+    local seen = {}
+    for _, praetor in ientitylist(Shared.GetEntitiesWithClassname("VTPraetor2")) do
+        local id = praetor:GetId()
+        seen[id] = true
+        local st = beamStates[id]
+        if not st then
+            st = { fx = VT_BeamFx.Create(), world = CreateEmitter(RenderScene.Zone_Default), spin = 0, lastTime = now }
+            st.sound = Client.CreateSoundEffect(Shared.GetSoundIndex(kPraetorBeamSound))
+            st.sound:SetParent(id)
+            beamStates[id] = st
+        end
+
+        local alive = praetor:GetIsAlive()
+        local targetId = praetor.vtBeamTargetId
+        local target = alive and targetId and targetId ~= Entity.invalidId and Shared.GetEntity(targetId) or nil
+        if target and not target.GetEngagementPoint then target = nil end
+        local firing = target ~= nil       -- (target must be nil, not false: "false ~= nil" drew a beam to false)
+        local dt = math.min(0.1, now - st.lastTime)
+        st.lastTime = now
+        st.spin = st.spin + dt * (firing and kRingSpinFiring or kRingSpinIdle)
+
+        local view = praetor:GetViewCoords()
+        local firstPerson = praetor == localPlayer and not praetor:GetIsThirdPerson()
+        local targetPoint = target and VT_BeamFx.GetEndPoint(target, localPlayer, cameraCoords)
+        local beamStart
+
+        -- world emitter on the right shoulder (others, or yourself in third person)
+        if alive and not firstPerson then
+            local anchor = praetor:GetAttachPointIndex("Exosuit_UpprTorso") >= 0
+                    and praetor:GetAttachPointCoords("Exosuit_UpprTorso").origin or praetor:GetEyePos()
+            local tip = anchor + view.yAxis * kEmitterUp - view.xAxis * kEmitterRight + view.zAxis * kEmitterForward
+            PlaceEmitter(st.world, tip, targetPoint or (praetor:GetEyePos() + view.zAxis * 20), view.yAxis, st.spin)
+            beamStart = tip
+        else
+            SetEmitterVisible(st.world, false)
+        end
+
+        -- first-person emitter in the view model zone (camera space: +Z forward, +Y up, +X left)
+        if alive and firstPerson and cameraCoords then
+            local viewModel = praetor:GetViewModelEntity()
+            if viewModel then
+                st.view = st.view or CreateEmitter(RenderScene.Zone_ViewModel)
+                local fView = GetViewZoneFocal(viewModel)
+                local fWorld = GetWorldFocal(cameraCoords)
+                local z = kViewEmitterDepth
+                local tip = Vector(-kViewEmitterScreenX * Client.GetScreenWidth() * z / fView,
+                        kViewEmitterScreenY * Client.GetScreenHeight() * z / fView, z)
+                local aim
+                if targetPoint then
+                    -- the target as it appears on screen, expressed in the view zone's projection
+                    local l = cameraCoords:GetInverse():TransformPoint(targetPoint)
+                    local k = fWorld / fView
+                    aim = Vector(l.x * k, l.y * k, math.max(l.z, 0.5))
+                else
+                    aim = Vector(0, 0, gunAimDistance or 20)
+                end
+                PlaceEmitter(st.view, tip, aim, Vector(0, 1, 0), st.spin)
+                -- beam start: the world point on the screen ray through the lens tip, 1 m out
+                local d = 1.0
+                local k = fView / fWorld * d / z
+                beamStart = cameraCoords.origin + cameraCoords.zAxis * d
+                        + cameraCoords.xAxis * (tip.x * k) + cameraCoords.yAxis * (tip.y * k)
+            end
+        elseif st.view then
+            SetEmitterVisible(st.view, false)
+        end
+
+        if firing and beamStart then
+            local cameraPos = cameraCoords and cameraCoords.origin or praetor:GetEyePos()
+            VT_BeamFx.Update(st.fx, beamStart, targetPoint, 1, cameraPos)
+            if not st.playing then st.sound:Start(); st.playing = true end
+        else
+            VT_BeamFx.SetVisible(st.fx, false)
+            if st.playing then st.sound:Stop(); st.playing = false end
+        end
+    end
+    for id, st in pairs(beamStates) do
+        if not seen[id] then
+            VT_BeamFx.Destroy(st.fx)
+            Client.DestroySoundEffect(st.sound)
+            DestroyEmitter(st.world)
+            if st.view then DestroyEmitter(st.view) end
+            beamStates[id] = nil
+        end
+    end
+end
+
+Event.Hook("UpdateRender", UpdatePraetorBeams)
+
+-- ----------------------------------------------------------------------------
+-- Praetor (I) shoulder missile pod (art/weapons/build_missilepod.sh, origin = launch point): same mount as the
+-- Praetor II emitter - right shoulder in the world, upper right of the screen in first person - aimed at the
+-- missile lock (own Praetor) or straight ahead. Every launch (vtNextMissileTime moves forward, networked to all)
+-- kicks the pod back and up and flashes a violet light at the tubes. The server spawns the missiles at the same
+-- world point (VTPraetor:VT_FireMissile).
+-- ----------------------------------------------------------------------------
+local kMissilePodModel = PrecacheAsset("models/vaelthor/lasergun/missile_pod.model")
+local kPodKickBack, kPodKickPitch, kPodKickDecay = 0.10, math.rad(7), 9
+local podStates = {}    -- praetor id -> { world, view, light, lastNext, launchTime }
+
+local function CreatePod(zone)
+    local model = Client.CreateRenderModel(zone)
+    model:SetModel(kMissilePodModel)
+    if zone == RenderScene.Zone_ViewModel then
+        model:SetCastsShadows(false)
+    end
+    return model
+end
+
+local function PlacePod(model, tip, aimPoint, up, kick)
+    local forward = aimPoint - tip
+    if forward:GetLengthSquared() < 0.01 then forward = Vector(0, 0, 1) end
+    local coords = Coords.GetLookIn(tip, GetNormalizedVector(forward), up)
+    local t = math.tan(kPodKickPitch * kick)
+    local z = GetNormalizedVector(coords.zAxis + coords.yAxis * t)
+    local y = GetNormalizedVector(coords.yAxis - coords.zAxis * t)
+    coords.zAxis, coords.yAxis = z, y
+    coords.origin = tip - z * (kPodKickBack * kick)
+    model:SetCoords(coords)
+    model:SetIsVisible(true)
+end
+
+local function UpdatePraetorPods()
+    local now = Shared.GetTime()
+    local localPlayer = Client.GetLocalPlayer()
+    local cameraCoords = localPlayer and localPlayer.GetCameraViewCoords and localPlayer:GetCameraViewCoords()
+    local seen = {}
+    for _, praetor in ientitylist(Shared.GetEntitiesWithClassname("VTPraetor")) do
+        if not praetor:isa("VTPraetor2") then          -- Praetor II carries the beam emitter instead
+            local id = praetor:GetId()
+            seen[id] = true
+            local st = podStates[id]
+            if not st then
+                st = { world = CreatePod(RenderScene.Zone_Default), lastNext = praetor.vtNextMissileTime or 0 }
+                st.light = Client.CreateRenderLight()
+                st.light:SetType(RenderLight.Type_Point)
+                st.light:SetCastsShadows(false)
+                st.light:SetSpecular(false)
+                st.light:SetColor(Color(0.85, 0.4, 1.0))
+                st.light:SetRadius(3)
+                st.light:SetIntensity(0)
+                podStates[id] = st
+            end
+            local nextTime = praetor.vtNextMissileTime or 0
+            if nextTime > (st.lastNext or 0) + 0.05 then
+                st.launchTime = now                      -- a missile just left
+            end
+            st.lastNext = nextTime
+            local kick = 0
+            if st.launchTime and now - st.launchTime < 0.6 then
+                kick = math.exp(-(now - st.launchTime) * kPodKickDecay)
+            end
+
+            local alive = praetor:GetIsAlive()
+            local view = praetor:GetViewCoords()
+            local firstPerson = praetor == localPlayer and not praetor:GetIsThirdPerson()
+            local lockId = praetor.vtMissileLockId
+            local lockTarget = lockId and lockId ~= Entity.invalidId and Shared.GetEntity(lockId) or nil
+            local lockPoint = lockTarget and lockTarget.GetEngagementPoint and lockTarget:GetEngagementPoint() or nil
+            local flashPoint
+
+            if alive and not firstPerson then
+                local anchor = praetor:GetAttachPointIndex("Exosuit_UpprTorso") >= 0
+                        and praetor:GetAttachPointCoords("Exosuit_UpprTorso").origin or praetor:GetEyePos()
+                local tip = anchor + view.yAxis * kEmitterUp - view.xAxis * kEmitterRight + view.zAxis * kEmitterForward
+                PlacePod(st.world, tip, lockPoint or (praetor:GetEyePos() + view.zAxis * 20), view.yAxis, kick)
+                flashPoint = tip + view.zAxis * 0.15
+            else
+                st.world:SetIsVisible(false)
+            end
+
+            if alive and firstPerson and cameraCoords then
+                local viewModel = praetor:GetViewModelEntity()
+                if viewModel then
+                    st.view = st.view or CreatePod(RenderScene.Zone_ViewModel)
+                    local fView = GetViewZoneFocal(viewModel)
+                    local fWorld = GetWorldFocal(cameraCoords)
+                    local z = kViewEmitterDepth
+                    local tip = Vector(-kViewEmitterScreenX * Client.GetScreenWidth() * z / fView,
+                            kViewEmitterScreenY * Client.GetScreenHeight() * z / fView, z)
+                    local aim
+                    if lockPoint then
+                        local l = cameraCoords:GetInverse():TransformPoint(lockPoint)
+                        local k = fWorld / fView
+                        aim = Vector(l.x * k, l.y * k, math.max(l.z, 0.5))
+                    else
+                        aim = Vector(0, 0, gunAimDistance or 20)
+                    end
+                    PlacePod(st.view, tip, aim, Vector(0, 1, 0), kick)
+                    local k = fView / fWorld * 1.0 / z
+                    flashPoint = cameraCoords.origin + cameraCoords.zAxis * 1.0
+                            + cameraCoords.xAxis * (tip.x * k) + cameraCoords.yAxis * (tip.y * k)
+                end
+            elseif st.view then
+                st.view:SetIsVisible(false)
+            end
+
+            if flashPoint and kick > 0.01 then
+                st.light:SetCoords(Coords.GetTranslation(flashPoint))
+                st.light:SetIntensity(8 * kick)
+            else
+                st.light:SetIntensity(0)
+            end
+        end
+    end
+    for id, st in pairs(podStates) do
+        if not seen[id] then
+            Client.DestroyRenderModel(st.world)
+            if st.view then Client.DestroyRenderModel(st.view) end
+            Client.DestroyRenderLight(st.light)
+            podStates[id] = nil
+        end
+    end
+end
+
+Event.Hook("UpdateRender", UpdatePraetorPods)
+
+-- ----------------------------------------------------------------------------
 -- Praetor: no exosuit cockpit. The first-person exo view model (exosuit_mm_view) has
 -- face set 0 = the minigun arms; 1-7 = cockpit frame + lid, screen, and the small
 -- in-world armor/heat panels. Those get the fully transparent override material.
@@ -498,12 +1042,15 @@ end)
 -- over kVTEchoScanFadeTime and is removed.
 --
 -- Fade: the mod ships ui/marine_outline_lookup.dds (art/ui/) whose red band
--- runs from full red at its centre (u = 288/320, what vanilla samples for red)
--- to black at its end. The composite is additive, so sliding a model's
--- "outline" parameter along that gradient fades its outline out.
+-- runs from full red at its centre (x = 288, what vanilla samples for red)
+-- to black at its end (x = 319). The composite is additive, so sliding a model's
+-- "outline" parameter along that gradient fades its outline out. The lookup is
+-- 64 px per band: 5 bands (320 px) before the 2026-11-17 game update, 6 (384 px,
+-- + Orange) since, so u is taken from vanilla's band count.
 -- ----------------------------------------------------------------------------
-local kEchoFadeUStart = 288.5 / 320
-local kEchoFadeUEnd   = 319.5 / 320
+local kEchoLookupWidth = 64 * (kEquipmentOutlineColorCount or 6)
+local kEchoFadeUStart = 288.5 / kEchoLookupWidth
+local kEchoFadeUEnd   = 319.5 / kEchoLookupWidth
 local kEchoOutlineRed = kEquipmentOutlineColor and kEquipmentOutlineColor.Red or 4
 
 local echoContacts = {}   -- entityId -> { lastSeen, model }

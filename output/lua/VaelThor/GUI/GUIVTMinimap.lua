@@ -43,6 +43,7 @@ local kVTOwnIconCells =
     VTInfiltrator = { GUIGetSprite(2, 10, kIconSize, kIconSize) },
     VTSubject     = { GUIGetSprite(3, 10, kIconSize, kIconSize) },
     VTPraetor     = { GUIGetSprite(4, 10, kIconSize, kIconSize) },
+    VTPraetor2    = { GUIGetSprite(4, 10, kIconSize, kIconSize) },
 }
 
 -- the Vael'Thor team's blip colours (vanilla: cyan / orange shades)

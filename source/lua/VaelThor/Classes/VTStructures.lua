@@ -708,6 +708,13 @@ if Client then
         return target:GetEngagementPoint()
     end
 
+    -- shared with the Praetor II beam (Client.lua)
+    VT_BeamFx =
+    {
+        Create = CreateBeamFx, Update = UpdateBeamFx, SetVisible = SetBeamFxVisible, Destroy = DestroyBeamFx,
+        GetEndPoint = GetBeamEndPoint,
+    }
+
     local function UpdateBeams(self)
 
         self.vtBeamFx = self.vtBeamFx or {}

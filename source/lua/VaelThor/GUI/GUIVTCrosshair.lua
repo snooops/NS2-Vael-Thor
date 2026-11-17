@@ -303,6 +303,75 @@ function GUIVTCrosshair:DrawPraetor(player, flash)
     local ar = r + len + U(16)
     self:PipArc("p_el", 8, frac, ar, 125, 235, U(6), pipCol, kColDim)    -- left arc, bottom -> top
     self:PipArc("p_er", 8, frac, ar, 55, -55, U(6), pipCol, kColDim)     -- right arc, bottom -> top
+
+    if player:isa("VTPraetor2") then
+        self:DrawBeamTarget(player, now)          -- test class: steady beam instead of missiles
+    else
+        self:DrawMissileCooldown(player, now, ar)
+        self:DrawMissileLock(player, now)
+    end
+end
+
+-- Praetor II beam target: red brackets around it while the beam is on (vtBeamTargetId).
+function GUIVTCrosshair:DrawBeamTarget(player, now)
+    local id = player.vtBeamTargetId
+    local target = id and id ~= Entity.invalidId and Shared.GetEntity(id)
+    if not target or not target.GetEngagementPoint then
+        return
+    end
+    local point = target:GetEngagementPoint()
+    if player:GetViewCoords().zAxis:DotProduct(point - player:GetEyePos()) <= 0 then
+        return
+    end
+    local p = Client.WorldToScreen(point)
+    local x, y = p.x - Client.GetScreenWidth() * 0.5, p.y - Client.GetScreenHeight() * 0.5
+    local f = U(22) + U(3) * math.sin(now * 12)
+    local s = U(16)
+    self:Put("b_tl", kCornerTL, x - f, y - f, s, kColWarn)
+    self:Put("b_tr", kCornerTR, x + f, y - f, s, kColWarn)
+    self:Put("b_bl", kCornerBL, x - f, y + f, s, kColWarn)
+    self:Put("b_br", kCornerBR, x + f, y + f, s, kColWarn)
+end
+
+-- Homing missile cooldown (vtNextMissileTime, networked to the own client): bottom arc between the two energy arcs,
+-- refilling left -> right while the missile recharges, lit when ready (no label: user 2026-11-17).
+function GUIVTCrosshair:DrawMissileCooldown(player, now, radius)
+    local remaining = math.max(0, (player.vtNextMissileTime or 0) - now)
+    local ready = remaining <= 0
+    local frac = ready and 1 or Clamp(1 - remaining / kVTMissileRefireDelay, 0, 1)
+    local enoughEnergy = (player.vtEnergy or 0) >= kVTMissileEnergyCost
+    local onCol = not enoughEnergy and kColWarn or (ready and kColAccent or kColPraetor)
+    self:PipArc("p_mc", 7, frac, radius, 117, 63, U(6), onCol, kColDim)  -- bottom arc, left -> right
+
+end
+
+-- Homing missile lock (right click held): corner brackets around the target that close in while the lock builds
+-- (vtMissileLockFraction, networked to the own client) and turn red + spin a ring once locked.
+function GUIVTCrosshair:DrawMissileLock(player, now)
+    local lockId = player.vtMissileLockId
+    local target = lockId and lockId ~= Entity.invalidId and Shared.GetEntity(lockId)
+    if not target or not target.GetEngagementPoint then
+        return
+    end
+    local point = target:GetEngagementPoint()
+    if player:GetViewCoords().zAxis:DotProduct(point - player:GetEyePos()) <= 0 then
+        return    -- behind the camera
+    end
+    local p = Client.WorldToScreen(point)
+    local x, y = p.x - Client.GetScreenWidth() * 0.5, p.y - Client.GetScreenHeight() * 0.5
+    local lock = Clamp(player.vtMissileLockFraction or 0, 0, 1)
+    local locked = lock >= 1
+    local col = locked and kColWarn or Mix(kColDim, kColPraetor, lock)
+    local f = U(46) - U(26) * lock
+    local s = U(16)
+    self:Put("m_tl", kCornerTL, x - f, y - f, s, col)
+    self:Put("m_tr", kCornerTR, x + f, y - f, s, col)
+    self:Put("m_bl", kCornerBL, x - f, y + f, s, col)
+    self:Put("m_br", kCornerBR, x + f, y + f, s, col)
+    if locked then
+        self:Put("m_ring", kRing, x, y, U(30), WithAlpha(kColWarn, 0.8))
+        self.items["m_ring"]:SetRotation(Vector(0, 0, -now * 4))
+    end
 end
 
 -- ---- update ----------------------------------------------------------------------

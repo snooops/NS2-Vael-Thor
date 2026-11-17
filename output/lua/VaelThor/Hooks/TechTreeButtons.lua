@@ -2,8 +2,8 @@
 -- Vael'Thor Empire - commander/HUD icons
 -- (post-hook of lua/TechTreeButtons.lua)
 --
--- Own icons: output/ui/buildmenu.dds is the vanilla atlas plus five rows of Vael'Thor icons
--- (art/ui/commander/build_command_icons.sh; vanilla cells keep their pixel positions). kVTIconCells mirrors
+-- Own icons: output/ui/buildmenu.dds is the vanilla atlas plus five rows of Vael'Thor icons from
+-- row kVTFirstRow on (art/ui/commander/build_command_icons.sh; vanilla cells keep their pixel positions). kVTIconCells mirrors
 -- the generator's ICONS order (column, row). kVTIconAlias stays as the fallback for tech without an icon.
 -- ============================================================================
 
@@ -64,62 +64,66 @@ local kVTIconAlias =
     [kTechId.VTObeliskBeams3]        = kTechId.Sentry,
 }
 
+-- First Vael'Thor row = vanilla atlas row count (16 before the 2026-11-17 game update, 18 since). Must match
+-- the atlas built by art/ui/commander/build_command_icons.sh (it prints the vanilla row count).
+local kVTFirstRow = 18
+
 -- tech id name -> { column, row } in the extended atlas (generated: art/ui/commander/vaelthor_buildmenu_cells.txt)
 local kVTIconCellList =
 {
-    { "VTNexus", 0, 16 },
-    { "VTSiphon", 1, 16 },
-    { "VTSubventionPylon", 2, 16 },
-    { "VTSynthesisChamber", 3, 16 },
-    { "VTShieldGenerator", 4, 16 },
-    { "VTSentinelObelisk", 5, 16 },
-    { "VTPsionicSpire", 7, 16 },
-    { "VTNexusGate", 8, 16 },
-    { "VTNexusGateUpgrade", 9, 16 },
-    { "VTResonantPylonUpgrade", 10, 16 },
-    { "VTAegisArrayUpgrade", 11, 16 },
-    { "VTVanguard", 0, 17 },
-    { "VTInfiltrator", 1, 17 },
-    { "VTSubject", 2, 17 },
-    { "VTPraetor", 3, 17 },
-    { "VTQuotaMenu", 4, 17 },
-    { "VTBuyInfiltrator", 5, 17 },   -- the old "quota +1" icons
-    { "VTBuySubject", 7, 17 },
-    { "VTBuyPraetor", 9, 17 },
-    { "VTArchonsThrone", 11, 17 },
-    { "VTEdictRequisition", 0, 18 },
-    { "VTEdictRelentless", 1, 18 },
-    { "VTEdictIronDiscipline", 2, 18 },
-    { "VTShieldPulse", 3, 18 },
-    { "VTNexusRecall", 8, 16 },   -- Nexus Gate icon (cell 4,18 is the old rift-themed recall icon)
-    { "VTAuthorizationTier2", 5, 18 },
-    { "VTAuthorizationTier3", 6, 18 },
-    { "VTOverchargeTech", 7, 18 },
-    { "VTSingularityTech", 8, 18 },
-    { "VTPhaseDashTech", 9, 18 },
-    { "VTShieldOverdriveTech", 10, 18 },
-    { "VTTargetingVisorTech", 11, 18 },
-    { "VTPhaseCloakTech", 0, 19 },
-    { "VTNeuralOverrideTech", 1, 19 },
-    { "VTPsionicEdictsTech", 2, 19 },
-    { "VTPlasmaCarbine", 9, 19 },
-    { "VTPsionicBlade", 10, 19 },
-    { "VTSubjectClaws", 11, 19 },
-    { "VTPsionicKnife", 0, 20 },
-    { "VTSingularityLauncher", 1, 20 },
-    { "VTEchoPulse", 2, 20 },
-    { "VTObeliskPrismUpgrade", 3, 20 },
-    { "VTObeliskTrinityUpgrade", 4, 20 },
-    { "VTObeliskFocus", 5, 20 },
-    { "VTObeliskBeams1", 6, 20 },
-    { "VTObeliskBeams2", 7, 20 },
-    { "VTObeliskBeams3", 8, 20 },
+    { "VTNexus", 0, kVTFirstRow + 0 },
+    { "VTSiphon", 1, kVTFirstRow + 0 },
+    { "VTSubventionPylon", 2, kVTFirstRow + 0 },
+    { "VTSynthesisChamber", 3, kVTFirstRow + 0 },
+    { "VTShieldGenerator", 4, kVTFirstRow + 0 },
+    { "VTSentinelObelisk", 5, kVTFirstRow + 0 },
+    { "VTPsionicSpire", 7, kVTFirstRow + 0 },
+    { "VTNexusGate", 8, kVTFirstRow + 0 },
+    { "VTNexusGateUpgrade", 9, kVTFirstRow + 0 },
+    { "VTResonantPylonUpgrade", 10, kVTFirstRow + 0 },
+    { "VTAegisArrayUpgrade", 11, kVTFirstRow + 0 },
+    { "VTVanguard", 0, kVTFirstRow + 1 },
+    { "VTInfiltrator", 1, kVTFirstRow + 1 },
+    { "VTSubject", 2, kVTFirstRow + 1 },
+    { "VTPraetor", 3, kVTFirstRow + 1 },
+    { "VTQuotaMenu", 4, kVTFirstRow + 1 },
+    { "VTBuyInfiltrator", 5, kVTFirstRow + 1 },   -- the old "quota +1" icons
+    { "VTBuySubject", 7, kVTFirstRow + 1 },
+    { "VTBuyPraetor", 9, kVTFirstRow + 1 },
+    { "VTArchonsThrone", 11, kVTFirstRow + 1 },
+    { "VTEdictRequisition", 0, kVTFirstRow + 2 },
+    { "VTEdictRelentless", 1, kVTFirstRow + 2 },
+    { "VTEdictIronDiscipline", 2, kVTFirstRow + 2 },
+    { "VTShieldPulse", 3, kVTFirstRow + 2 },
+    { "VTNexusRecall", 8, kVTFirstRow + 0 },   -- Nexus Gate icon (cell 4,18 is the old rift-themed recall icon)
+    { "VTAuthorizationTier2", 5, kVTFirstRow + 2 },
+    { "VTAuthorizationTier3", 6, kVTFirstRow + 2 },
+    { "VTOverchargeTech", 7, kVTFirstRow + 2 },
+    { "VTSingularityTech", 8, kVTFirstRow + 2 },
+    { "VTPhaseDashTech", 9, kVTFirstRow + 2 },
+    { "VTShieldOverdriveTech", 10, kVTFirstRow + 2 },
+    { "VTTargetingVisorTech", 11, kVTFirstRow + 2 },
+    { "VTPhaseCloakTech", 0, kVTFirstRow + 3 },
+    { "VTNeuralOverrideTech", 1, kVTFirstRow + 3 },
+    { "VTPsionicEdictsTech", 2, kVTFirstRow + 3 },
+    { "VTPlasmaCarbine", 9, kVTFirstRow + 3 },
+    { "VTPsionicBlade", 10, kVTFirstRow + 3 },
+    { "VTSubjectClaws", 11, kVTFirstRow + 3 },
+    { "VTPsionicKnife", 0, kVTFirstRow + 4 },
+    { "VTSingularityLauncher", 1, kVTFirstRow + 4 },
+    { "VTEchoPulse", 2, kVTFirstRow + 4 },
+    { "VTObeliskPrismUpgrade", 3, kVTFirstRow + 4 },
+    { "VTObeliskTrinityUpgrade", 4, kVTFirstRow + 4 },
+    { "VTObeliskFocus", 5, kVTFirstRow + 4 },
+    { "VTObeliskBeams1", 6, kVTFirstRow + 4 },
+    { "VTObeliskBeams2", 7, kVTFirstRow + 4 },
+    { "VTObeliskBeams3", 8, kVTFirstRow + 4 },
 }
 
 -- Plasma Calibration / Shield Matrix (own tech ids) use the cells drawn for them
 for i, name in ipairs({ "VTPlasmaCalibration1", "VTPlasmaCalibration2", "VTPlasmaCalibration3",
                         "VTShieldMatrix1", "VTShieldMatrix2", "VTShieldMatrix3" }) do
-    kVTIconCellList[#kVTIconCellList + 1] = { name, i + 2, 19 }
+    kVTIconCellList[#kVTIconCellList + 1] = { name, i + 2, kVTFirstRow + 3 }
 end
 
 -- vanilla tech shown with a different icon to Vael'Thor viewers only (none at the moment)

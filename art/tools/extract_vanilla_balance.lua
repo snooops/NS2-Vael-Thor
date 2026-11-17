@@ -12,6 +12,18 @@ function PrecacheAsset(p) return p end
 Shared = setmetatable({ GetThunderdomeEnabled = function() return false end }, { __index = function() return stub end })
 function enum(t) local e = {} for i, v in ipairs(t) do e[v] = i; e[i] = v end return e end
 
+-- Balance.lua reads a few Globals.lua constants since the 2026-11-17 game update (kRailgunRange =
+-- kMaxRelevancyDistance - 8); take their values from Globals.lua instead of the callable stub
+do
+    local f = assert(io.open(ns2 .. "/ns2/lua/Globals.lua"))
+    local src = f:read("*a")
+    f:close()
+    for _, name in ipairs({ "kMaxRelevancyDistance" }) do
+        local v = src:match("\n" .. name .. "%s*=%s*([%d%.]+)")
+        rawset(_G, name, assert(tonumber(v), name .. " not found in Globals.lua"))
+    end
+end
+
 local values, fileOf = {}, {}
 local function run(file)
     local before = {}

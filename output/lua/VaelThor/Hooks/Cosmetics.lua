@@ -21,6 +21,7 @@ kVTCosmeticClassAliases =
     VTInfiltrator         = "Marine",
     VTSubject             = "Marine",
     VTPraetor             = "Exo",
+    VTPraetor2            = "Exo",
 
     VTNexus               = "CommandStation",
     VTSiphon              = "Extractor",

@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+albedoMap = "models/vaelthor/lasergun/lasergun.dds"
+normalMap = "models/vaelthor/lasergun/lasergun_normal.dds"
+emissiveMap = "models/vaelthor/lasergun/lasergun_illum.dds"
+specularMap = "models/vaelthor/lasergun/lasergun_spec.dds"
+surface = "metal"

@@ -38,6 +38,7 @@ local kClassTechIds =
     [kVTClass.Infiltrator] = kTechId.VTInfiltrator,
     [kVTClass.Subject]     = kTechId.VTSubject,
     [kVTClass.Praetor]     = kTechId.VTPraetor,
+    [kVTClass.Praetor2]    = kTechId.VTPraetor,   -- test class: Praetor tech data (extents), no caste stock
 }
 
 -- ----------------------------------------------------------------------------
@@ -574,6 +575,11 @@ end
 -- Returns the caste the player may actually be synthesized as, plus an
 -- optional message key explaining a downgrade to Vanguard.
 function VTTeam:ResolveCaste(desiredClass)
+
+    -- test class (vt_class praetor2): kept across respawns while cheats are on, no stock / tech needed
+    if desiredClass == kVTClass.Praetor2 then
+        return Shared.GetCheatsEnabled() and desiredClass or kVTClass.Vanguard
+    end
 
     local caste = kClassToCaste[desiredClass]
     if not caste then
