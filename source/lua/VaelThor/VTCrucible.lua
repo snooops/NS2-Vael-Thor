@@ -290,6 +290,23 @@ local function PlaceLegs(st, body)
     end
 end
 
+-- The Crucible's render models while it is drawn (Client.lua: psi shield hit glow goes on these, not on the
+-- hidden Titan). Empty list in first person / before the first frame.
+function VT_GetCrucibleRenderModels(player)
+    local st = states[player:GetId()]
+    local models = {}
+    if st and st.visible then
+        table.insert(models, st.body)
+        table.insert(models, st.core)
+        for _, leg in ipairs(st.legs) do
+            table.insert(models, leg.thigh)
+            table.insert(models, leg.shin)
+            table.insert(models, leg.foot)
+        end
+    end
+    return models
+end
+
 function VT_GetCrucibleEmitterPoint(player)
     local st = player and states[player:GetId()]
     if st and st.bodyCoords and st.visible then

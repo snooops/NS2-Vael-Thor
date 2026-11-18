@@ -197,6 +197,31 @@ local function SetShieldMaterial(glow, modelKey, materialKey, model, materialNam
     end
 end
 
+-- glow.extra: model -> material on render models we draw ourselves (Crucible parts, building parts)
+-- modelsGone: the entity disappeared - VTCrucible / VTBuildingAnim (UpdateRender hooks registered earlier) have
+-- already destroyed those models this frame, so only the materials are freed
+local function SetShieldMaterialOnModels(glow, models, intensity, modelsGone)
+    glow.extra = glow.extra or {}
+    local wanted = {}
+    if intensity > 0 then
+        for _, m in ipairs(models) do
+            wanted[m] = true
+            if not glow.extra[m] then
+                glow.extra[m] = AddMaterial(m, kVTShieldGlowMaterial)
+            end
+            glow.extra[m]:SetParameter("intensity", intensity)
+        end
+    end
+    for m, material in pairs(glow.extra) do
+        if not wanted[m] then
+            if modelsGone or not pcall(RemoveMaterial, m, material) then
+                Client.DestroyRenderMaterial(material)
+            end
+            glow.extra[m] = nil
+        end
+    end
+end
+
 local function UpdateShieldGlow(ent, now, localPlayer, seen)
 
     if ent:GetTeamNumber() ~= kVTTeamIndex or not VT_GetHasShieldPool(ent) or not ent:GetIsAlive() then
@@ -228,7 +253,17 @@ local function UpdateShieldGlow(ent, now, localPlayer, seen)
 
     local firstPerson = ent == localPlayer and ent.GetIsThirdPerson and not ent:GetIsThirdPerson()
     local model = not firstPerson and ent.GetRenderModel and ent:GetRenderModel() or nil
+    -- Artificer: the Titan model is hidden under the Crucible (VTCrucible.lua) - an added material still shows on
+    -- it, so the shell goes on the Crucible's parts instead
+    local extra = {}
+    if ent:isa("VTArtificer") then
+        model = nil
+        extra = VT_GetCrucibleRenderModels and VT_GetCrucibleRenderModels(ent) or {}
+    elseif VT_GetBuildingPartModels and not ent:isa("Player") then
+        extra = VT_GetBuildingPartModels(ent)       -- the moving crystals / rings / dome
+    end
     SetShieldMaterial(glow, "model", "material", model, kVTShieldGlowMaterial, intensity)
+    SetShieldMaterialOnModels(glow, extra, intensity)
 
     local viewModel
     if firstPerson and ent.GetViewModelEntity then
@@ -257,6 +292,7 @@ local function UpdateShieldGlows()
         if not seen[id] then
             ClearShieldMaterial(glow, "model", "material")
             ClearShieldMaterial(glow, "viewModel", "viewMaterial")
+            SetShieldMaterialOnModels(glow, {}, 0, true)
             shieldGlows[id] = nil
         end
     end

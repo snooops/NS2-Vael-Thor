@@ -70,6 +70,11 @@ Balance numbers are always first pass.
   `art/buildings/glb/` but are unused.
 
 ### Fixed
+- ✅ **Artificer psi shield hit glow showed the Titan's shape** (user report with screenshot): the purple shell is
+  an added material layer (`Client.lua` UpdateShieldGlow) and was put on the player's render model - for the
+  Artificer the hidden Titan, where added layers still render. It now goes on the Crucible's parts instead
+  (`VT_GetCrucibleRenderModels`, VTCrucible.lua). The buildings' moving parts get the shell too now
+  (`VT_GetBuildingPartModels`, VTBuildingAnim.lua); before, only the static body flashed.
 - `build_building.sh` still pointed at the old `~/Dokumente/NS2 mod` folder; it now resolves the repo from its own
   location. `make_concepts.py` only renders when run directly, so it can be imported.
 

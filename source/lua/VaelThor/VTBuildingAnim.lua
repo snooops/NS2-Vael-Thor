@@ -352,3 +352,15 @@ local function UpdateBuildings()
 end
 
 Event.Hook("UpdateRender", UpdateBuildings)
+
+-- The moving parts of a building (Client.lua: the psi shield hit glow covers them too). Empty while warping.
+function VT_GetBuildingPartModels(ent)
+    local st = states[ent:GetId()]
+    local models = {}
+    if st and not st.warping then
+        for _, m in pairs(st.parts) do
+            table.insert(models, m)
+        end
+    end
+    return models
+end
