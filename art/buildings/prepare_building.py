@@ -1,6 +1,6 @@
 """Tripo GLB -> NS2 static building FBX + convex collision FBX (used by build_building.sh).
 Usage: blender -b --factory-startup -P prepare_building.py -- <in.glb> <out_dir> <name> <albedo.tga>
-                                                             <height_m> <target_tris> <bands>
+                                                             <height_m> <target_tris> <bands> [parts_dir]
 
   * decimates the ~500k-tri Tripo mesh (UVs kept) to target_tris
   * scales to height_m (Tripo GLBs are normalised to 1 m tall), centres XY on the origin, base at z = 0
@@ -12,11 +12,17 @@ Usage: blender -b --factory-startup -P prepare_building.py -- <in.glb> <out_dir>
     (no collision, use traces and bullets passed through the building).
   * exports <out_dir>/<name>.fbx (rig + geometry, one material -> albedo.tga), <name>_physics.fbx (rig + hulls)
     and <name>_prepared.blend (for previews)
+  * parts_dir (export_concepts.py <concept>_parts/): animated part groups. They count for size and collision and
+    are part of <name>.fbx as a second material (<name>_anim.tga -> face set the client hides while it draws the
+    moving copies). Each group is also exported on its own around its pivot: <name>_<group>.fbx (static, material
+    <name>.tga), and the pivots go to <name>_parts.json in NS2 model coordinates (x, y up, z = -Blender y).
 """
 import bpy, bmesh, sys, os, math
 from mathutils import Vector
 
-GLB, OUT, NAME, TGA, HEIGHT, TARGET, BANDS = sys.argv[sys.argv.index("--") + 1:]
+ARGS = sys.argv[sys.argv.index("--") + 1:]
+GLB, OUT, NAME, TGA, HEIGHT, TARGET, BANDS = ARGS[:7]
+PARTS = ARGS[7] if len(ARGS) > 7 and ARGS[7] else None
 HEIGHT, TARGET = float(HEIGHT), int(TARGET)
 AUTO = None
 DISC = None                                    # (radius, centre z): clear disc in the XZ plane (Rift membrane)
@@ -44,6 +50,32 @@ if len(meshes) > 1:
     bpy.ops.object.join()
 src = bpy.context.view_layer.objects.active
 
+
+def import_joined(path, name):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    ms = [o for o in new if o.type == "MESH"]
+    for o in new:
+        if o.type != "MESH":
+            bpy.data.objects.remove(o, do_unlink=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in ms:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = ms[0]
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    if len(ms) > 1:
+        bpy.ops.object.join()
+    ob = bpy.context.view_layer.objects.active; ob.name = name
+    return ob
+
+
+parts = {}                                     # group -> (object, pivot Vector)
+if PARTS:
+    import json
+    for group, pivot in json.load(open(os.path.join(PARTS, "parts.json"))).items():
+        parts[group] = (import_joined(os.path.join(PARTS, group + ".glb"), "part_" + group), Vector(pivot))
+
 # ---- decimate (collapse keeps UVs)
 tris = sum(len(p.vertices) - 2 for p in src.data.polygons)
 dec = src.modifiers.new("dec", "DECIMATE"); dec.ratio = min(1.0, TARGET / tris); dec.use_collapse_triangulate = True
@@ -51,14 +83,16 @@ bpy.ops.object.modifier_apply(modifier=dec.name)
 print("TRIS", tris, "->", len(src.data.polygons))
 
 # ---- scale + centre
-vs = [v.co for v in src.data.vertices]
+vs = [v.co for o in [src] + [p[0] for p in parts.values()] for v in o.data.vertices]
 lo = Vector((min(v.x for v in vs), min(v.y for v in vs), min(v.z for v in vs)))
 hi = Vector((max(v.x for v in vs), max(v.y for v in vs), max(v.z for v in vs)))
 k = HEIGHT / (hi.z - lo.z)
 shift = Vector(((lo.x + hi.x) / 2, (lo.y + hi.y) / 2, lo.z))
-for v in src.data.vertices:
-    v.co = (v.co - shift) * k
-src.data.update()
+for o in [src] + [p[0] for p in parts.values()]:
+    for v in o.data.vertices:
+        v.co = (v.co - shift) * k
+    o.data.update()
+parts = {g: (o, (pv - shift) * k) for g, (o, pv) in parts.items()}
 print("SIZE %.2f x %.2f x %.2f m" % ((hi.x - lo.x) * k, (hi.y - lo.y) * k, HEIGHT))
 
 # ---- material: one slot, base colour from the converted albedo TGA (CompileModel maps it to the .material)
@@ -69,6 +103,47 @@ tex = mat.node_tree.nodes.new("ShaderNodeTexImage"); tex.image = bpy.data.images
 mat.node_tree.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
 src.data.materials.append(mat)
 src.name = NAME
+
+if parts:
+    import json
+    # moving copies: one static FBX per group, vertices around the pivot, the building's own material
+    part_mat = bpy.data.materials.new(NAME + "_part"); part_mat.use_nodes = True
+    pb = next(n for n in part_mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    pt = part_mat.node_tree.nodes.new("ShaderNodeTexImage"); pt.image = tex.image
+    part_mat.node_tree.links.new(pt.outputs["Color"], pb.inputs["Base Color"])
+    # face set hidden by the client while it animates: same maps, its own material file (<name>_anim.material)
+    anim_mat = bpy.data.materials.new(NAME + "_anim"); anim_mat.use_nodes = True
+    ab = next(n for n in anim_mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    at = anim_mat.node_tree.nodes.new("ShaderNodeTexImage")
+    at.image = bpy.data.images.load(TGA[:-4] + "_anim.tga")
+    anim_mat.node_tree.links.new(at.outputs["Color"], ab.inputs["Base Color"])
+    src.data.materials.append(anim_mat)
+    pivots = {}
+    for group, (ob, pv) in sorted(parts.items()):
+        copy = ob.copy(); copy.data = ob.data.copy(); bpy.context.scene.collection.objects.link(copy)
+        copy.data.materials.clear(); copy.data.materials.append(anim_mat)
+        for poly in copy.data.polygons:
+            poly.material_index = 0
+        for v in ob.data.vertices:
+            v.co = v.co - pv
+        ob.data.materials.clear(); ob.data.materials.append(part_mat)
+        bpy.ops.object.select_all(action="DESELECT"); ob.select_set(True)
+        bpy.context.view_layer.objects.active = ob
+        path = os.path.join(OUT, "%s_%s.fbx" % (NAME, group))
+        bpy.ops.export_scene.fbx(filepath=path, use_selection=True, object_types={"MESH"},
+                                 apply_unit_scale=True, apply_scale_options="FBX_SCALE_UNITS",
+                                 axis_forward="-Z", axis_up="Y", mesh_smooth_type="FACE", use_tspace=True,
+                                 path_mode="ABSOLUTE")
+        print("EXPORTED", path)
+        pivots[group] = [round(pv.x, 4), round(pv.z, 4), round(-pv.y, 4)]
+        bpy.data.objects.remove(ob, do_unlink=True)
+        # join the hidden copy into the building: size, collision and the commander ghost see the whole thing
+        bpy.ops.object.select_all(action="DESELECT"); src.select_set(True); copy.select_set(True)
+        bpy.context.view_layer.objects.active = src
+        bpy.ops.object.join()           # same material object -> the copy's faces land on src's slot 1
+    with open(os.path.join(OUT, NAME + "_parts.json"), "w") as f:
+        json.dump(pivots, f, indent=1)
+    print("PARTS", pivots)
 
 
 def hull_mesh(me):

@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+surface = "metal"
+albedoMap = "models/vaelthor/obelisk/obelisk.dds"
+normalMap = "models/vaelthor/obelisk/obelisk_normal.dds"
+emissiveMap = "models/vaelthor/obelisk/obelisk_illum.dds"
+specularMap = "models/vaelthor/obelisk/obelisk_spec.dds"

@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+surface = "metal"
+albedoMap = "models/vaelthor/shieldgen/shieldgen.dds"
+normalMap = "models/vaelthor/shieldgen/shieldgen_normal.dds"
+emissiveMap = "models/vaelthor/shieldgen/shieldgen_illum.dds"
+specularMap = "models/vaelthor/shieldgen/shieldgen_spec.dds"

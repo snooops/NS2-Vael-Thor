@@ -32,6 +32,7 @@ Script.Load("lua/VaelThor/GUI/GUIVTPlayerHUD.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTCrosshair.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTDroneBay.lua")
 Script.Load("lua/VaelThor/VTCrucible.lua")      -- the Artificer's Crucible body + legs
+Script.Load("lua/VaelThor/VTBuildingAnim.lua")  -- building idle animations (crystals, rings, dome)
 Script.Load("lua/VaelThor/GUI/GUIVTTopBar.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTUnitStatus.lua")
 Script.Load("lua/VaelThor/GUI/GUIVTMinimap.lua")

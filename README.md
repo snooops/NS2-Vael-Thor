@@ -51,7 +51,7 @@ Every feature in this README has one of these markers:
 |---|---|---|
 | **Imperial Nexus** | The command chair, spawn point and field source. It can be built **anywhere** (25 res). Snapping to a tech point is optional. The empire falls when every Nexus is destroyed. **Taking command works like the Alien Hive:** look at it from any side (or stand within ~1.5 m of its base) and press **E**; a chat message explains a refusal. | 🟡 ✅ (own model and Hive-style entry) |
 | **Subvention field** | Pylons (11 m) and the Nexus (16 m) project a field. Structures only work inside it. Siphons (extractors) ignore room power. Power nodes can't be built, and the start room's power node stays off. | 🟡 |
-| **Proximity auto-build** | Structures inside a field build themselves. There is no welder and no marine "use to build". | 🟡 |
+| **Warp-in construction** | A placed building is a warp field (a small singularity: black core, blue-white horizon and accretion disk) from the moment it is placed; no blueprint stage. It warps in while a soldier is within 11 m (fixed rate, no welder, no "use to build"). With nobody near it degenerates (shrinks, flickers, shakes) and collapses after 10 s: the building is gone, its cost is lost; a soldier coming back restores it. Warp fields are indestructible. Warped in: flash, the building appears. | 🟡 ✅ |
 | **Psi shield (Protoss style)** | Third pool in front of armor and health. **Only the shield regenerates**; armor and health are permanent and nothing can be welded. Players regenerate 4/s inside a field after 3 s out of combat; structures 10/s anywhere after 6 s. Absorbed hits still give hit numbers. A purple shell flashes on every shield hit and stops once the shield is 0. | 🔧 |
 | **Bile Bomb** | Hits the psi shield first. Against soldiers 10 % of the raw bile damage drains the shield, the rest removes armor; it never touches health. Against structures the shield absorbs the bile first, the remainder takes vanilla bile damage. | 🔧 |
 | **Infestation** | Drains the psi shield of empire structures (30/s) instead of their armor and blocks its regeneration while they stand on creep. | 🔧 |
@@ -167,17 +167,18 @@ Matrix menu, no caste stock. Numbers are first pass (`kVTArtificer*`, `kVTDroneT
 
 | Structure | Cost | Build | HP / Armor / Psi shield | Size (W × D × H) | Notes | Status |
 |---|---|---|---|---|---|---|
-| Imperial Nexus | 25 | — | vanilla CS / 800 | 5.0 × 5.0 × 4.2 m | Build anywhere, field 16 m, Hive-style commander entry | 🟡 ✅ |
-| Resource Siphon | 10 | 11 s | vanilla / 500 | 2.3 × 2.6 × 3.2 m | Needs the field, not room power | 🟡 🔧 |
-| Subvention Pylon | 8 | 8 s | 700 / 100 / 250 | 1.4 × 1.7 × 3.2 m | Field 11 m, gate entry point | 🟡 🔧 |
+| Imperial Nexus | 25 | — | vanilla CS / 800 | 4.9 × 4.9 × 4.2 m | Build anywhere, field 16 m, Hive-style commander entry | 🟡 ✅ |
+| Resource Siphon | 10 | 11 s | vanilla / 500 | 2.2 × 2.6 × 3.2 m | Needs the field, not room power | 🟡 🔧 |
+| Subvention Pylon | 8 | 8 s | 700 / 100 / 250 | 1.5 × 1.7 × 3.2 m | Field 11 m, gate entry point | 🟡 🔧 |
 | Synthesis Chamber | 15 | 18 s | 1600 / 300 / 500 | 2.4 × 2.4 × 2.6 m | Spawn point and main research | 🟡 🔧 |
-| Shield Generator | 12 | 14 s | 1100 / 250 / 400 | 3.3 × 3.3 × 2.4 m | Halves ranged and artillery damage to structures within 9 m | 🟡 🔧 |
-| Sentinel Obelisk | 12 | 10 s | 600 / 150 / 200 | 1.9 × 1.9 × 3.8 m | Psionic beam turret: steady violet beam(s) from its crystal head, 33 DPS base, 20 m (from the head), fires 360°, needs no battery. Lenses split it into 2-3 beams; the commander can focus a target and pick the beam count | 🟡 🔧 |
-| Psionic Spire | 25 | 20 s | 1800 / 300 / 550 | 2.3 × 2.3 × 5.0 m | Psionic research only (no buy menu) | 🟡 🔧 |
+| Shield Generator | 12 | 14 s | 1100 / 250 / 400 | 3.3 × 3.4 × 2.4 m | Halves ranged and artillery damage to structures within 9 m | 🟡 🔧 |
+| Sentinel Obelisk | 12 | 10 s | 600 / 150 / 200 | 1.7 × 1.7 × 3.8 m | Psionic beam turret: steady violet beam(s) from its crystal head, 33 DPS base, 20 m (from the head), fires 360°, needs no battery. Lenses split it into 2-3 beams; the commander can focus a target and pick the beam count | 🟡 🔧 |
+| Psionic Spire | 25 | 20 s | 1800 / 300 / 550 | 2.1 × 2.1 × 5.0 m | Psionic research only (no buy menu) | 🟡 🔧 |
 
-Structures get their full psi shield when construction completes. All eight use **own models** (generated in
-Tripo from our concept renders in `art/buildings/concepts/`) with violet glow textures and a pulsing violet light
-while built and powered. Marine team skins are ignored for the Vael'Thor team.
+Structures get their full psi shield when construction completes. All eight use **own models**, built in Blender
+from the original procedural designs in `art/buildings/concepts/make_concepts.py` (no Tripo), with violet glow textures and a pulsing violet light
+while built and powered. Crystals, rings and the Shield Generator dome are animated (spin, float, orbit, wobble;
+`VTBuildingAnim.lua`, faster while the building is busy). Marine team skins are ignored for the Vael'Thor team.
 
 **Hitboxes** follow the models: 12-120 convex pieces per building (gaps between prongs, struts and legs stay
 open). Until 2026-11-03 every building hitbox was lying on its side in-game (see the changelog). ✅ confirmed
@@ -256,6 +257,8 @@ The open work in one list.
 - No more Resource Siphon skin error spam
 - Publishing to the Steam Workshop from Linux with `launchpad.sh`
 - Marines vs. Vael'Thor: the Vael'Thor commander on team 2 works (HUD, clicks, research strip), and marines build without the builder/weapon flicker (2026-11-14)
+- Building models from the original Blender designs (no Tripo), their hitboxes, and the building animations (2026-11-18)
+- Warp-in construction: singularity look, warp-in, collapse after 10 s alone, recovery, indestructible warp fields (2026-11-18)
 - Ready room signs: "VAEL'THOR" above the Vael'Thor door in both matchups (replacing "ALIENS" in Marines vs. Vael'Thor), the other sign vanilla (2026-11-14)
 - Marines vs. Vael'Thor: violet damage numbers and chat names for the Vael'Thor on team 2, chat text in the vanilla colour (2026-11-14)
 - Building models and hitboxes at 80 % scale (2026-11-13); the Nexus as its own class with Hive-style commander entry
@@ -358,8 +361,9 @@ animations. View models swap only the weapon face set inside the vanilla binary
 (`art/weapons/replace_view_weapon.py`); the arms (face set 0) are swapped the same way for caste arms
 (`art/weapons/build_vanguard_view_arms.sh`). Each model has its own `build_*.sh` under `art/`.
 
-**Structure pipeline:** `art/buildings/build_all.sh [names]` turns the Tripo GLBs in `art/buildings/glb/` into
-static models (decimate, scale, model-following collision: a watertight voxel copy cut into thin slices and
+**Structure pipeline:** `art/buildings/build_all.sh [names]` exports the procedural concept designs
+(`concepts/export_concepts.py` → `art/buildings/procedural/<concept>.glb` + `_maps/` with a 2×2 material atlas:
+silver, gunmetal, glow seams, crystal) and turns them into static models (scale, model-following collision: a watertight voxel copy cut into thin slices and
 separate pieces, one convex hull each, max 120 per building, all bound to one root bone and made
 bone-relative after compiling with `fix_solid_space.py`; NS2 textures,
 preview render). Lessons that cost a crash or a broken feature:
@@ -387,6 +391,6 @@ ones (vanilla cells keep their pixel positions).
   [CC-BY-4.0](http://creativecommons.org/licenses/by/4.0/). It was re-textured, rescaled and rigged onto the
   NS2 rifle models. See `output/CREDITS.txt`.
 - Player models: Fab assets (Tripo AI), re-rigged for NS2.
-- Structure models: generated in Tripo from our own concept renders (`art/buildings/concepts/`).
+- Structure models: original, built procedurally in Blender for this mod (`art/buildings/concepts/`).
 - Crosshairs, map icons and commander icons: original, drawn procedurally for this mod.
 - Natural Selection 2 © Unknown Worlds Entertainment.

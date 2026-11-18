@@ -321,7 +321,8 @@ end
 
 VT_InstallShield(VTNexus, false)
 VT_InstallStructureScale(VTNexus, "nexus")
-Shared.LinkClassToMap("VTNexus", VTNexus.kMapName, VT_AddShieldNetworkVars({}))
+VT_InstallWarpField(VTNexus)
+Shared.LinkClassToMap("VTNexus", VTNexus.kMapName, VT_AddWarpNetworkVars(VT_AddShieldNetworkVars({})))
 
 -- ----------------------------------------------------------------------------
 -- Resource Siphon
@@ -358,4 +359,5 @@ end
 
 VT_InstallShield(VTSiphon, false)
 VT_InstallStructureScale(VTSiphon, "siphon")
-Shared.LinkClassToMap("VTSiphon", VTSiphon.kMapName, VT_AddShieldNetworkVars({}))
+VT_InstallWarpField(VTSiphon)
+Shared.LinkClassToMap("VTSiphon", VTSiphon.kMapName, VT_AddWarpNetworkVars(VT_AddShieldNetworkVars({})))

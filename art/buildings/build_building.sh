@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Tripo GLB -> static NS2 Vael'Thor building: output/models/vaelthor/<name>/<name>.model (+ material, DDS, collision)
+# Building GLB -> static NS2 Vael'Thor building: output/models/vaelthor/<name>/<name>.model (+ material, DDS, collision)
 # Usage: build_building.sh <name> <in.glb> <height_m> <target_tris> <collision_bands>
 #   collision: "auto:<slice_m>[:<clear_radius_m>]" (model-following hulls) or legacy height bands "0-0.15,0.13-1"
 # Writes a preview render to art/buildings/work/<name>/<name>_preview.png
 set -euo pipefail
 NAME="$1"; GLB="$(realpath "$2")"; HEIGHT="$3"; TRIS="$4"; BANDS="$5"
 NS2="$HOME/.steam/steam/steamapps/common/Natural Selection 2"
-MOD="$HOME/Dokumente/NS2 mod"; HERE="$MOD/art/buildings"; WORK="$HERE/work/$NAME"
+HERE="$(cd "$(dirname "$0")" && pwd)"; MOD="$(cd "$HERE/../.." && pwd)"; WORK="$HERE/work/$NAME"
 SRC="$MOD/source/modelsrc/vaelthor/$NAME"; OUT="$MOD/output/models/vaelthor/$NAME"
 MATSRC="$MOD/source/models/vaelthor/$NAME"; SK="$MOD/art/skeleton"
 export WINEPREFIX="${WINEPREFIX:-$HOME/.local/share/ns2-tools-wine}" WINEDEBUG=-all WINEDLLOVERRIDES="mscoree,mshtml="
@@ -15,10 +15,17 @@ B(){ blender -b --factory-startup --python-exit-code 1 -P "$@" 2>&1 | grep -E "T
 mkdir -p "$WORK/tga" "$SRC" "$OUT" "$MATSRC"
 
 echo "== textures"
-rm -f "$WORK"/basecolor.* "$WORK"/rm.* "$WORK"/normal.*     # always from the current GLB
-B "$HERE/extract_textures.py" -- "$GLB" "$WORK"
-python3 -I "$HERE/make_building_textures.py" "$(ls "$WORK"/basecolor.*)" "$(ls "$WORK"/rm.*)" "$(ls "$WORK"/normal.*)" \
-    "$WORK/tga" "$NAME" 2048
+rm -f "$WORK"/basecolor.* "$WORK"/rm.* "$WORK"/normal.* "$WORK"/emissive.*     # always from the current GLB
+MAPS="${GLB%.glb}_maps"
+if [ -d "$MAPS" ]; then          # procedural concept export (export_concepts.py): maps + explicit emissive
+    cp "$MAPS"/*.png "$WORK/"
+    python3 -I "$HERE/make_building_textures.py" "$WORK/basecolor.png" "$WORK/rm.png" "$WORK/normal.png" \
+        "$WORK/tga" "$NAME" 512 "$WORK/emissive.png"
+else                             # Tripo GLB: maps embedded in the GLB, glow guessed from the colours
+    B "$HERE/extract_textures.py" -- "$GLB" "$WORK"
+    python3 -I "$HERE/make_building_textures.py" "$(ls "$WORK"/basecolor.*)" "$(ls "$WORK"/rm.*)" "$(ls "$WORK"/normal.*)" \
+        "$WORK/tga" "$NAME" 2048
+fi
 cd "$WORK/tga"
 wine "$NS2/utils/nvcompress.exe" -bc1 "$NAME.tga" "$(w "$OUT/$NAME.dds")" >/dev/null 2>&1
 wine "$NS2/utils/nvcompress.exe" -bc3 "${NAME}_spec.tga" "$(w "$OUT/${NAME}_spec.dds")" >/dev/null 2>&1
@@ -34,9 +41,15 @@ emissiveMap = "models/vaelthor/$NAME/${NAME}_illum.dds"
 specularMap = "models/vaelthor/$NAME/${NAME}_spec.dds"
 MAT
 cp "$MATSRC/$NAME.material" "$OUT/"
+PARTS="${GLB%.glb}_parts"; [ -f "$PARTS/parts.json" ] || PARTS=""
+rm -f "$OUT/${NAME}"_*.model "$SRC/${NAME}"_parts.json "$SRC/${NAME}_anim.tga"
+if [ -n "$PARTS" ]; then          # animated parts: the face set the client hides gets its own material file
+    cp "$NAME.tga" "$SRC/${NAME}_anim.tga"
+    cp "$MATSRC/$NAME.material" "$MATSRC/${NAME}_anim.material"; cp "$MATSRC/$NAME.material" "$OUT/${NAME}_anim.material"
+fi
 
 echo "== mesh + collision"
-B "$HERE/prepare_building.py" -- "$GLB" "$SRC" "$NAME" "$SRC/$NAME.tga" "$HEIGHT" "$TRIS" "$BANDS"
+B "$HERE/prepare_building.py" -- "$GLB" "$SRC" "$NAME" "$SRC/$NAME.tga" "$HEIGHT" "$TRIS" "$BANDS" "$PARTS"
 printf 'geometry "%s.fbx"\nphysics "%s_physics.fbx"\n' "$NAME" "$NAME" > "$SRC/$NAME.model_compile"
 
 echo "== compile"
@@ -56,6 +69,15 @@ ln = struct.unpack_from('<I', d, o)[0]; bones.append(struct.unpack_from('<i', d,
 assert bones[0] == 0, 'collision solids not bound to the root bone (%d)' % bones[0]
 print('collision ok: %d solids on bone 0, %d bones' % (n, struct.unpack_from('<I', d, ch[6][0])[0]))"
 strings -n 8 "$OUT/$NAME.model" | grep "\.material"
+if [ -n "$PARTS" ]; then          # moving parts: static models, no collision (the building model has it)
+    for fbx in "$SRC/${NAME}"_*.fbx; do
+        part="$(basename "$fbx" .fbx)"; [ "$part" = "${NAME}_physics" ] && continue
+        echo "geometry \"$part.fbx\"" > "$SRC/$part.model_compile"
+        wine "$NS2/x64/CompileModel.exe" -verbose -material_src "$MOD/source/modelsrc/" -material_dst models \
+          "$part.model_compile" "$(w "$OUT/$part.model")" 2>&1 | grep -v radv | grep -E "rror" || true
+        echo "part $part.model -> $(strings -n 8 "$OUT/$part.model" | grep '\.material' | tr '\n' ' ')"
+    done
+fi
 
 echo "== preview"
 B "$HERE/preview_building.py" -- "$SRC/${NAME}_prepared.blend" "$NAME" "$WORK/tga" "$WORK/${NAME}_preview.png"

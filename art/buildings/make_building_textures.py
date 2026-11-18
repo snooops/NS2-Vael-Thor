@@ -1,5 +1,6 @@
 """Tripo PBR maps -> NS2 marine.surface_shader maps for Vael'Thor buildings.
-Usage: python3 make_building_textures.py <basecolor> <rm> <normal> <out_dir> <prefix> [size=2048]
+Usage: python3 make_building_textures.py <basecolor> <rm> <normal> <out_dir> <prefix> [size=2048] [emissive]
+  emissive (procedural concept buildings): used as the glow map as-is instead of the colour-based guess.
 
 Tripo 'rm': R unused (occlusion = 1), G = roughness, B = metallic (under-reported: silver ~0.23).
   * metallic: boosted on the neutral silver / gunmetal plating (low saturation), violet stays dielectric
@@ -13,6 +14,7 @@ from PIL import Image, ImageFilter
 
 BASE, RM, NRM, OUT, PREFIX = sys.argv[1:6]
 SIZE = int(sys.argv[6]) if len(sys.argv) > 6 else 2048
+EMIS = sys.argv[7] if len(sys.argv) > 7 else None
 os.makedirs(OUT, exist_ok=True)
 
 
@@ -51,7 +53,7 @@ albedo = alb * (1 - 0.45 * m3)                                    # metal colour
 spec = 0.04 * (1 - m3) + alb * m3
 gloss = np.clip(1 - (0.18 + rough * 1.5), 0.25, 0.85)
 glow = np.clip(0.22 * violet + 0.9 * seam, 0, 1)[..., None]
-emis = alb * glow
+emis = load(EMIS) if EMIS else alb * glow
 
 
 def save(arr, name, alpha=None):

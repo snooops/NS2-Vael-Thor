@@ -219,6 +219,10 @@ kVTFieldUpdateInterval      = 0.5
 -- at least one living soldier stands within this radius (same as pylon range).
 kVTAutoBuildRadius          = kVTFieldRadiusPylon
 kVTAutoBuildInterval        = 0.1
+-- Warp-in (Classes/VTWarpField.lua): an unbuilt structure is a warp field; with no soldier in
+-- kVTAutoBuildRadius it collapses after kVTWarpCollapseTime s (cost lost), a soldier back restores it.
+kVTWarpCollapseTime         = 10
+kVTWarpRecoverScalar        = 2      -- stability comes back this many times faster than it drains
 kVTFieldPlayerShieldRegen   = 4      -- psi shield per second (only the shield regenerates; armor + health are permanent)
 kVTFieldStructureShieldRegen= 10
 kVTFieldRegenDelay          = 3      -- seconds without taking damage before field shields recharge

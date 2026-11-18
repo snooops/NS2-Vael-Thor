@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+surface = "metal"
+albedoMap = "models/vaelthor/nexus/nexus.dds"
+normalMap = "models/vaelthor/nexus/nexus_normal.dds"
+emissiveMap = "models/vaelthor/nexus/nexus_illum.dds"
+specularMap = "models/vaelthor/nexus/nexus_spec.dds"

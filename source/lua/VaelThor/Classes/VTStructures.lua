@@ -116,7 +116,8 @@ end
 
 VT_InstallShield(VTSubventionPylon, false)
 VT_InstallStructureScale(VTSubventionPylon, "pylon")
-Shared.LinkClassToMap("VTSubventionPylon", VTSubventionPylon.kMapName, VT_AddShieldNetworkVars(pylonNetworkVars))
+VT_InstallWarpField(VTSubventionPylon)
+Shared.LinkClassToMap("VTSubventionPylon", VTSubventionPylon.kMapName, VT_AddWarpNetworkVars(VT_AddShieldNetworkVars(pylonNetworkVars)))
 
 -- ----------------------------------------------------------------------------
 -- Synthesis Chamber
@@ -181,7 +182,8 @@ end
 
 VT_InstallShield(VTSynthesisChamber, false)
 VT_InstallStructureScale(VTSynthesisChamber, "chamber")
-Shared.LinkClassToMap("VTSynthesisChamber", VTSynthesisChamber.kMapName, VT_AddShieldNetworkVars({}))
+VT_InstallWarpField(VTSynthesisChamber)
+Shared.LinkClassToMap("VTSynthesisChamber", VTSynthesisChamber.kMapName, VT_AddWarpNetworkVars(VT_AddShieldNetworkVars({})))
 
 -- ----------------------------------------------------------------------------
 -- Shield Generator
@@ -239,7 +241,8 @@ end
 
 VT_InstallShield(VTShieldGenerator, false)
 VT_InstallStructureScale(VTShieldGenerator, "shieldgen")
-Shared.LinkClassToMap("VTShieldGenerator", VTShieldGenerator.kMapName, VT_AddShieldNetworkVars(shieldGenNetworkVars))
+VT_InstallWarpField(VTShieldGenerator)
+Shared.LinkClassToMap("VTShieldGenerator", VTShieldGenerator.kMapName, VT_AddWarpNetworkVars(VT_AddShieldNetworkVars(shieldGenNetworkVars)))
 
 -- ----------------------------------------------------------------------------
 -- Sentinel Obelisk (Sentry): psionic beam turret powered by the Subvention field.
@@ -772,7 +775,8 @@ end
 
 VT_InstallShield(VTSentinelObelisk, false)
 VT_InstallStructureScale(VTSentinelObelisk, "obelisk")
-Shared.LinkClassToMap("VTSentinelObelisk", VTSentinelObelisk.kMapName, VT_AddShieldNetworkVars(obeliskNetworkVars))
+VT_InstallWarpField(VTSentinelObelisk)
+Shared.LinkClassToMap("VTSentinelObelisk", VTSentinelObelisk.kMapName, VT_AddWarpNetworkVars(VT_AddShieldNetworkVars(obeliskNetworkVars)))
 
 -- ----------------------------------------------------------------------------
 -- Psionic Spire (Prototype Lab): psionic research.
@@ -827,4 +831,5 @@ end
 
 VT_InstallShield(VTPsionicSpire, false)
 VT_InstallStructureScale(VTPsionicSpire, "spire")
-Shared.LinkClassToMap("VTPsionicSpire", VTPsionicSpire.kMapName, VT_AddShieldNetworkVars({}))
+VT_InstallWarpField(VTPsionicSpire)
+Shared.LinkClassToMap("VTPsionicSpire", VTPsionicSpire.kMapName, VT_AddWarpNetworkVars(VT_AddShieldNetworkVars({})))

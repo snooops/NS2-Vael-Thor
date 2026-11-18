@@ -33,4 +33,28 @@ function ConstructMixin:GetCanConstruct(constructor)
     return oldGetCanConstruct(self, constructor)
 end
 
+-- No vanilla construction hologram (ConstructMixin client: build.material added to every marine-type structure
+-- while underConstruction): a Vael'Thor building is hidden while it warps in, the singularity is drawn instead
+-- (VTBuildingAnim.lua). The hologram is an extra material layer, so it showed through the hidden model.
+if Client then
+    local oldOnConstructUpdate = ConstructMixin.OnConstructUpdate
+    function ConstructMixin:OnConstructUpdate(deltaTime)
+        if VT_GetIsVTClass(self) then
+            if self.buildMaterial then
+                local model = self:GetRenderModel()
+                if model then
+                    model:RemoveMaterial(self.buildMaterial)
+                end
+                Client.DestroyRenderMaterial(self.buildMaterial)
+                self.buildMaterial = nil
+            end
+            if self.underConstruction or not self.constructionComplete then
+                return kUpdateIntervalLow
+            end
+            return false
+        end
+        return oldOnConstructUpdate(self, deltaTime)
+    end
+end
+
 end -- VT_HookedConstructMixin

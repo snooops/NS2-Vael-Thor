@@ -6,6 +6,75 @@ Balance numbers are always first pass.
 
 ---
 
+## 2026-11-18
+
+### Added
+- ✅ **Warp-in construction** (user design, Protoss style; replaces the plain proximity auto-build). A placed
+  Vael'Thor building is a warp field: a small singularity (black event horizon, white-hot photon ring, spinning
+  blue/white accretion disk, blue light) hovering where the building will stand, growing with the progress. It
+  warps in while a soldier is within `kVTAutoBuildRadius` (11 m, as before). With nobody near, `vtWarpStability`
+  (networked) drains over `kVTWarpCollapseTime` 10 s: the field shrinks, shakes, flickers and its disk tumbles; a
+  soldier coming back restores it (`kVTWarpRecoverScalar` 2× as fast). At 0 the field collapses (implosion + flash,
+  power-down sound): the structure is removed, the cost is lost, the commander gets a message. Warp fields are
+  indestructible (`GetCanTakeDamageOverride`). Warped in: flash, portal sound, the building appears and its crystals
+  rise. **No blueprint stage:** vanilla ghost-structure mode is switched off on creation, so there's no 75% cancel
+  refund and enemies no longer cancel placements. New: `Classes/VTWarpField.lua` (shared rules, `VT_InstallWarpField`
+  on all 7 structures, `VT_AddWarpNetworkVars`), `VTTeam:UpdateAutoConstruction` (stability + collapse), client
+  visuals in `VTBuildingAnim.lua` (building fully hidden while warping), models `art/effects/build_warp.sh` →
+  `models/vaelthor/warp/warp_{core,halo,disk}.model`. Known limits: the hidden building's collision is there during
+  the warp (the space is reserved); bots may keep shooting indestructible warp fields.
+  First in-game test (Pylon): only the black core showed, plus the vanilla blue construction hologram over the
+  hidden building. Fixed: no `hiddenAmount` material parameter on the Emissive ring/disk any more (the only
+  difference to the working missile flame; flicker = parts hidden for single frames), the warp parts' visibility
+  is set in one place (UpdateWarp overrode the flicker), and `Hooks/ConstructMixin.lua` removes the vanilla
+  `build.material` hologram from Vael'Thor structures.
+  Second test: still only the core. **Cause:** the ring and disk are flat, so CompileModel gave them a
+  zero-thickness bounding box (model chunk 17: centre + half extents; halo z = 0, disk y = 0) and the engine never
+  drew them (the working missile flame is two crossed planes = real depth). `build_warp.py` now adds two tiny
+  triangles off the plane on a black texel (invisible with additive Emissive) → boxes 2.4 / 3.2 on every axis.
+  Third test: still only the core. **Real cause** (found with the new log lines + `vt_warptest`, which showed
+  the parts were placed and visible): halo and disk had an EMPTY material name in the compiled model. `build_warp.py`
+  rewired their Blender materials to an additive preview shader before the FBX export, so the export carried no
+  texture and CompileModel assigned no material. Preview wiring now happens after the export, and
+  `build_warp.sh` fails if a model has no material. (The bounding-box depth from the second fix stays; it may or
+  may not have mattered.)
+  ✅ The warp field look was confirmed in-game by the user after this fix; the diagnostics (log lines,
+  `vt_warptest`) are removed again.
+- ✅ **Building animations** (user request). The crystals, rings and the Shield Generator dome move:
+  main crystal spins and floats, small crystals circle the building, rings wobble with a precessing tilt, the
+  lattice dome turns. Motion ramps up over 1.5 s when the building is built + alive + powered (same rule as the
+  glow light) and down again without power; inactive crystals sink a little, under construction they sit lower and
+  rise with the build progress. Faster while busy (commander in the Nexus, research running, Obelisk firing).
+  **How:** the models stay static. `make_concepts.py` tags the moving objects (`anim("core"|"orbit"|"halo"|"dome")`),
+  `export_concepts.py` exports them as `<concept>_parts/<group>.glb` + pivots, `prepare_building.py` keeps them in
+  the building as face set 1 (`<name>_anim.material`; collision and the commander ghost unchanged) and exports
+  each group around its pivot → `models/vaelthor/<name>/<name>_<group>.model`. `build_all.sh` generates
+  `lua/VaelThor/VTBuildingParts.lua` (pivots). New client file `VTBuildingAnim.lua` (loaded from Client.lua) draws
+  the parts every frame and hides face set 1 with the invisible blades material (same trick as the Crucible).
+  Ghost structures get the see-through overlay on the parts too. Known limit: the moving parts are separate
+  render models, so outlines / hive sight / hit flashes don't include them.
+
+### Changed
+- ✅ **Building models: original Blender designs instead of Tripo** (user decision). All eight structures (Nexus,
+  Siphon, Pylon, Synthesis Chamber, Shield Generator, Sentinel Obelisk, Psionic Spire, unused Rift Portal) now use
+  the procedural designs from `art/buildings/concepts/make_concepts.py`, which so far only served as Tripo input
+  renders. New `concepts/export_concepts.py` joins each design into one mesh (modifiers applied, sharp edges
+  > 35°) with UVs on a 2×2 material atlas (silver, gunmetal, glow seams, crystal) and writes
+  `art/buildings/procedural/<concept>.glb` + `<concept>_maps/` (basecolor, rm, flat normal, explicit emissive:
+  seams 0.9, crystals 0.35). `build_all.sh` runs the export first and builds from there; `build_building.sh` uses
+  the `_maps/` folder when present (512 px textures) and otherwise still handles Tripo GLBs. Same heights as
+  before, so glow lights, the Obelisk head, health bars and the 0.8 scale need no change; footprints differ by
+  ≤ 0.2 m (README table updated). 0.8k-3.7k tris per building (Tripo: 10k-15k). Collision hulls are regenerated
+  from the new meshes (18-114 per building; the Shield Generator dome is a strut lattice → 114).
+  **Why:** the user prefers the hand-made look over the Tripo reinterpretations. The Tripo GLBs stay in
+  `art/buildings/glb/` but are unused.
+
+### Fixed
+- `build_building.sh` still pointed at the old `~/Dokumente/NS2 mod` folder; it now resolves the repo from its own
+  location. `make_concepts.py` only renders when run directly, so it can be imported.
+
+---
+
 ## 2026-11-17
 
 ### Added — Artificer (concept class)

@@ -487,24 +487,46 @@ local function GetNearestBuilder(structure, teamNumber)
     return nil
 end
 
--- Unbuilt structures progress by real time while any soldier is nearby. The
--- rate is fixed: one soldier or ten build equally fast.
+-- Unbuilt structures (warp fields, Classes/VTWarpField.lua) progress by real time while any soldier is
+-- nearby. The rate is fixed: one soldier or ten build equally fast. Without a soldier the field degenerates and
+-- collapses after kVTWarpCollapseTime: the structure is removed, its cost is lost.
 function VTTeam:UpdateAutoConstruction(deltaTime)
 
     PROFILE("VTTeam:UpdateAutoConstruction")
 
     local teamNumber = self:GetTeamNumber()
+    local collapsed
 
     for _, structure in ipairs(GetEntitiesWithMixinForTeam("Construct", teamNumber)) do
 
         if VT_GetIsEmpireEntity(structure) and not structure:GetIsBuilt() and structure:GetIsAlive() then
             local builder = GetNearestBuilder(structure, teamNumber)
+            local stability = structure.vtWarpStability
             if builder then
                 -- The builder is passed for ghost activation and build score only.
                 structure:Construct(deltaTime, builder)
+                if stability then
+                    structure.vtWarpStability = math.min(1, stability + deltaTime * kVTWarpRecoverScalar / kVTWarpCollapseTime)
+                end
+            elseif stability and VT_GetIsWarping(structure) then
+                stability = math.max(0, stability - deltaTime / kVTWarpCollapseTime)
+                structure.vtWarpStability = stability
+                if stability <= 0 then
+                    collapsed = collapsed or {}
+                    table.insert(collapsed, structure)
+                end
             end
         end
 
+    end
+
+    for _, structure in ipairs(collapsed or {}) do
+        local commander = self.GetCommander and self:GetCommander()
+        if commander then
+            VT_SendMessageToPlayer(commander, string.format("Warp field collapsed: %s (no soldier nearby).",
+                    GetDisplayNameForTechId(structure:GetTechId()) or "structure"))
+        end
+        DestroyEntity(structure)
     end
 
 end

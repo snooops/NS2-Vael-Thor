@@ -9,14 +9,19 @@ thin glowing violet seams. One object per image, 3/4 view from slightly above, t
 import bpy, bmesh, math, sys, os
 from mathutils import Vector
 
-argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-OUT = argv[0] if argv else "."
-ONLY = set(argv[1:])
-os.makedirs(OUT, exist_ok=True)
+M = {}
+# Animated part group for the objects created next (export_concepts.py exports each group as its own in-game model,
+# moved by lua/VaelThor/VTBuildingAnim.lua). None = static building body.
+ANIM = [None]
+
+
+def anim(group):
+    ANIM[0] = group
 
 
 # ---------------------------------------------------------------- scene / materials
 def reset():
+    ANIM[0] = None
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
     sc.render.engine = "CYCLES"
@@ -56,6 +61,8 @@ def mat(name, color, metal, rough, emit=None, strength=0.0):
 
 def finish(obj, m, bevel=0.0, smooth=False):
     obj.data.materials.append(M[m])
+    if ANIM[0]:
+        obj["vt_anim"] = ANIM[0]
     if bevel > 0:
         b = obj.modifiers.new("bevel", "BEVEL")
         b.width = bevel; b.segments = 2; b.limit_method = "ANGLE"
@@ -138,10 +145,12 @@ def nexus():
     prism(8, 1.1, 0.25, 1.05, "silver", r_top=0.8, rot=math.pi / 8)
     for a, x, y in around(4, 1.75, math.pi / 4):
         plate(0.9, 0.3, 3.4, a, 1.75, 1.0, 14)
-    bipyramid(0.75, 2.3, 1.1, 4.0)
-    ring(1.35, 0.06, 4.15)
+    anim("core"); bipyramid(0.75, 2.3, 1.1, 4.0)
+    anim("halo"); ring(1.35, 0.06, 4.15)
+    anim("orbit")
     for a, x, y in around(6, 2.5, 0.3):
         bipyramid(0.16, 0.45, 0.3, 3.4 + 0.25 * math.sin(3 * a), x=x, y=y, n=4, tilt=(0.3, 0.2, a))
+    anim(None)
 
 
 def siphon():
@@ -154,7 +163,7 @@ def siphon():
         seam(6, 0.48, z)
     prism(8, 0.95, 0.35, 3.0, "gun", rot=math.pi / 8); seam(8, 0.97, 3.32, math.pi / 8)
     prism(8, 0.6, 0.3, 3.35, "silver", r_top=0.35, rot=math.pi / 8)
-    bipyramid(0.32, 0.8, 0.35, 4.15, n=4)
+    anim("core"); bipyramid(0.32, 0.8, 0.35, 4.15, n=4); anim(None)
     for a, x, y in around(2, 1.0, 0.0):
         bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=0.28, depth=1.1, location=(x, y, 1.15))
         finish(bpy.context.object, "crystal", smooth=True)
@@ -167,9 +176,11 @@ def pylon():
     prism(6, 0.62, 0.2, 0.25, "silver", r_top=0.5)
     for a, x, y in around(3, 0.42, math.pi / 2):
         plate(0.5, 0.12, 2.4, a, 0.42, 0.4, -6)
-    bipyramid(0.45, 0.95, 0.95, 3.45, n=4)
+    anim("core"); bipyramid(0.45, 0.95, 0.95, 3.45, n=4)
+    anim("orbit")
     for a, x, y in around(3, 0.95, 0.4):
         bipyramid(0.1, 0.28, 0.22, 3.45 + 0.2 * math.cos(a), x=x, y=y, n=4, tilt=(0.4, 0, a))
+    anim(None)
 
 
 def chamber():
@@ -184,7 +195,7 @@ def chamber():
         plate(0.35, 0.25, 2.9, a, 1.15, 0.5, -4)
     prism(8, 1.3, 0.45, 3.2, "silver", r_top=1.0, rot=math.pi / 8); seam(8, 1.32, 3.18, math.pi / 8)
     prism(8, 0.7, 0.3, 3.65, "gun", r_top=0.4, rot=math.pi / 8)
-    bipyramid(0.22, 0.6, 0.2, 4.2, n=4)
+    anim("core"); bipyramid(0.22, 0.6, 0.2, 4.2, n=4); anim(None)
     box(0.5, 0.9, 0.7, (1.75, 0, 0.7), "gun", rot=(0, math.radians(-20), 0))
     box(0.04, 0.6, 0.35, (1.98, 0, 0.82), "glow", rot=(0, math.radians(-20), 0), bevel=0)
 
@@ -193,7 +204,7 @@ def shield_generator():
     prism(6, 1.7, 0.4, 0, "gun"); seam(6, 1.72, 0.36)
     prism(6, 1.3, 0.15, 0.4, "silver")
     prism(8, 0.35, 1.3, 0.55, "silver", r_top=0.22, rot=math.pi / 8)
-    bipyramid(0.32, 0.6, 0.35, 2.1, n=4)
+    anim("core"); bipyramid(0.32, 0.6, 0.35, 2.1, n=4); anim(None)
     # lattice dome: upper half of an icosphere turned into glowing struts
     bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=1.5, location=(0, 0, 0.55))
     dome = bpy.context.object
@@ -201,7 +212,7 @@ def shield_generator():
     bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z < -0.05], context="VERTS")
     bm.to_mesh(dome.data); bm.free()
     w = dome.modifiers.new("lattice", "WIREFRAME"); w.thickness = 0.06
-    finish(dome, "glow")
+    anim("dome"); finish(dome, "glow"); anim(None)
     for a, x, y in around(6, 1.5, 0.0):
         prism(4, 0.18, 0.5, 0.45, "silver", x=x, y=y, rot=a + math.pi / 4, r_top=0.1)
 
@@ -218,8 +229,8 @@ def obelisk():
     # three prongs rising from the tip and cradling the crystal (turret head)
     for a, x, y in around(3, 0.0, math.pi / 2):
         plate(0.18, 0.1, 1.1, a, 0.3, 3.35, -18, glow=False)
-    bipyramid(0.3, 0.55, 0.5, 4.15, n=6)
-    ring(0.55, 0.035, 3.75)
+    anim("core"); bipyramid(0.3, 0.55, 0.5, 4.15, n=6)
+    anim("halo"); ring(0.55, 0.035, 3.75); anim(None)
 
 
 def rift_portal():
@@ -243,9 +254,11 @@ def spire():
         prism(6, r, h, z, "silver" if i % 2 == 0 else "gun", r_top=r * 0.88, rot=math.radians(17 * i))
         seam(6, r * 0.9, z + h - 0.03, rot=math.radians(17 * i))
         z += h; r *= 0.86
-    bipyramid(0.38, 1.2, 0.4, z + 0.85, n=6)
+    anim("core"); bipyramid(0.38, 1.2, 0.4, z + 0.85, n=6)
+    anim("orbit")
     for a, x, y in around(3, 0.75, 0.0):
         bipyramid(0.1, 0.32, 0.22, z + 0.55, x=x, y=y, n=4, tilt=(0.5, 0, a))
+    anim(None)
 
 
 BUILDINGS = {
@@ -287,12 +300,17 @@ def frame_and_light():
         lo_.rotation_euler = (-v).to_track_quat("-Z", "Y").to_euler()
 
 
-for name, build in BUILDINGS.items():
-    if ONLY and name not in ONLY:
-        continue
-    reset()
-    build()
-    frame_and_light()
-    bpy.context.scene.render.filepath = os.path.join(OUT, name + "_transparent.png")
-    bpy.ops.render.render(write_still=True)
-    print("rendered", name)
+if __name__ == "__main__":        # imported by export_concepts.py for the in-game models: no rendering then
+    argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    OUT = argv[0] if argv else "."
+    ONLY = set(argv[1:])
+    os.makedirs(OUT, exist_ok=True)
+    for name, build in BUILDINGS.items():
+        if ONLY and name not in ONLY:
+            continue
+        reset()
+        build()
+        frame_and_light()
+        bpy.context.scene.render.filepath = os.path.join(OUT, name + "_transparent.png")
+        bpy.ops.render.render(write_still=True)
+        print("rendered", name)

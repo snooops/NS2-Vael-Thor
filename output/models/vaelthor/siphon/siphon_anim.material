@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+surface = "metal"
+albedoMap = "models/vaelthor/siphon/siphon.dds"
+normalMap = "models/vaelthor/siphon/siphon_normal.dds"
+emissiveMap = "models/vaelthor/siphon/siphon_illum.dds"
+specularMap = "models/vaelthor/siphon/siphon_spec.dds"
