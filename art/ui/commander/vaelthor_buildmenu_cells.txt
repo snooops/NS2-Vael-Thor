@@ -55,3 +55,5 @@ VTObeliskFocus 5 22
 VTObeliskBeams1 6 22
 VTObeliskBeams2 7 22
 VTObeliskBeams3 8 22
+VTArtificer 9 22
+VTBuyArtificer 10 22

@@ -376,6 +376,7 @@ function BuildTechData()
         { kTechId.VTBuyInfiltrator, "VT_BUY_INFILTRATOR", "VT_BUY_INFILTRATOR_TOOLTIP", kVTCasteCost.Infiltrator },
         { kTechId.VTBuySubject,     "VT_BUY_SUBJECT",     "VT_BUY_SUBJECT_TOOLTIP",     kVTCasteCost.Subject },
         { kTechId.VTBuyPraetor,     "VT_BUY_PRAETOR",     "VT_BUY_PRAETOR_TOOLTIP",     kVTCasteCost.Praetor },
+        { kTechId.VTBuyArtificer,   "VT_BUY_ARTIFICER",   "VT_BUY_ARTIFICER_TOOLTIP",   kVTCasteCost.Artificer },
     }
     for _, b in ipairs(buyButtons) do
         Add(techData, {

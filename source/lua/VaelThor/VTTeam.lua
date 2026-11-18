@@ -23,6 +23,7 @@ local kCasteClassNames =
     Infiltrator = "VTInfiltrator",
     Subject     = "VTSubject",
     Praetor     = "VTPraetor",
+    Artificer   = "VTArtificer",
 }
 
 local kClassToCaste =
@@ -30,6 +31,7 @@ local kClassToCaste =
     [kVTClass.Infiltrator] = "Infiltrator",
     [kVTClass.Subject]     = "Subject",
     [kVTClass.Praetor]     = "Praetor",
+    [kVTClass.Artificer]   = "Artificer",
 }
 
 local kClassTechIds =
@@ -39,7 +41,7 @@ local kClassTechIds =
     [kVTClass.Subject]     = kTechId.VTSubject,
     [kVTClass.Praetor]     = kTechId.VTPraetor,
     [kVTClass.Praetor2]    = kTechId.VTPraetor,   -- test class: Praetor tech data (extents), no caste stock
-    [kVTClass.Artificer]   = kTechId.VTPraetor,   -- concept class: Praetor chassis, no caste stock
+    [kVTClass.Artificer]   = kTechId.VTPraetor,   -- Praetor chassis (extents); own caste stock
 }
 
 -- ----------------------------------------------------------------------------
@@ -254,6 +256,7 @@ function VTTeam:InitTechTree()
     t:AddActivation(kTechId.VTBuyInfiltrator,     N, N)
     t:AddActivation(kTechId.VTBuySubject,         kTechId.VTAuthorizationTier2, N)
     t:AddActivation(kTechId.VTBuyPraetor,         kTechId.VTAuthorizationTier3, N)
+    t:AddActivation(kTechId.VTBuyArtificer,       kTechId.VTAuthorizationTier3, N)
 
     -- Synthesis Chamber research
     t:AddResearchNode(kTechId.VTAuthorizationTier2,  kTechId.VTSynthesisChamber,   N)
@@ -542,6 +545,10 @@ function VTTeam:UpdateCasteCounts()
     for caste, className in pairs(kCasteClassNames) do
         info:SetCount(caste, #GetEntitiesAliveForTeam(className, self:GetTeamNumber()))
     end
+    -- class lists include subclasses: VTPraetor counts the Praetor II test class and the Artificer too
+    local teamNumber = self:GetTeamNumber()
+    info:SetCount("Praetor", #GetEntitiesAliveForTeam("VTPraetor", teamNumber)
+            - #GetEntitiesAliveForTeam("VTPraetor2", teamNumber))
 end
 
 -- Team status + running research for the top bar (networked through VTEmpireInfo).
@@ -599,8 +606,8 @@ end
 -- optional message key explaining a downgrade to Vanguard.
 function VTTeam:ResolveCaste(desiredClass)
 
-    -- test / concept classes (vt_class praetor2 | artificer): kept across respawns while cheats are on, no stock / tech
-    if desiredClass == kVTClass.Praetor2 or desiredClass == kVTClass.Artificer then
+    -- test class (vt_class praetor2): kept across respawns while cheats are on, no stock / tech
+    if desiredClass == kVTClass.Praetor2 then
         return Shared.GetCheatsEnabled() and desiredClass or kVTClass.Vanguard
     end
 

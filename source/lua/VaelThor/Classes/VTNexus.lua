@@ -223,7 +223,7 @@ local kNexusButtons =
 
 local kQuotaMenuButtons =
 {
-    kTechId.VTBuyInfiltrator, kTechId.VTBuySubject, kTechId.VTBuyPraetor, N,
+    kTechId.VTBuyInfiltrator, kTechId.VTBuySubject, kTechId.VTBuyPraetor, kTechId.VTBuyArtificer,
     N,                        N,                    N,                    kTechId.RootMenu,
 }
 
@@ -233,6 +233,7 @@ kVTCasteBuyActions =
     [kTechId.VTBuyInfiltrator] = "Infiltrator",
     [kTechId.VTBuySubject]     = "Subject",
     [kTechId.VTBuyPraetor]     = "Praetor",
+    [kTechId.VTBuyArtificer]   = "Artificer",
 }
 
 local kEdictMessages =

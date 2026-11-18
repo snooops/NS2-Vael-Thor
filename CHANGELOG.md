@@ -9,6 +9,16 @@ Balance numbers are always first pass.
 ## 2026-11-18
 
 ### Added
+- ✅ **Artificer is the fifth caste** (user request; was a cheats-only concept class via `vt_class artificer`).
+  The commander buys Artificers like the other castes: Nexus > Castes > **Requisition Artificer, 40 res**
+  (`kVTCasteCost.Artificer`, new tech id `VTBuyArtificer`), needs Authorization Tier III like the Praetor
+  (`kVTClassRequirements`). Each purchase adds one to the stock (`VTEmpireInfo` stockArtificer / countArtificer),
+  synthesizing as Artificer uses one up. Spawn menu (`GUIVTMatrixMenu`): fifth card (cards 245 → 196 px wide),
+  click only (key 5 stays the tactical module), choice id 15 (`VTMatrixChoice` range 1-15, cards carry their
+  choice id now). Crucible portrait (`art/ui/make_caste_portraits.sh` renders it via `build_crucible.py`'s new
+  portrait argument; atlas 1024 → 2048 px wide), commander icons Artificer + Requisition Artificer
+  (`make_command_icons.py`, cells 9/10 of row 22), top bar "ART n" (castes column 190 → 230 px, resources 200 →
+  160). Praetor live count no longer includes Artificers / Praetor II (subclasses).
 - ✅ **Warp-in construction** (user design, Protoss style; replaces the plain proximity auto-build). A placed
   Vael'Thor building is a warp field: a small singularity (black event horizon, white-hot photon ring, spinning
   blue/white accretion disk, blue light) hovering where the building will stand, growing with the progress. It

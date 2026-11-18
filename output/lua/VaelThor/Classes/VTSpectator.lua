@@ -109,7 +109,9 @@ if Server then
         end
     end
 
-    local kChoiceClasses = { kVTClass.Vanguard, kVTClass.Infiltrator, kVTClass.Subject, kVTClass.Praetor }
+    -- choice ids 1-4 and 15 (5-14 are loadout / synthesize / spawn choices, see VTNetwork.lua)
+    local kChoiceClasses = { kVTClass.Vanguard, kVTClass.Infiltrator, kVTClass.Subject, kVTClass.Praetor,
+                             [15] = kVTClass.Artificer }
 
     -- Built, living Nexuses of the team in a stable order (entity id): the spawn choices besides "any host".
     local function GetSpawnNexuses(teamNumber)

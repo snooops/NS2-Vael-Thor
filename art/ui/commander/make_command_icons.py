@@ -247,6 +247,23 @@ def praetor(ic):
     ic.crystal_kite(0.5, 0.70, 0.07, 0.09, 0.07)
 
 
+def artificer(ic):
+    """the Crucible: six-legged crab foundry, furnace dome with the crystal core in its open iris"""
+    for side in (-1, 1):
+        for k, (hx, kx, fx) in enumerate(((0.30, 0.16, 0.08), (0.34, 0.20, 0.17), (0.38, 0.30, 0.30))):
+            hip = (0.5 + side * (0.5 - hx) * 0.55, 0.62)
+            knee = (0.5 + side * (0.5 - kx), 0.50 + k * 0.03)
+            foot = (0.5 + side * (0.5 - fx), 0.90 - k * 0.05)
+            ic.metal_line(hip, knee, 0.05, 0.65 + 0.1 * k)
+            ic.metal_line(knee, foot, 0.045, 0.75 + 0.1 * k)
+    ic.metal_poly(ngon(8, 0.30, 0.5, 0.64, math.pi / 8, 0.38), 0.7)                 # hull
+    ic.metal_poly([(0.30, 0.62), (0.70, 0.62), (0.62, 0.34), (0.38, 0.34)], 0.95)   # furnace dome
+    for x in (0.40, 0.50, 0.60):
+        ic.crystal_line((x, 0.58), (x + (x - 0.5) * 0.4, 0.40), 0.018)            # glow strips
+    ic.crystal_ring(0.5, 0.33, 0.12, 0.022, 0.35)                                   # iris
+    ic.crystal_kite(0.5, 0.30, 0.06, 0.12, 0.04)                                    # core crystal
+
+
 def quota(caste_fn, sign):
     def fn(ic):
         caste_fn(ic)
@@ -523,6 +540,7 @@ ICONS = [
     ("VTObeliskPrismUpgrade", obelisk_lens(2)), ("VTObeliskTrinityUpgrade", obelisk_lens(3)),
     ("VTObeliskFocus", obelisk_focus),
     ("VTObeliskBeams1", beams(1)), ("VTObeliskBeams2", beams(2)), ("VTObeliskBeams3", beams(3)),
+    ("VTArtificer", artificer), ("VTBuyArtificer", quota(artificer, 1)),
 ]
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ local kVTIconAlias =
     [kTechId.VTBuyInfiltrator]       = kTechId.Axe,
     [kTechId.VTBuySubject]           = kTechId.Marine,
     [kTechId.VTBuyPraetor]           = kTechId.Exo,
+    [kTechId.VTBuyArtificer]         = kTechId.Exo,
 
     [kTechId.VTAuthorizationTier2]   = kTechId.AdvancedArmoryUpgrade,
     [kTechId.VTAuthorizationTier3]   = kTechId.ExosuitTech,
@@ -118,6 +119,8 @@ local kVTIconCellList =
     { "VTObeliskBeams1", 6, kVTFirstRow + 4 },
     { "VTObeliskBeams2", 7, kVTFirstRow + 4 },
     { "VTObeliskBeams3", 8, kVTFirstRow + 4 },
+    { "VTArtificer", 9, kVTFirstRow + 4 },      -- no tech id (the Artificer uses VTPraetor's); skipped by BuildCells
+    { "VTBuyArtificer", 10, kVTFirstRow + 4 },
 }
 
 -- Plasma Calibration / Shield Matrix (own tech ids) use the cells drawn for them

@@ -26,6 +26,7 @@ from mathutils import Vector, Quaternion
 args = sys.argv[sys.argv.index("--") + 1:]
 SRC, TGA = args[0], args[1]
 PREVIEW = args[2] if len(args) > 2 else None
+PORTRAIT = args[3] if len(args) > 3 else None   # transparent 512x512 render for the spawn menu (make_caste_portraits.sh)
 
 COLS = {"chrome": 0, "gun": 1, "dark": 2, "glow": 3, "crystal": 4}
 NCOLS = 8
@@ -377,3 +378,10 @@ if PREVIEW:
     sc.render.filepath = PREVIEW
     bpy.ops.render.render(write_still=True)
     print("PREVIEW", PREVIEW)
+    if PORTRAIT:
+        sc.render.film_transparent = True
+        sc.render.resolution_x = sc.render.resolution_y = 512
+        cam.location = (1.6, -3.9, 1.7)
+        sc.render.filepath = PORTRAIT
+        bpy.ops.render.render(write_still=True)
+        print("PORTRAIT", PORTRAIT)

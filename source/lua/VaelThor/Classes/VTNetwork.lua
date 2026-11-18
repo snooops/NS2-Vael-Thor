@@ -29,10 +29,10 @@ Shared.RegisterNetworkMessage("VTMatrixLoadout",
 -- keys, sent as a message so it works in every spectator camera mode).
 -- 1-4 caste, 5 module, 6 primary mod, 7 secondary, 8 toggle "synthesize me",
 -- 9-11 cycle module / primary / secondary backwards, 12 stop auto-synthesis,
--- 13 / 14 next / previous spawn Nexus (VTSpectator:VT_ApplyChoice).
+-- 13 / 14 next / previous spawn Nexus, 15 Artificer caste (VTSpectator:VT_ApplyChoice).
 Shared.RegisterNetworkMessage("VTMatrixChoice",
 {
-    choice = "integer (1 to 14)",
+    choice = "integer (1 to 15)",
 })
 
 -- Server -> players near a plasma bolt impact: play the impact locally

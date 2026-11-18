@@ -57,7 +57,7 @@ Every feature in this README has one of these markers:
 | **Infestation** | Drains the psi shield of empire structures (30/s) instead of their armor and blocks its regeneration while they stand on creep. | 🔧 |
 | **Nexus Gate** | A Nexus upgrade (20 res / 45 s). Any soldier can press **E** on any Pylon and teleport to the gate (8 s cooldown). | 🟡 |
 | **Synthesis Matrix** | Dead players pick caste and loadout in a clickable menu (or keys 1–5 / R / E; B hides it) and respawn with SYNTHESIZE / Space once the 9 s timer is over. No automatic respawn (bots excepted). | ✅ (menu + manual respawn, #1) |
-| **Caste requisition** | The commander buys single lifeforms from the Nexus > Castes menu (Infiltrator 4, Subject 8 with Tier II, Praetor 25 with Tier III). Each purchase lets one soldier be synthesized in that caste and is used up when that soldier dies. No quotas, no cost at synthesis. If none is in stock (or the caste is locked), the player spawns as a Vanguard. | 🔧 |
+| **Caste requisition** | The commander buys single lifeforms from the Nexus > Castes menu (Infiltrator 4, Subject 8 with Tier II, Praetor 25 and Artificer 40 with Tier III). Each purchase lets one soldier be synthesized in that caste and is used up when that soldier dies. No quotas, no cost at synthesis. If none is in stock (or the caste is locked), the player spawns as a Vanguard. | 🔧 |
 | **Authorization rank** | Personal score unlocks loadout tiers: rank II at 15 points, rank III at 40. | 🟡 |
 | **No sprint, no flashlight** | Sprinting is removed for every caste (the Subject uses Shift for its sprint burst / wall hold instead). The flashlight key toggles the Targeting Visor instead (free for every soldier: a violet heat scanner, enemies in sight outlined). Praetors can't eject. | 🟡 |
 | **Vael'Thor HUD** | Replaces the marine HUD with a "psionic crystal" design: vitals, shield, burnout, ability chips, weapon energy and directives. The corner minimap is removed, but the full map (C) still works. The hidden marine HUD no longer leaves its blue boot-up squares on screen. | 🔧 |
@@ -94,6 +94,7 @@ The server can run three matchups. Players pick one through **Vote faction match
 | **Infiltrator** | Scout, assassin, saboteur | 85 / 20 / 35, +34 % speed | — | 4 team res |
 | **Subject** (Bio-Construct) | Melee war-beast | 320 / 80 / 100, +15 % speed | Authorization Tier II | 8 team res |
 | **Praetor** | Heavy elite (exo chassis) | 150 / exo armor / 200 | Authorization Tier III | 25 team res |
+| **Artificer** | Walking drone foundry (Crucible, Praetor chassis) | Praetor ×1.25 / exo armor / 260, ×0.9 speed | Authorization Tier III | 40 team res |
 
 Shield Matrix I–III adds +15 max psi shield per level (armor stays fixed).
 
@@ -143,9 +144,10 @@ Shield Matrix I–III adds +15 max psi shield per level (armor stays fixed).
 | **No exo HUD**: cockpit frame and screens, rings, info bars and fuel bar are hidden | ✅ (cockpit) · 🔧 (rest) |
 | Player model: "Titan Sentinel" on the exosuit skeleton | 🔧 |
 
-### Artificer (concept class, only `vt_class artificer` with cheats)
-A walking drone factory on the Praetor chassis, meant as a tanky alternative to the Praetor. Not in the Synthesis
-Matrix menu, no caste stock. Numbers are first pass (`kVTArtificer*`, `kVTDroneTypes` in `Hooks/Globals.lua`).
+### Artificer (fifth caste)
+A walking drone factory on the Praetor chassis, meant as a tanky alternative to the Praetor. Bought by the
+commander (Nexus > Castes, 40 res, Authorization Tier III), fifth card in the Synthesis Matrix menu (click only).
+Numbers are first pass (`kVTArtificer*`, `kVTDroneTypes` in `Hooks/Globals.lua`).
 
 | Feature | Status |
 |---|---|
@@ -259,6 +261,7 @@ The open work in one list.
 - Marines vs. Vael'Thor: the Vael'Thor commander on team 2 works (HUD, clicks, research strip), and marines build without the builder/weapon flicker (2026-11-14)
 - Building models from the original Blender designs (no Tripo), their hitboxes, and the building animations (2026-11-18)
 - Warp-in construction: singularity look, warp-in, collapse after 10 s alone, recovery, indestructible warp fields (2026-11-18)
+- Artificer as fifth caste: commander purchase (40 res), spawn menu card, stock (2026-11-18)
 - Ready room signs: "VAEL'THOR" above the Vael'Thor door in both matchups (replacing "ALIENS" in Marines vs. Vael'Thor), the other sign vanilla (2026-11-14)
 - Marines vs. Vael'Thor: violet damage numbers and chat names for the Vael'Thor on team 2, chat text in the vanilla colour (2026-11-14)
 - Building models and hitboxes at 80 % scale (2026-11-13); the Nexus as its own class with Hive-style commander entry

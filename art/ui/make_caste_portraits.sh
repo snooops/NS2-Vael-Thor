@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Caste portraits for the Synthesis Matrix menu (GUIVTMatrixMenu):
 # renders each rigged player model with its in-game texture (render_caste_portrait.py), trims, and packs
-# them into output/ui/vaelthor/caste_portraits.dds (1024x256: vanguard | infiltrator | subject | praetor).
+# them into output/ui/vaelthor/caste_portraits.dds (2048x256: vanguard | infiltrator | subject | praetor | artificer).
+# The Artificer is the Crucible, rendered by art/artificer/build_crucible.py (its FBX side output goes to the work dir).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"; MOD="$(cd "$HERE/../.." && pwd)"
 NS2="$HOME/.steam/steam/steamapps/common/Natural Selection 2"
@@ -16,12 +17,16 @@ render "$MOD/art/fab/silver_sentinel/work/sentinel_rigged.blend" "$TEX/sentinel"
 render "$MOD/art/fab/cyber_sentinel/work/cyber_rigged.blend"     "$TEX/cyber"    cyber    infiltrator
 render "$MOD/art/fab/mecha_sentinel/work/mecha_rigged.blend"     "$TEX/mecha"    mecha    subject
 render "$MOD/art/fab/titan_sentinel/work/titan_rigged.blend"     "$TEX/titan"    titan    praetor full
+mkdir -p "$WORK/crucible_src"
+blender -b --factory-startup --python-exit-code 1 -P "$MOD/art/artificer/build_crucible.py" -- "$WORK/crucible_src" \
+    "$MOD/art/artificer/work_crucible/crucible.tga" "$WORK/crucible_preview.png" "$WORK/artificer.png" 2>&1 \
+    | grep -E "PORTRAIT|Traceback|Error:" | grep -v OCIO || true
 python3 -I - "$WORK" <<'PY'
 import sys, os
 from PIL import Image
 work = sys.argv[1]; cell = 256
-atlas = Image.new("RGBA", (cell * 4, cell), (0, 0, 0, 0))
-for i, name in enumerate(["vanguard", "infiltrator", "subject", "praetor"]):
+atlas = Image.new("RGBA", (cell * 8, cell), (0, 0, 0, 0))     # 2048 wide (power of two), cells 5-7 unused
+for i, name in enumerate(["vanguard", "infiltrator", "subject", "praetor", "artificer"]):
     im = Image.open(os.path.join(work, name + ".png")).convert("RGBA")
     im = im.crop(im.getchannel("A").getbbox())          # trim empty space
     s = min((cell - 8) / im.width, (cell - 4) / im.height)

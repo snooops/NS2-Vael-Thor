@@ -5,8 +5,9 @@
 -- Closed on death: a hint box on the left of the screen says "[B] open Synthesis
 -- Matrix" and shows the synthesis status. B opens it with a mouse cursor over a
 -- dimmed screen:
---   * four caste cards with a portrait (ui/vaelthor/caste_portraits.dds, from
---     art/ui/make_caste_portraits.sh), lifeforms available (bought by the commander) and lock state (click, or keys 1-4)
+--   * five caste cards with a portrait (ui/vaelthor/caste_portraits.dds, from
+--     art/ui/make_caste_portraits.sh), lifeforms available (bought by the commander) and lock state (click, or keys
+--     1-4; the Artificer card is click only: 5 is the tactical module key)
 --   * three loadout rows (left click / right click cycles; keys 5, R, E)
 --   * SPAWN AT row: which built Nexus to be synthesized at, or any host (left /
 --     right click cycles; the server sends the names, see VTMatrixLoadout)
@@ -33,7 +34,7 @@ local St = VTGUIStyle   -- shared look (GUI/VTGUIStyle.lua)
 local kPanelTex     = St.kPanelTex
 local kChipTex      = St.kChipTex
 local kPortraitTex  = PrecacheAsset("ui/vaelthor/caste_portraits.dds")
-local kPortraitCell = 256          -- atlas: 4 cells of 256x256, order as kCastes
+local kPortraitCell = 256          -- atlas: 2048x256, cells of 256x256 in kCastes order (5 used)
 
 local kColDim           = St.kColDim
 local kColBody          = St.kColBody
@@ -54,7 +55,7 @@ local kColActive        = St.kColActive
 
 local kMargin = 28
 local kPanelW, kPanelH = 1100, 812
-local kCardW, kCardH, kCardGap, kCardY = 245, 330, 16, 100
+local kCardW, kCardH, kCardGap, kCardY = 196, 330, 16, 100   -- five cards across kPanelW - 2 * kMargin
 local kPortraitH = 196
 local kPad = 12                                             -- text inset inside cards / rows
 local kDescY = kCardY + kCardH + 12
@@ -65,10 +66,11 @@ local kMiniW, kMiniH = 440, 104                            -- hint box on the le
 
 local kCastes =
 {
-    { key = "1", class = "Vanguard",    caste = nil,           name = "VANGUARD",    tip = "VT_VANGUARD_TOOLTIP" },
-    { key = "2", class = "Infiltrator", caste = "Infiltrator", name = "INFILTRATOR", tip = "VT_INFILTRATOR_TOOLTIP" },
-    { key = "3", class = "Subject",     caste = "Subject",     name = "SUBJECT",     tip = "VT_SUBJECT_TOOLTIP" },
-    { key = "4", class = "Praetor",     caste = "Praetor",     name = "PRAETOR",     tip = "VT_PRAETOR_TOOLTIP" },
+    { key = "1", choice = 1,  class = "Vanguard",    caste = nil,           name = "VANGUARD",    tip = "VT_VANGUARD_TOOLTIP" },
+    { key = "2", choice = 2,  class = "Infiltrator", caste = "Infiltrator", name = "INFILTRATOR", tip = "VT_INFILTRATOR_TOOLTIP" },
+    { key = "3", choice = 3,  class = "Subject",     caste = "Subject",     name = "SUBJECT",     tip = "VT_SUBJECT_TOOLTIP" },
+    { key = "4", choice = 4,  class = "Praetor",     caste = "Praetor",     name = "PRAETOR",     tip = "VT_PRAETOR_TOOLTIP" },
+    { key = "",  choice = 15, class = "Artificer",   caste = "Artificer",   name = "ARTIFICER",   tip = "VT_ARTIFICER_TOOLTIP" },
 }
 
 -- choice ids: forward / backward (VTSpectator:VT_ApplyChoice)
@@ -226,7 +228,7 @@ function GUIVTMatrixMenu:Initialize()
             info2    = self:Text(body, Fonts.kAgencyFB_Small, kPad, textY + 74, nil, kColDimText),
             lock     = self:Text(body, Fonts.kAgencyFB_Small, kPad, textY + 100, nil, kColWarn),
         }
-        card.key:SetText("[" .. def.key .. "]")
+        card.key:SetText(def.key ~= "" and ("[" .. def.key .. "]") or "")
         SetFittedText(card.name, def.name, kCardW - 2 * kPad - 34)   -- room for the "[n]" on the right
         self.cards[i] = card
     end
@@ -556,7 +558,7 @@ function GUIVTMatrixMenu:OnMouseDown(rightButton)
 
     for i, card in ipairs(self.cards) do
         if GUIItemContainsPoint(card.body, x, y) then
-            SendChoice(i)
+            SendChoice(card.def.choice)
             return true
         end
     end

@@ -72,6 +72,9 @@ local kNewTechIds =
     -- targeted focus and the beam count switches
     "VTObeliskPrismUpgrade", "VTObeliskTrinityUpgrade",
     "VTObeliskFocus", "VTObeliskBeams1", "VTObeliskBeams2", "VTObeliskBeams3",
+
+    -- Artificer: fifth caste (Nexus > Castes purchase)
+    "VTBuyArtificer",
 }
 
 for _, name in ipairs(kNewTechIds) do
@@ -202,7 +205,7 @@ kVTSpawnMaxRange        = 6
 -- lifeform of that caste to the empire's stock (VTEmpireInfo); synthesizing a player as that caste uses it up
 -- (it does not come back when the soldier dies). No quotas any more, no cost at synthesis: the commander controls
 -- the resource flow by buying ahead. Vanguard is always free and unlimited.
-kVTCasteCost     = { Infiltrator = 4, Subject = 8, Praetor = 25 }   -- team res per purchase
+kVTCasteCost     = { Infiltrator = 4, Subject = 8, Praetor = 25, Artificer = 40 }   -- team res per purchase
 kVTCasteStockMax = 15                                               -- per caste (network field range)
 
 -- Imperial Authorization: round score needed for each rank
@@ -821,4 +824,5 @@ kVTClassRequirements =
     [kVTClass.Infiltrator] = { },
     [kVTClass.Subject]     = { tech = "VTAuthorizationTier2" },
     [kVTClass.Praetor]     = { tech = "VTAuthorizationTier3" },
+    [kVTClass.Artificer]   = { tech = "VTAuthorizationTier3" },
 }

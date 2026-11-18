@@ -13,10 +13,12 @@ local networkVars =
     stockInfiltrator  = "integer (0 to 15)",
     stockSubject      = "integer (0 to 15)",
     stockPraetor      = "integer (0 to 15)",
+    stockArtificer    = "integer (0 to 15)",
 
     countInfiltrator  = "integer (0 to 16)",
     countSubject      = "integer (0 to 16)",
     countPraetor      = "integer (0 to 16)",
+    countArtificer    = "integer (0 to 16)",
 
     requisitionEnd    = "time",
     requisitionReady  = "time",
@@ -49,10 +51,12 @@ function VTEmpireInfo:OnCreate()
     self.stockInfiltrator = 0
     self.stockSubject     = 0
     self.stockPraetor     = 0
+    self.stockArtificer   = 0
 
     self.countInfiltrator = 0
     self.countSubject     = 0
     self.countPraetor     = 0
+    self.countArtificer   = 0
 
     self.requisitionEnd   = 0
     self.requisitionReady = 0

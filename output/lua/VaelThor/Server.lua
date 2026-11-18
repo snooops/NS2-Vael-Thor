@@ -187,10 +187,10 @@ Event.Hook("Console_vt_status", function(client)
         return
     end
     local now = Shared.GetTime()
-    Shared.Message(string.format("[Vael'Thor] alive / in stock: Infiltrator %d/%d  Subject %d/%d  Praetor %d/%d",
+    Shared.Message(string.format("[Vael'Thor] alive / in stock: Infiltrator %d/%d  Subject %d/%d  Praetor %d/%d  Artificer %d/%d",
             info:GetCount("Infiltrator"), info:GetStock("Infiltrator"),
             info:GetCount("Subject"), info:GetStock("Subject"),
-            info:GetCount("Praetor"), info:GetStock("Praetor")))
+            info:GetCount("Praetor"), info:GetStock("Praetor"), info:GetCount("Artificer"), info:GetStock("Artificer")))
     Shared.Message(string.format("[Vael'Thor] Requisition active %.0fs, ready in %.0fs | Relentless active %.0fs, ready in %.0fs",
             math.max(0, info.requisitionEnd - now), math.max(0, info.requisitionReady - now),
             math.max(0, info.relentlessEnd - now), math.max(0, info.relentlessReady - now)))

@@ -28,11 +28,11 @@ local kTopY = 12
 local kBarW, kBarH = 820, 46
 -- column widths of the top row (sum = kBarW - 2 * kPad)
 local kPad = 22
-local kColumns = { { "res", 200 }, { "nexus", 92 }, { "siphons", 98 }, { "pylons", 92 }, { "matrix", 104 }, { "castes", 190 } }
+local kColumns = { { "res", 160 }, { "nexus", 92 }, { "siphons", 98 }, { "pylons", 92 }, { "matrix", 104 }, { "castes", 230 } }
 local kResW, kResRowH, kResHeadH = 470, 24, 26
 local kMaxRows = 3
 
-local kCastes = { { "Infiltrator", "INF" }, { "Subject", "SUB" }, { "Praetor", "PRA" } }
+local kCastes = { { "Infiltrator", "INF" }, { "Subject", "SUB" }, { "Praetor", "PRA" }, { "Artificer", "ART" } }
 
 local function S(x, y) return GUIScale(Vector(x, y, 0)) end
 
