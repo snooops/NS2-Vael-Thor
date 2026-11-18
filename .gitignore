@@ -40,6 +40,7 @@ luac.out
 *.hex
 
 __pycache__/
+*.pyc
 
 # raw audio cut out of the game's own sound banks by art/sound/build_sounds.sh (regenerated from the install)
 art/sound/work/src/
