@@ -135,6 +135,12 @@ kVTStrings =
     VT_PRIMARY_2                   = "Overcharge Core",
     VT_SECONDARY_1                 = "None",
     VT_SECONDARY_2                 = "Singularity Launcher",
+
+    -- voice menu (Hooks/VoiceOver.lua)
+    VT_VOICE_REQ_SHIELD            = "Need Shield Pulse",
+    VT_VOICE_REQ_ARMS              = "Request Arms",
+    VT_VOICE_BUILD                 = "Raising Structure",
+    VT_VOICE_ADVANCE               = "Advance",
 }
 
 function VT_GetString(key)

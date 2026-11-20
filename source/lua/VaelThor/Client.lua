@@ -329,7 +329,7 @@ end)
 
 -- ----------------------------------------------------------------------------
 -- Wrist weapons (third person): face set 1 of the caste's player model -
--- Infiltrator blades (cyber_player.model), Subject claws (mecha_player.model).
+-- Infiltrator blades (cyber_player.model), Subject forearm blades + talons (stalker_player.model).
 -- Visible while that weapon is active, otherwise covered by a fully transparent
 -- override material. Re-applied every second in case a skin update cleared the
 -- overrides.
@@ -1268,6 +1268,7 @@ local kVTPreviewModels = {
     sentinel       = PrecacheAsset("models/vaelthor/sentinel/sentinel_player.model"),
     cyber          = PrecacheAsset("models/vaelthor/cyber/cyber_player.model"),
     mecha          = PrecacheAsset("models/vaelthor/mecha/mecha_player.model"),
+    stalker        = PrecacheAsset("models/vaelthor/stalker/stalker_player.model"),
     titan          = PrecacheAsset("models/vaelthor/titan/titan_player.model"),
     marine         = PrecacheAsset("models/marine/male/male.model"),
 }

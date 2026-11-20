@@ -1,12 +1,12 @@
 Debug: 
 Building project 'vaelthor'...
 Debug: Building project Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\build\vaelthor.fev...
-Debug: Unique sound defs 1/11
+Debug: Unique sound defs 1/52
 Debug: Retrieving sound file info...
 Debug: Retrieving reverb info...
 Debug: FEV file written ok
 Debug: Unique Envelope Points: 0 of 0
-Debug: Unique Strings: 557 characters of 557
+Debug: Unique Strings: 2902 characters of 2902
 Debug: Caching sound file details for ''...
 Debug: crucible_hum.wav
 Debug: crucible_jump.wav
@@ -19,6 +19,47 @@ Debug: crucible_unfold.wav
 Debug: missile_explode.wav
 Debug: missile_flight.wav
 Debug: missile_launch.wav
+Debug: vanguard_ack_01.wav
+Debug: vanguard_ack_02.wav
+Debug: vanguard_ack_03.wav
+Debug: vanguard_ack_04.wav
+Debug: vanguard_build_01.wav
+Debug: vanguard_cover_01.wav
+Debug: vanguard_cover_02.wav
+Debug: vanguard_dash_01.wav
+Debug: vanguard_dash_02.wav
+Debug: vanguard_dash_03.wav
+Debug: vanguard_death_01.wav
+Debug: vanguard_death_02.wav
+Debug: vanguard_death_03.wav
+Debug: vanguard_done_01.wav
+Debug: vanguard_done_02.wav
+Debug: vanguard_energy_01.wav
+Debug: vanguard_follow_01.wav
+Debug: vanguard_follow_02.wav
+Debug: vanguard_hit_01.wav
+Debug: vanguard_hit_02.wav
+Debug: vanguard_kill_01.wav
+Debug: vanguard_kill_02.wav
+Debug: vanguard_kill_03.wav
+Debug: vanguard_move_01.wav
+Debug: vanguard_move_02.wav
+Debug: vanguard_overdrive_01.wav
+Debug: vanguard_overdrive_02.wav
+Debug: vanguard_req_orders_01.wav
+Debug: vanguard_req_orders_02.wav
+Debug: vanguard_req_shield_01.wav
+Debug: vanguard_req_shield_02.wav
+Debug: vanguard_req_weapon_01.wav
+Debug: vanguard_spawn_01.wav
+Debug: vanguard_spawn_02.wav
+Debug: vanguard_spawn_03.wav
+Debug: vanguard_spotted_01.wav
+Debug: vanguard_spotted_02.wav
+Debug: vanguard_spotted_03.wav
+Debug: vanguard_taunt_01.wav
+Debug: vanguard_taunt_02.wav
+Debug: vanguard_taunt_03.wav
 Debug: Building 'vaelthor.fsb'
 Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_jump.wav
 Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_hum.wav
@@ -31,6 +72,47 @@ Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\crucible_un
 Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_explode.wav
 Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_flight.wav
 Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\missile_launch.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_ack_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_ack_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_ack_03.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_ack_04.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_build_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_cover_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_cover_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_dash_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_dash_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_dash_03.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_death_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_death_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_death_03.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_done_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_done_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_energy_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_follow_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_follow_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_hit_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_hit_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_kill_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_kill_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_kill_03.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_move_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_move_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_overdrive_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_overdrive_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_req_orders_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_req_orders_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_req_shield_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_req_shield_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_req_weapon_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_spawn_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_spawn_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_spawn_03.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_spotted_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_spotted_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_spotted_03.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_taunt_01.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_taunt_02.wav
+Debug: Encoded Z:\home\snooops\Dokumente\NS2_VaelThor\art\sound\work\vanguard_taunt_03.wav
 Debug: Writing FSB...
 Debug: Finished building FSB
 Debug: 

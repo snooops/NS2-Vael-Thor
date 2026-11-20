@@ -6,6 +6,40 @@ Balance numbers are always first pass.
 
 ---
 
+## 2026-11-20
+
+### Added
+- 🔧 **Vanguard voice lines** (recorded by a friend of the user, script `docs/unit_voice_lines.md`). 41 takes cut
+  from the recording, run through the Vanguard effect chain (deeper pitch, octave layer, shimmer, short "radio
+  helmet" reverb), mono WAVs in `art/sound/voice/vanguard/`. `art/sound/build_sounds.sh` builds one 3D event per
+  take into the mod's bank (`sound/vaelthor.fev/vanguard/<line>_NN`, 3-40 m, -3 dB; the bank grows 1 → 7.5 MB, PCM
+  kept so the confirmed missile / Crucible sounds don't change). New `Classes/VTVoice.lua` plays a random take
+  (never the same one twice in a row) with per-line chance and cooldown and a 2.2 s "don't talk over yourself"
+  guard. Triggers: synthesized (spawn), commander order (one ordered soldier acknowledges, `MarineCommander:
+  OrderEntities`), order complete (only that player hears it, like vanilla), kill 40 %, taking damage 35 % / 12 s,
+  carbine drained outside a field, Phase Dash / Shield Overdrive, death (at the spot; vanilla marine death scream
+  silenced for voiced castes).
+- 🔧 **Voice menu (Z / X) for the Vanguard.** Vanilla picks the menu by class name and had none for the Vael'Thor
+  classes (empty menu, voice keys did nothing). `Hooks/VoiceOver.lua`: left Need Shield Pulse / Request Arms / Need
+  Orders / Raising Structure / Ping, right Taunt / Covering / Follow Me / Advance / Hostiles / Acknowledged. The
+  vanilla voice ids are reused (key binds, send limit, commander alerts keep working); the server swaps in the
+  caste's own line (`CreateVoiceMessage` in `Server.lua`).
+
+### Changed
+- 🔧 **New Subject player model: the "Stalker"** (user picked it from three original concepts, `art/subject/concepts/`:
+  Shackled / Stalker / Graft; replaces the Tripo "Mecha Sentinel", which is still built and viewable with
+  `vt_model mecha`). Original Blender model built on the marine joint positions: chitin carapace with glowing seams,
+  eyeless swept-back crest, dorsal crystal blades, tail; forearm blades + finger talons as face set 1 (the existing
+  third-person claws toggle in `Client.lua`). Legs with a mechanical exo-frame (user request): hip actuator, outer
+  struts, knee / ankle hinges centred on the marine pivots, bracketed thigh and calf pistons. Bird feet (user
+  request, raptor-like): scaled shank with front scutes and spur, three segmented forward toes with scutes, pads and
+  hooked talons, a back toe (wall grip). ~21k tris, 2048 px maps baked from the procedural materials.
+  Pipeline `art/subject/build_stalker.sh`: model + Cycles bakes, `rig_robot.py` on the unchanged marine skeleton,
+  new `art/skeleton/apply_rigid_weights.py` (every part except the flesh body rides 100 % on its bone; bone heat
+  fails on this mesh), `export_rigged.py` now keeps several material slots (= face sets) when given several
+  textures, `make_ns2_textures.py` gained a `baked` glow mode. `art/skeleton/pose_preview.py` renders pose tests.
+  Still drawn at `kVTSubjectModelScale` 1.3.
+
 ## 2026-11-18
 
 ### Added

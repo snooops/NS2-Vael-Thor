@@ -5,7 +5,7 @@ Usage: python3 make_fdp.py <hitsounds_client.fdp> <out.fdp>
 Result: project "vaelthor", event groups "missile" and "crucible", 3D simple events
 (Lua: "sound/vaelthor.fev/<group>/<event>"), one sound bank "vaelthor" with the WAVs next to the .fdp.
 """
-import sys, uuid, copy
+import sys, os, glob, uuid, copy
 import xml.etree.ElementTree as ET
 
 SRC, OUT = sys.argv[1], sys.argv[2]
@@ -25,6 +25,14 @@ EVENTS = [
     ("crucible", "jump",    "crucible_jump.wav",   True,  2.0, 30.0, -13.0),
     ("crucible", "land",    "crucible_land.wav",   True,  2.0, 35.0, -12.0),
 ]
+# Unit voice lines (art/sound/voice/<caste>/<caste>_<line>_NN.wav, copied next to the .fdp by build_sounds.sh):
+# one 3D oneshot event per take, "sound/vaelthor.fev/<caste>/<line>_NN" (Classes/VTVoice.lua picks the takes).
+VOICE_CASTES = ["vanguard"]
+for caste in VOICE_CASTES:
+    for wav in sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(OUT)), caste + "_*.wav"))):
+        name = os.path.basename(wav)[len(caste) + 1:-4]
+        EVENTS.append((caste, name, os.path.basename(wav), True, 3.0, 40.0, -3.0))
+
 GROUPS = []
 for e in EVENTS:
     if e[0] not in GROUPS:

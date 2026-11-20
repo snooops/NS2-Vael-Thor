@@ -703,6 +703,16 @@ function VTTeam:SynthesizePlayer(player, host)
 
     newPlayer:TriggerEffects("infantry_portal_spawn")
 
+    -- "Legionnaire, synthesized." a moment after the warp-in, once the client has the new entity
+    if VT_GetHasVoice(newPlayer) then
+        newPlayer:AddTimedCallback(function(player)
+            if player:GetIsAlive() then
+                VT_PlayVoice(player, "spawn")
+            end
+            return false
+        end, 0.6)
+    end
+
     return true
 
 end

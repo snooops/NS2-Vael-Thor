@@ -8,6 +8,7 @@ Usage: python3 make_ns2_textures.py <art_dir> <out_dir> [prefix=robot] [glow=cya
         brightness; only the bright parts glow
   orange: same as teal for orange accents (Mecha Sentinel visor/seams); dull copper stays as is
   accent: any saturated colour (on an otherwise grey model, e.g. the Falcon rifle) -> purple glow
+  baked: the art dir also has bake_emission.png (own Blender models): glow = that map, no recolouring
   paint=orange: additionally repaint saturated orange panels deep Vael'Thor purple, NOT emissive
         (Titan Sentinel's orange paint); applied after the glow pass
 """
@@ -35,7 +36,10 @@ nrm = load("bake_normal.png")
 r, g, b = alb[..., 0], alb[..., 1], alb[..., 2]
 mx = alb.max(-1); mn = alb.min(-1)
 sat = (mx - mn) / np.maximum(mx, 1e-4)
-if GLOW == "purple":
+if GLOW == "baked":
+    baked_emis = load("bake_emission.png")
+    glow = np.clip(baked_emis.max(-1) * 3.0, 0, 1)
+elif GLOW == "purple":
     glow = np.clip((b - 0.35) / 0.15, 0, 1) * np.clip((r - 0.2) / 0.1, 0, 1) * np.clip((np.minimum(r, b) - g - 0.15) / 0.1, 0, 1)
 elif GLOW == "teal":
     glow = np.clip(((np.minimum(g, b) - r) - 0.10) / 0.08, 0, 1) * np.clip((sat - 0.35) / 0.10, 0, 1)
@@ -55,7 +59,7 @@ albedo = alb * (1 - 0.75 * met[..., None])
 HUE_MODES = ("teal", "orange", "accent")  # recolour at original brightness, glow only where bright
 if GLOW in HUE_MODES:
     albedo = albedo * (1 - g3) + PURPLE * mx[..., None] * g3
-elif GLOW != "purple":
+elif GLOW not in ("purple", "baked"):
     albedo = albedo * (1 - g3) + (PURPLE * np.clip(lum * 1.3, 0.3, 1)) * g3
 if PAINT == "orange":
     paint = np.clip(((r - b) - 0.25) / 0.08, 0, 1) * np.clip((r - g) / 0.05 + 0.5, 0, 1) * np.clip((sat - 0.45) / 0.08, 0, 1)
@@ -69,6 +73,8 @@ spec = spec * (1 - g3) + 0.3 * g3
 gloss = np.clip(1 - rough, 0, 1)
 # emissive: purple strips only
 emis = (alb * 1.2 if GLOW == "purple" else PURPLE) * g3
+if GLOW == "baked":
+    emis = baked_emis
 if GLOW in HUE_MODES:  # dark accent panels stay unlit, bright strips glow
     emis = emis * np.clip((mx - 0.35) / 0.4, 0, 1)[..., None]
 

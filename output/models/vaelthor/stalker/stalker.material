@@ -1,0 +1,6 @@
+shader = "models/marine/marine.surface_shader"
+albedoMap = "models/vaelthor/stalker/stalker.dds"
+normalMap = "models/vaelthor/stalker/stalker_normal.dds"
+emissiveMap = "models/vaelthor/stalker/stalker_illum.dds"
+specularMap = "models/vaelthor/stalker/stalker_spec.dds"
+surface = "organic"

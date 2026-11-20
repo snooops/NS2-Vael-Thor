@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Vael'Thor sound bank -> output/sound/vaelthor.fev + .fsb + .soundinfo
 # Lua event paths: "sound/vaelthor.fev/missile/{launch,flight,explode}" (Praetor homing missile),
-#                  "sound/vaelthor.fev/crucible/{step1-3,servo,hum,unfold,jump,land}" (Artificer Crucible).
+#                  "sound/vaelthor.fev/crucible/{step1-3,servo,hum,unfold,jump,land}" (Artificer Crucible),
+#                  "sound/vaelthor.fev/vanguard/<line>_NN" (Vanguard voice, art/sound/voice/vanguard, Classes/VTVoice.lua).
 #   make_missile_sounds.py  synthesises the missile WAVs (original sounds, numpy)
 #   make_crucible_sounds.py builds the Crucible WAVs from NS2's own mechanical recordings (cut out of the game's
 #                           banks with fsb5_extract.py + ffmpeg, processed with sox)
@@ -27,6 +28,8 @@ done
 echo "== waves"
 python3 -I "$HERE/make_missile_sounds.py" "$WORK"
 python3 -I "$HERE/make_crucible_sounds.py" "$WORK"
+echo "== voice lines"
+for d in "$HERE"/voice/*/; do cp "$d"*.wav "$WORK/"; done
 echo "== project"
 python3 -I "$HERE/make_fdp.py" "$NS2/assets/soundsrc/hitsounds_client.fdp" "$WORK/vaelthor.fdp"
 echo "== build"
@@ -39,5 +42,5 @@ cp "$BUILD"/vaelthor.fev "$BUILD"/*.fsb "$OUT/"
 echo "== soundinfo"
 cd "$OUT"
 wine "$NS2/x64/SoundInfo.exe" "$(w "$OUT/vaelthor.fev")" "$(w "$OUT")\\" 2>&1 | grep -viE "radv" || true
-cp "$WORK/vaelthor.fdp" "$WORK"/missile_*.wav "$WORK"/crucible_*.wav "$SRC/"
+cp "$WORK/vaelthor.fdp" "$WORK"/missile_*.wav "$WORK"/crucible_*.wav "$SRC/"   # voice WAVs stay in art/sound/voice
 ls -l "$OUT"

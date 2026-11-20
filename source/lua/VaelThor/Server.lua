@@ -292,3 +292,69 @@ end)
 
 Shared.Message(string.format("[Vael'Thor] Empire loaded. Faction matchup: %s (vote menu or sv_vt_matchup to change).",
         kVTMatchupNames[VT_GetMatchup()]))
+
+-- ----------------------------------------------------------------------------
+-- Unit voice lines (Classes/VTVoice.lua)
+-- ----------------------------------------------------------------------------
+
+-- Voice menu: voiced castes speak their own line instead of the marine one. The commander alert (need shield /
+-- orders / structure) and the taunt achievement hook stay vanilla; everything else (ping, votes, other classes)
+-- goes to vanilla untouched. Bots call CreateVoiceMessage too (follow-me acknowledgement).
+local oldCreateVoiceMessage = CreateVoiceMessage
+function CreateVoiceMessage(player, voiceId)
+
+    local line = VT_GetVoiceRequestLine(player, voiceId)
+    if not line then
+        return oldCreateVoiceMessage(player, voiceId)
+    end
+
+    if player.OnTaunt and player:GetClient() and (voiceId == kVoiceId.MarineTaunt or voiceId == kVoiceId.MarineTauntExclusive) then
+        player:OnTaunt()
+    end
+
+    VT_PlayVoice(player, line, { force = true })
+
+    local soundData = GetVoiceSoundData(voiceId)
+    local team = player:GetTeam()
+    if team and soundData and soundData.AlertTechId and soundData.AlertTechId ~= kTechId.None then
+        team:TriggerAlert(soundData.AlertTechId, player)
+    end
+
+end
+
+-- Commander orders: one of the ordered soldiers acknowledges (a whole squad answering at once is just noise).
+local oldOrderEntities = MarineCommander.OrderEntities
+function MarineCommander:OrderEntities(orderTechId, trace, orientation, targetId, shiftDown)
+
+    oldOrderEntities(self, orderTechId, trace, orientation, targetId, shiftDown)
+
+    local voiced = {}
+    for _, entity in ipairs(self:GetSelection() or {}) do
+        if VT_GetHasVoice(entity) and entity:GetIsAlive() and HasMixin(entity, "Orders") and entity:GetHasOrder() then
+            voiced[#voiced + 1] = entity
+        end
+    end
+    if #voiced > 0 then
+        VT_PlayVoice(voiced[math.random(1, #voiced)], "ack")
+    end
+
+end
+
+-- Kills and deaths. The dying soldier is replaced by a spectator right away, so the death line plays at the
+-- spot, not on the entity.
+local oldOnEntityKilled = NS2Gamerules.OnEntityKilled
+function NS2Gamerules:OnEntityKilled(targetEntity, attacker, doer, point, direction)
+
+    if targetEntity and VT_GetHasVoice(targetEntity) then
+        VT_PlayVoice(targetEntity, "death", { force = true, origin = targetEntity:GetOrigin() })
+    end
+
+    if attacker and attacker ~= targetEntity and VT_GetHasVoice(attacker) and attacker:GetIsAlive()
+            and targetEntity and targetEntity:isa("Player")
+            and HasMixin(targetEntity, "Team") and targetEntity:GetTeamNumber() ~= attacker:GetTeamNumber() then
+        VT_PlayVoice(attacker, "kill")
+    end
+
+    return oldOnEntityKilled(self, targetEntity, attacker, doer, point, direction)
+
+end

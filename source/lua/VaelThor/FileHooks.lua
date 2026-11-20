@@ -58,6 +58,9 @@ ModLoader.SetupFileHook("lua/GUITechMap.lua",    H .. "GUITechMap.lua",      "po
 -- Commander ghost preview of the (scaled) Vael'Thor buildings.
 ModLoader.SetupFileHook("lua/GhostModelUI.lua",   H .. "GhostModelUI.lua",    "post")
 
+-- Voice menu (Z / X) for the voiced castes (Vanguard), Classes/VTVoice.lua.
+ModLoader.SetupFileHook("lua/VoiceOver.lua",        H .. "VoiceOver.lua",       "post")
+
 -- Bots: turn-speed table is keyed by class name and has no fallback.
 ModLoader.SetupFileHook("lua/bots/BotAim.lua",      H .. "BotAim.lua",          "post")
 

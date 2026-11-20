@@ -237,6 +237,19 @@ function VTVanguard:OnProcessMove(input)
     if carbine and carbine.VT_UpdateEnergy then
         carbine:VT_UpdateEnergy(self, input.time)
     end
+    if Server then
+        VT_UpdateVoice(self)   -- "taking fire" / "carbine drained" lines (Classes/VTVoice.lua)
+    end
+end
+
+-- Order complete: the soldier's own "Objective secured" instead of the marine voice. Client-only and heard only by
+-- this player, like vanilla (OrderSelfMixin calls it on the owning client); automatic orders stay silent here.
+if Client then
+    function VTVanguard:OnOrderSelfComplete(orderType)
+        if not PlayerUI_GetTypeAutoOrderOrPheromone(orderType) then
+            VT_PlayVoice(self, "done")
+        end
+    end
 end
 
 function VTVanguard:GetMaxSpeed(possible)
@@ -280,6 +293,7 @@ if Server then
 
             if VT_PerformBlink(self, kVTPhaseDashDistance) then
                 self:VT_StartCooldown(kVTPhaseDashCooldown)
+                VT_PlayVoice(self, "dash")
             end
 
         elseif self.vtModule == kVTModule.ShieldOverdrive then
@@ -289,6 +303,7 @@ if Server then
             self.vtShieldBurnoutEnd = now + kVTOverdriveDuration + kVTOverdriveBurnout
             self:VT_StartCooldown(kVTOverdriveCooldown)
             self:TriggerEffects("catpack_pickup")
+            VT_PlayVoice(self, "overdrive", { force = true })
 
             self:AddTimedCallback(function(player)
                 if player:GetIsAlive() then
@@ -860,9 +875,10 @@ function VTSubject:ModifyVelocity(input, velocity, deltaTime)
 
 end
 
--- Player model: Fab "Mecha Sentinel" rigged to the marine skeleton (art/fab/mecha_sentinel/build_mecha.sh),
--- orange visor recoloured to Vael'Thor purple; drawn at kVTSubjectModelScale (OnAdjustModelCoords).
-kVTSubjectPlayerModel = PrecacheAsset("models/vaelthor/mecha/mecha_player.model")
+-- Player model: the "Stalker", an original Blender model (chitin predator, forearm blades, toe claws for the wall
+-- climb) on the marine skeleton (art/subject/build_stalker.sh); face set 1 = blades + talons (wrist weapon toggle in
+-- Client.lua). Drawn at kVTSubjectModelScale (OnAdjustModelCoords). The old Mecha Sentinel is still built (vt_model mecha).
+kVTSubjectPlayerModel = PrecacheAsset("models/vaelthor/stalker/stalker_player.model")
 
 function VTSubject:GetVariantModel()
     return kVTSubjectPlayerModel
